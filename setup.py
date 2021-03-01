@@ -1,10 +1,8 @@
-from setuptools import find_packages, setup
+# -*- coding: utf-8 -*-
 
-setup(
-    name='src',
-    packages=find_packages(),
-    version='0.1.0',
-    description='Master's Thesis code for Multimodal Transformers for Biomedical Text and Knowledge Graph Data',
-    author='Helena Balabin',
-    license='',
-)
+"""Setup module for :mod:`multi_stonkgs`."""
+
+import setuptools
+
+if __name__ == '__main__':
+    setuptools.setup()
