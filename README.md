@@ -12,9 +12,6 @@
     <a href="https://github.com/multi-stonkgs/multi-stonkgs/actions?query=workflow%3ATests">
         <img alt="Tests" src="https://github.com/multi-stonkgs/multi-stonkgs/workflows/Tests/badge.svg" />
     </a>
-    <a href="https://github.com/cthoyt/cookiecutter-python-package">
-        <img alt="Cookiecutter template from @cthoyt" src="https://img.shields.io/badge/Cookiecutter-python--package-yellow" /> 
-    </a>
     <a href="https://pypi.org/project/multi_stonkgs">
         <img alt="PyPI" src="https://img.shields.io/pypi/v/multi_stonkgs" />
     </a>
@@ -74,17 +71,6 @@ $ pip install -e .
 ## ⚖️ License
 
 The code in this package is licensed under the MIT License.
-
-## 🙏 Contributing
-Contributions, whether filing an issue, making a pull request, or forking, are appreciated. See
-[CONTRIBUTING.rst](https://github.com/multi-stonkgs/multi-stonkgs/blob/master/CONTRIBUTING.rst) for more information on getting
-involved.
-
-## 🍪 Cookiecutter Acknowledgement
-
-This package was created with [@audreyr](https://github.com/audreyr)'s
-[cookiecutter](https://github.com/cookiecutter/cookiecutter) package using [@cthoyt](https://github.com/cthoyt)'s
-[cookiecutter-python-package](https://github.com/cthoyt/cookiecutter-python-package) template.
 
 ## 🛠️ Development
 
