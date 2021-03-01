@@ -40,6 +40,7 @@ def run_node2vec(
 
     # Parameters
     # TODO: what are the best? look at other papers / make grid search
+    # see https://github.com/seffnet/seffnet/blob/master/src/seffnet/optimization.py
     n_components: int = 50
     walklen: int = 10
     epochs: int = 20
