@@ -32,6 +32,13 @@ def read_indra_triples(
 
     #TODO: "context" annotation is missing
     logger.info(context_annotations)
+    
+    
+    # TODO: get a subgraph for each of the four annnotations of interest
+    
+    # TODO: summarize each of the subgraphs
+    
+    # TODO: export them in edgelist with a fourth column with the label/class (e.g., human, rat...)
 
 
 if __name__ == '__main__':
