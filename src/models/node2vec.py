@@ -34,9 +34,13 @@ def run_node2vec(
     #: TODO check if it is a directed graph
     indra_kg_pos = nx.read_edgelist(positive_graph_path, sep=sep)
 
-    # TODO: get negative sampling from https://pykeen.readthedocs.io/en/latest/reference/negative_sampling.html
-    # TODO: or xswap from himmelstein (https://github.com/drug2ways/drug2ways/blob/master/src/drug2ways/permute.py)
+    # TODO: get negative sampling (priority)
+    # 1. https://stellargraph.readthedocs.io/en/latest/_modules/stellargraph/data/edge_splitter.html
+    # 2. from https://pykeen.readthedocs.io/en/latest/reference/negative_sampling.html
+    # 3. or xswap from himmelstein (https://github.com/drug2ways/drug2ways/blob/master/src/drug2ways/permute.py)
     indra_kg_neg = ...
+    
+    # follow https://stellargraph.readthedocs.io/en/stable/demos/link-prediction/node2vec-link-prediction.html
 
     # Parameters
     # TODO: what are the best? look at other papers / make grid search
