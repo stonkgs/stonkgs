@@ -76,6 +76,7 @@ def dump_edgelist(graph: pybel.BELGraph, annotations: List[str], name: str) -> N
 
     df = pd.DataFrame(triples)
 
+    # TODO: filter classes that are really small
     logger.info(df['class'].value_counts())
 
     df.to_csv(os.path.join(DATA_DIR, f'{name}.tsv'), sep='\t', index=False)
