@@ -39,6 +39,8 @@ def read_indra_triples(
     # TODO: summarize each of the subgraphs
     
     # TODO: export them in edgelist with a fourth column with the label/class (e.g., human, rat...)
+    
+    # TODO: TSV FILE |  source, target, relation, evidence, label
 
 
 if __name__ == '__main__':
