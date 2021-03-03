@@ -17,3 +17,5 @@ os.makedirs(MODELS_DIR, exist_ok=True)
 
 # Download from https://emmaa.s3.amazonaws.com/assembled/brca/statements_2021-01-30-17-21-54.gz
 DUMMY_EXAMPLE_INDRA = os.path.join(DATA_DIR, 'statements_2021-01-30-17-21-54.json')
+# Can be created by running python -m src.data.indra
+DUMMY_EXAMPLE_TRIPLES = os.path.join(DATA_DIR, 'organ.tsv')
