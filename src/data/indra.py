@@ -6,13 +6,14 @@ Run with:
 python -m src.data.indra
 """
 
+import os
 import logging
 
 import pandas as pd
 import pybel
 from pybel.constants import ANNOTATIONS, EVIDENCE, RELATION, CITATION
 
-from ..constants import DUMMY_EXAMPLE_INDRA
+from ..constants import DATA_DIR, DUMMY_EXAMPLE_INDRA
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ def dump_edgelist(graph: pybel.BELGraph, name: str) -> None:
             )
 
     df = pd.DataFrame(triples)
-    df.to_csv(f'{name}.tsv', sep='\t', index=False)
+    df.to_csv(os.path.join(DATA_DIR, f'{name}.tsv'), sep='\t', index=False)
 
 
 def read_indra_triples(
