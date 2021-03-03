@@ -29,6 +29,8 @@ def read_indra_triples(
         if ANNOTATIONS in data:
             for key in data[ANNOTATIONS]:
                 context_annotations.add(key)
+                
+                # TODO: check for triples without any evidence
 
     #TODO: "context" annotation is missing
     logger.info(context_annotations)
