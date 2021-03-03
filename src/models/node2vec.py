@@ -25,11 +25,11 @@ def run_link_prediction(
         model: Node2Vec
 ) -> float:
     """Link prediction task for a given KG and node2vec model."""
+    # Preprocessing step: Generate positive and negative triples
+    # 1. Method employed -> https://stellargraph.readthedocs.io/en/latest/_modules/stellargraph/data/edge_splitter.html
+    # 2. Alternative from PyKEEN -> https://pykeen.readthedocs.io/en/latest/reference/negative_sampling.html
+    # 3. Alternative from xswap -> https://github.com/hetio/xswap
 
-    # get negative sampling (priority) for the link prediction task
-    # 1. https://stellargraph.readthedocs.io/en/latest/_modules/stellargraph/data/edge_splitter.html
-    # 2. from https://pykeen.readthedocs.io/en/latest/reference/negative_sampling.html
-    # 3. or xswap from himmelstein (https://github.com/drug2ways/drug2ways/blob/master/src/drug2ways/permute.py)
     # follow https://stellargraph.readthedocs.io/en/stable/demos/link-prediction/node2vec-link-prediction.html
     _, indra_kg_triples, edge_labels = EdgeSplitter(kg).train_test_split()
 
