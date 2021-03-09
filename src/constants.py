@@ -43,7 +43,7 @@ os.makedirs(SPECIES_DIR, exist_ok=True)
 # Download from https://emmaa.s3.amazonaws.com/assembled/brca/statements_2021-01-30-17-21-54.gz
 DUMMY_EXAMPLE_INDRA = os.path.join(RAW_DIR, 'statements_2021-01-30-17-21-54.json')
 # Can be created by running python -m src.data.indra
-DUMMY_EXAMPLE_TRIPLES = os.path.join(DATA_DIR, 'organ.tsv')
+DUMMY_EXAMPLE_TRIPLES = os.path.join(DATA_DIR, 'location.tsv')
 
 # Specify the (huggingface) language model that is used in this project
 NLP_MODEL_TYPE = "monologg/biobert_v1.1_pubmed"
