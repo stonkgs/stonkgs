@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-class INDRADataset(torch.utils.data.Dataset):
+class INDRAEvidenceDataset(torch.utils.data.Dataset):
     """Custom Dataset class for INDRA data."""
     def __init__(self, encodings, labels):
         # Assumes that the labels are numerically encoded
@@ -86,8 +86,8 @@ def run_sequence_classification_cv(
         test_evidences = tokenizer(evidences_text[indices["test_idx"]].tolist(), truncation=True, padding=True)
         train_labels = labels[indices["train_idx"]].tolist()
         test_labels = labels[indices["test_idx"]].tolist()
-        train_dataset = INDRADataset(encodings=train_evidences, labels=train_labels)
-        test_dataset = INDRADataset(encodings=test_evidences, labels=test_labels)
+        train_dataset = INDRAEvidenceDataset(encodings=train_evidences, labels=train_labels)
+        test_dataset = INDRAEvidenceDataset(encodings=test_evidences, labels=test_labels)
 
         # Note that due to the randomization in the batches, the training/evaluation is slightly different every time
         training_args = TrainingArguments(
