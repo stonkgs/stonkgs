@@ -26,9 +26,16 @@ SPECIES_DIR = os.path.join(INPUT_DIR, 'species')
 RELATION_TYPE_DIR = os.path.join(INPUT_DIR, 'relation_type')
 
 MODELS_DIR = os.path.join(PROJECT_DIR, 'models')
+NLP_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'nlp-baseline')
+KG_HPO_DIR = os.path.join(MODELS_DIR, 'kg-hpo')
+KG_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'kg-baseline')
+STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, 'stonkgs')
+
+LOG_DIR = os.path.join(PROJECT_DIR, 'logs')
 
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(MODELS_DIR, exist_ok=True)
+os.makedirs(LOG_DIR, exist_ok=True)
 os.makedirs(RAW_DIR, exist_ok=True)
 os.makedirs(INPUT_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)

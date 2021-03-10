@@ -7,7 +7,7 @@ from sklearn.model_selection import StratifiedKFold
 from typing import List, Dict
 import numpy as np
 import torch
-from ..constants import NLP_MODEL_TYPE, DUMMY_EXAMPLE_TRIPLES, MODELS_DIR
+from ..constants import NLP_MODEL_TYPE, DUMMY_EXAMPLE_TRIPLES, NLP_BL_OUTPUT_DIR, LOG_DIR
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 from sklearn.metrics import f1_score
 import os
@@ -56,7 +56,8 @@ def run_sequence_classification_cv(
     data_path: str = DUMMY_EXAMPLE_TRIPLES,
     sep: str = "\t",
     model_type: str = NLP_MODEL_TYPE,
-    logging_dir: str = MODELS_DIR,
+    logging_dir: str = LOG_DIR,
+    output_dir: str = NLP_BL_OUTPUT_DIR,
     label_column_name: str = "class",
     text_data_column_name: str = "evidence",
     epochs: int = 2,
@@ -90,9 +91,8 @@ def run_sequence_classification_cv(
 
         # Note that due to the randomization in the batches, the training/evaluation is slightly different every time
         training_args = TrainingArguments(
-            # TODO: specify better log and output directories
             # label_names
-            output_dir=logging_dir,
+            output_dir=output_dir,
             num_train_epochs=epochs,  # total number of training epochs
             logging_dir=logging_dir,  # directory for storing logs
             logging_steps=100,

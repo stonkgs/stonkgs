@@ -317,4 +317,6 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/macos,linux,pycharm,python,windows
 
 scratch/
+# Models and logs folders
 /models/
+/logs/
