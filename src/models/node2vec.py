@@ -4,25 +4,28 @@
 
 import logging
 import random
+import pickle
+import os
+from typing import Optional
+
 import numpy as np
 import pandas as pd
-import click
-from nodevectors import Node2Vec
+import optuna
 import networkx as nx
-from typing import Optional
+from nodevectors import Node2Vec
 from stellargraph.data import EdgeSplitter
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
-from constants import DUMMY_EXAMPLE_TRIPLES, MODELS_DIR
-import optuna
+
+from constants import DUMMY_EXAMPLE_TRIPLES, MODELS_DIR, KG_HPO_DIR
 
 logger = logging.getLogger(__name__)
 
 
 def run_link_prediction(
-        kg: nx.DiGraph,
-        model: Node2Vec
+    kg: nx.DiGraph,
+    model: Node2Vec
 ) -> float:
     """Link prediction task for a given KG and node2vec model."""
     # Preprocessing step: Generate positive and negative triples
@@ -60,9 +63,9 @@ def run_link_prediction(
 # TODO: add parameters/click later on
 # @click.group()
 def run_node2vec(
-        positive_graph_path: str = DUMMY_EXAMPLE_TRIPLES,
-        sep: str = '\t',
-        seed: Optional[int] = None,
+    positive_graph_path: str = DUMMY_EXAMPLE_TRIPLES,
+    sep: str = '\t',
+    seed: Optional[int] = None,
 ):
     """CLI to run node2vec."""
     if seed is None:
@@ -89,14 +92,14 @@ def run_node2vec(
     negative: int = 5
     iterations: int = 15
     batch_words: int = 1000
-    walk_length: int = 256
+    walk_length: int = 128
     # has to be the same as the embedding dimension of the NLP model
     # TODO double check later on
     dimensions: int = 768
 
     # define HPO function for optuna
     def objective(
-            trial: optuna.trial.Trial
+        trial: optuna.trial.Trial
     ) -> float:
         """Runs HPO on the link prediction task on the KG, based on a LogReg classifier and the auc score."""
         epochs = trial.suggest_categorical('epochs', [8, 16, 32, 64, 128, 256])
@@ -106,7 +109,7 @@ def run_node2vec(
         q = trial.suggest_uniform('q', 0, 4.0)
 
         # train the KGE model
-        kg_model = Node2Vec(
+        node2vec_model = Node2Vec(
             n_components=dimensions,
             walklen=walk_length,
             epochs=epochs,
@@ -124,19 +127,23 @@ def run_node2vec(
             },
         )
 
-        kg_model.fit(indra_kg_pos)
+        node2vec_model.fit(indra_kg_pos)
+
+        # Save a trained model to a file
+        with open(os.path.join(KG_HPO_DIR, "node2vec_model_{}.pickle".format(trial.number), "wb")) as fout:
+            pickle.dump(node2vec_model, fout)
 
         # return the auc score for a LogReg classifier on the link prediction task with negative samples
         return run_link_prediction(
             kg=indra_kg_pos,
-            model=kg_model
+            model=node2vec_model
         )
 
     # create study and set number of trials
     n_trials = 50
     study = optuna.create_study(
         study_name="Node2vec HPO on INDRA KG",
-        storage="sqlite:///" + MODELS_DIR + "/kge_indra_hpo.db",
+        storage=f"sqlite:///{MODELS_DIR}/kge_indra_hpo.db",
         direction='maximize',
         load_if_exists=True,
     )
@@ -145,8 +152,35 @@ def run_node2vec(
         n_trials=n_trials
     )
 
-    # TODO save 2 things: 1) tsv file of random walks (e.g. 256 columns with ids in the cells)
-    #   2) pickle of numpy array with embeddings for each entity ID
+    # Remove all the models except for the best one :)
+    for filename in os.listdir(KG_HPO_DIR):
+
+        if filename != "node2vec_model_{}.pickle".format(study.best_trial.number):
+            os.remove(os.path.join(KG_HPO_DIR, filename))
+
+    # Load the best model
+    with open(os.path.join(KG_HPO_DIR, "node2vec_model_{}.pickle".format(study.best_trial.number), "rb")) as fin:
+        best_clf: Node2Vec = pickle.load(fin)
+
+    """Save the embeddings"""
+    wv = best_clf.model.wv
+    sorted_vocab_items = sorted(wv.vocab.items(), key=lambda item: item[1].count, reverse=True)
+    vectors = wv.vectors
+
+    with open(os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv", "wb")) as emb_file:
+        for word, vocab_ in sorted_vocab_items:
+            # Write to vectors file
+            print(word, *(repr(val) for val in vectors[vocab_.index]), sep='\t', file=emb_file)
+
+    randomwalks = best_clf.walks
+
+    print(randomwalks)
+    print(type(randomwalks))
+
+    with open(os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv", "wb")) as emb_file:
+        for word, vocab_ in sorted_vocab_items:
+            # Write to vectors file
+            print(word, *(repr(val) for val in vectors[vocab_.index]), sep='\t', file=emb_file)
 
 
 if __name__ == "__main__":
