@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 
-"""Node2vec model."""
+"""Node2vec model.
+
+run with:
+python -m src.models.node2vec
+"""
 
 import logging
 import random
@@ -18,7 +22,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 
-from ..constants import DUMMY_EXAMPLE_TRIPLES, KG_HPO_DIR
+from ..constants import DUMMY_EXAMPLE_TRIPLES, KG_HPO_DIR, MODELS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -80,10 +84,10 @@ def run_node2vec(
 
     # Read graph, first read the triples into a dataframe
     triples_df = pd.read_csv(positive_graph_path, sep=sep)
-    # TODO check if it is a directed graph
     # Initialize empty Graph and fill it with the triples from the df
-    indra_kg_pos = nx.empty_graph()
+    indra_kg_pos = nx.DiGraph()
     for _, row in triples_df[["source", "target"]].iterrows():
+        # FIXME add double relation for some cases
         indra_kg_pos.add_edge(row["source"], row["target"])
 
     # indra_kg_pos = nx.read_edgelist(positive_graph_path, delimiter=sep)
@@ -144,7 +148,7 @@ def run_node2vec(
     n_trials = 2
     study = optuna.create_study(
         study_name="Node2vec HPO on INDRA KG",
-        storage=f"sqlite:///{KG_HPO_DIR}/kge_indra_hpo.db",
+        storage=f"sqlite:///{MODELS_DIR}/kge_indra_hpo.db",
         direction='maximize',
         load_if_exists=True,
     )
@@ -164,17 +168,18 @@ def run_node2vec(
 
     # Delete the HPO database by default
     if delete_database:
-        optuna.delete_study(study_name="Node2vec HPO on INDRA KG", storage=f"sqlite:///{KG_HPO_DIR}/kge_indra_hpo.db")
+        optuna.delete_study(study_name="Node2vec HPO on INDRA KG", storage=f"sqlite:///{MODELS_DIR}/kge_indra_hpo.db")
 
     """Save the embeddings"""
     wv = best_clf.model.wv
     sorted_vocab_items = sorted(wv.vocab.items(), key=lambda item: item[1].count, reverse=True)
     vectors = wv.vectors
 
-    with open(os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv"), "wb") as emb_file:
+    with open(os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv"), "w") as emb_file:
         for word, vocab_ in sorted_vocab_items:
             # Write to vectors file
-            print(word, *(repr(val) for val in vectors[vocab_.index]), sep='\t', file=emb_file)
+            embeddings = "\t".join(repr(val) for val in vectors[vocab_.index])
+            emb_file.write(f'{word}\t{embeddings}\n')
 
     randomwalks = best_clf.walks
 
