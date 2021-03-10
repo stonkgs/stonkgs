@@ -31,6 +31,9 @@ KG_HPO_DIR = os.path.join(MODELS_DIR, 'kg-hpo')
 KG_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'kg-baseline')
 STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, 'stonkgs')
 
+EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, 'embeddings_best_model.tsv')
+RANDOM_WALKS_PATH = os.path.join(KG_HPO_DIR, 'random_walks_best_model.tsv')
+
 LOG_DIR = os.path.join(PROJECT_DIR, 'logs')
 
 os.makedirs(DATA_DIR, exist_ok=True)

@@ -1,12 +1,18 @@
 # -*- coding: utf-8 -*-
 
-"""KG baseline model on the fine-tuning classification task, assuming the model embeddings are pre-trained."""
+"""
+KG baseline model on the fine-tuning classification task, assuming the model embeddings are pre-trained.
 
-import os
+Run with:
+python -m src.models.kg_baseline_model
+"""
+
 from typing import Dict, List
 
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
+
+from constants import DUMMY_EXAMPLE_TRIPLES, RANDOM_WALKS_PATH, EMBEDDINGS_PATH
 
 
 def _prepare_df(embedding_path: str, sep: str = '\t') -> Dict[str, List[str]]:
@@ -65,19 +71,12 @@ def run_kg_baseline_classification_cv(triples_path, embedding_path, random_walks
     embeddings_dict = _prepare_df(embedding_path)
     random_walks_dict = _prepare_df(random_walks_path)
 
-    print(embeddings_dict)
-    print(random_walks_dict)
-
-    # Number of embeddings and random walks
-    print(len(random_walks_dict[list(random_walks_dict.keys())[0]]))
-    print(len(embeddings_dict[list(embeddings_dict.keys())[0]]))
-
     # TODO: 3. Initialize the model pooling classification (make a class)
 
 
 if __name__ == "__main__":
     run_kg_baseline_classification_cv(
-        triples_path='',  # fixme
-        embedding_path='',
-        random_walks_path='',
+        triples_path=DUMMY_EXAMPLE_TRIPLES,
+        embedding_path=EMBEDDINGS_PATH,
+        random_walks_path=RANDOM_WALKS_PATH,
     )
