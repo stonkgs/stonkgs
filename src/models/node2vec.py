@@ -167,7 +167,7 @@ def run_node2vec(
     sorted_vocab_items = sorted(wv.vocab.items(), key=lambda item: item[1].count, reverse=True)
     vectors = wv.vectors
 
-    with open(os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv", "wb")) as emb_file:
+    with open(os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv"), "wb") as emb_file:
         for word, vocab_ in sorted_vocab_items:
             # Write to vectors file
             print(word, *(repr(val) for val in vectors[vocab_.index]), sep='\t', file=emb_file)
