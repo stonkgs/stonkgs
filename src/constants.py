@@ -23,6 +23,7 @@ LOCATION_DIR = os.path.join(INPUT_DIR, 'location')
 CELL_TYPE_DIR = os.path.join(INPUT_DIR, 'cell_type')
 CELL_LINE_DIR = os.path.join(INPUT_DIR, 'cell_line')
 SPECIES_DIR = os.path.join(INPUT_DIR, 'species')
+RELATION_TYPE_DIR = os.path.join(INPUT_DIR, 'relation_type')
 
 MODELS_DIR = os.path.join(PROJECT_DIR, 'models')
 
@@ -39,6 +40,7 @@ os.makedirs(LOCATION_DIR, exist_ok=True)
 os.makedirs(CELL_TYPE_DIR, exist_ok=True)
 os.makedirs(CELL_LINE_DIR, exist_ok=True)
 os.makedirs(SPECIES_DIR, exist_ok=True)
+os.makedirs(RELATION_TYPE_DIR, exist_ok=True)
 
 # Download from https://emmaa.s3.amazonaws.com/assembled/brca/statements_2021-01-30-17-21-54.gz
 DUMMY_EXAMPLE_INDRA = os.path.join(RAW_DIR, 'statements_2021-01-30-17-21-54.json')

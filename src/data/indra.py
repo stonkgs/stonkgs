@@ -12,7 +12,27 @@ from typing import Any, Dict, List
 
 import pandas as pd
 import pybel
-from pybel.constants import ANNOTATIONS, EVIDENCE, RELATION, CITATION
+from pybel.dsl import CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna
+from pybel.constants import (
+    ANNOTATIONS,
+    EVIDENCE,
+    RELATION,
+    CITATION,
+    INCREASES,
+    DIRECTLY_INCREASES,
+    DECREASES,
+    DIRECTLY_DECREASES,
+    REGULATES,
+    BINDS,
+    CORRELATION,
+    NO_CORRELATION,
+    NEGATIVE_CORRELATION,
+    POSITIVE_CORRELATION,
+    ASSOCIATION,
+    BIOMARKER_FOR,
+    PROGONSTIC_BIOMARKER_FOR,
+    PART_OF,
+)
 
 from ..constants import (
     DUMMY_EXAMPLE_INDRA,
@@ -24,9 +44,78 @@ from ..constants import (
     CELL_LINE_DIR,
     LOCATION_DIR,
     DISEASE_DIR,
+    RELATION_TYPE_DIR,
 )
 
 logger = logging.getLogger(__name__)
+
+DIRECT_RELATIONS = {
+    INCREASES,  # TODO: @choyt
+    DIRECTLY_INCREASES,
+    DECREASES,  # TODO: @choyt
+    DIRECTLY_DECREASES,
+    BINDS,
+}
+
+INDIRECT_RELATIONS = {
+    REGULATES,  # TODO: @choyt
+    CORRELATION,
+    NO_CORRELATION,
+    NEGATIVE_CORRELATION,
+    POSITIVE_CORRELATION,
+    ASSOCIATION,
+    PART_OF,  # @choyt remove?
+    BIOMARKER_FOR,  # @choyt remove?
+    PROGONSTIC_BIOMARKER_FOR,  # @choyt remove?
+}
+
+
+def binarize_triple_direction(graph: pybel.BELGraph) -> Dict[str, Any]:
+    """Binarize triples depending on the type of direction."""
+    triples = []
+
+    summary = {'context': '(in)direct relations'}
+
+    # Iterate through the graph and infer a subgraph
+    for u, v, data in graph.edges(data=True):
+
+        if EVIDENCE not in data or not data[EVIDENCE]:
+            logger.warning(f'not evidence found in {data}')
+            continue
+
+        # todo: check this we will focus only on molecular interactions
+        if not any(
+            isinstance(u, class_to_check)
+            for class_to_check in (CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna)
+        ):
+            continue
+
+        if not any(
+            isinstance(v, class_to_check)
+            for class_to_check in (CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna)
+        ):
+            continue
+
+        class_label = 'indirect' if data[RELATION] in INDIRECT_RELATIONS else 'direct'
+
+        triples.append({
+            'source': u,
+            'relation': data[RELATION],
+            'target': v,
+            'evidence': data[EVIDENCE],
+            'pmid': data[CITATION],
+            'class': class_label,
+        })
+
+    df = pd.DataFrame(triples)
+
+    summary['number_of_triples'] = df.shape[0]
+    summary['number_of_labels'] = len(df['class'].unique())
+    summary['labels'] = df['class'].value_counts().to_dict()
+
+    df.to_csv(os.path.join(RELATION_TYPE_DIR, f'relation_type.tsv'), sep='\t', index=False)
+
+    return summary
 
 
 def create_context_type_specific_subgraph(graph: pybel.BELGraph, context_annotations: List[str]) -> pybel.BELGraph:
@@ -79,7 +168,6 @@ def dump_edgelist(
     for u, v, data in graph.edges(data=True):
 
         if not data[EVIDENCE]:
-            logger.warning(f'not evidence found in {data}')
             continue
 
         # Multiple annotations
@@ -170,18 +258,17 @@ def read_indra_triples(
     """
     Split the KG into two big chunks:
 
-    1. Pre-training dataset -> Any triple + text evidence that is not in any of the 6 annotation types above
+    1. Pre-training dataset -> Any triple + text evidence that is not in any of the 6+1 annotation types above
     The rationale is that we want to have a common pre-trained model that can be used as a basis for all the fine tuning
     classification tasks.
 
-    2. Fine-tuning datasets (benchmark for our models). 6 different train-validation-test splits for each of the 
+    2. Fine-tuning datasets (benchmark for our models). 7 different train-validation-test splits for each of the 
     annotation types (each of them will contain multiple classes).
 
     We would like to note that the pre-training dataset is significantly larger than the fine-tuning dataset.
     Naturally, MultiSTonKGs requires a pre-training similar to the other two baselines models (i.e., KG-based has been
     trained based on node2vec on the INDRA KG and BioBERT was trained on PubMed).
     """
-
     organ_subgraph = create_context_type_specific_subgraph(indra_kg, ['MeSHAnatomy'])
     species_subgraph = create_context_type_specific_subgraph(indra_kg, ['TAX_ID'])
     disease_subgraph = create_context_type_specific_subgraph(indra_kg, ['MeSHDisease', 'Disease'])
@@ -189,7 +276,7 @@ def read_indra_triples(
     cell_line_subgraph = create_context_type_specific_subgraph(indra_kg, ['CellLine'])
     location_subgraph = create_context_type_specific_subgraph(indra_kg, ['CellStructure'])
 
-    #: Dump the 6 annotation type specific subgraphs (triples)
+    #: Dump the 6+1 annotation type specific subgraphs (triples)
     organ_summary = dump_edgelist(
         graph=organ_subgraph,
         annotations=['MeSHAnatomy'],
@@ -227,6 +314,8 @@ def read_indra_triples(
         output_dir=LOCATION_DIR,
     )
 
+    directionality_summary = binarize_triple_direction(indra_kg)
+
     summary_df = pd.DataFrame([
         organ_summary,
         species_summary,
@@ -234,6 +323,7 @@ def read_indra_triples(
         cell_type_summary,
         cell_line_summary,
         location_summary,
+        directionality_summary,
     ])
     summary_df.to_csv(os.path.join(MISC_DIR, 'summary.tsv'), sep='\t', index=False)
 
