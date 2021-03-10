@@ -7,24 +7,26 @@ Run with:
 python -m src.models.kg_baseline_model
 """
 
+import logging
 from typing import Dict, List
 
-import pandas as pd
 import numpy as np
-from sklearn.model_selection import StratifiedKFold
+import pandas as pd
 import torch
-import logging
-from constants import DUMMY_EXAMPLE_TRIPLES, RANDOM_WALKS_PATH, EMBEDDINGS_PATH
+from sklearn.model_selection import StratifiedKFold
 
+from constants import DUMMY_EXAMPLE_TRIPLES, RANDOM_WALKS_PATH, EMBEDDINGS_PATH
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
 class KGEClassificationModel(torch.nn.Module):
-    def __init__(self,
-                 num_classes: int = 5,  # the 5 does not mean anything, it is randomly chosen
-                 d_in: int = 768):
+    def __init__(
+        self,
+        num_classes: int = 5,  # the 5 does not mean anything, it is randomly chosen
+        d_in: int = 768,
+    ):
         """
         Initialize the components of the KGE based classification model, consisting of
         1) "Max-Pooling" (embedding-dimension-wise max)
@@ -51,6 +53,7 @@ class KGEClassificationModel(torch.nn.Module):
 # TODO: Own dataset class
 class INDRAEntityDataset(torch.utils.data.Dataset):
     """Custom Dataset class for INDRA data."""
+
     def __init__(self, encodings, labels):
         # Assumes that the labels are numerically encoded
         # TODO: do all the embedding mappings in here
@@ -141,7 +144,6 @@ def run_kg_baseline_classification_cv(triples_path, embedding_path, random_walks
         # Train the model for epoch many epochs
         # TODO: tqdm?
         for epoch in range(epochs):
-
             # Forward pass: Compute predicted y by passing x to the model
             # y_pred = model(x)
 
