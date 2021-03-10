@@ -152,11 +152,11 @@ def run_node2vec(
         n_trials=n_trials
     )
 
-    # Remove all the models except for the best one :)
-    for filename in os.listdir(KG_HPO_DIR):
-
-        if filename != "node2vec_model_{}.pickle".format(study.best_trial.number):
-            os.remove(os.path.join(KG_HPO_DIR, filename))
+    # # Remove all the models except for the best one :)
+    # for filename in os.listdir(KG_HPO_DIR):
+    #
+    #     if filename != "node2vec_model_{}.pickle".format(study.best_trial.number):
+    #         os.remove(os.path.join(KG_HPO_DIR, filename))
 
     # Load the best model
     with open(os.path.join(KG_HPO_DIR, "node2vec_model_{}.pickle".format(study.best_trial.number)), "rb") as fin:
@@ -172,10 +172,10 @@ def run_node2vec(
             # Write to vectors file
             print(word, *(repr(val) for val in vectors[vocab_.index]), sep='\t', file=emb_file)
 
-    randomwalks = best_clf.walks
+    random_walks = best_clf.walks
 
-    print(randomwalks)
-    print(type(randomwalks))
+    print(random_walks)
+    print(type(random_walks))
 
     with open(os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv", "wb")) as emb_file:
         for word, vocab_ in sorted_vocab_items:

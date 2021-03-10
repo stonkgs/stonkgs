@@ -2,9 +2,11 @@
 
 """KG baseline model on the fine-tuning classification task, assuming the model embeddings are pre-trained."""
 
+import os
+from typing import List
+
 import pandas as pd
 from sklearn.model_selection import StratifiedKFold
-from typing import List
 
 
 def get_train_test_splits(
@@ -28,3 +30,14 @@ def get_train_test_splits(
     # TODO: 1. load the tsv file with the annotation types you want to test and make the splits
     # TODO: 2. load the embeddings from node2vec and random walks
     # TODO: 3. Initialize the model pooling classification (make a class)
+
+
+def run_kg_baseline_classification_cv(embedding_path, random_walks_path):
+    """"""
+
+
+if __name__ == "__main__":
+    run_kg_baseline_classification_cv(
+        embedding_path='',
+        random_walks_path='',
+    )
