@@ -18,7 +18,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 
-from constants import DUMMY_EXAMPLE_TRIPLES, MODELS_DIR, KG_HPO_DIR
+from ..constants import DUMMY_EXAMPLE_TRIPLES, KG_HPO_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +66,7 @@ def run_node2vec(
     positive_graph_path: str = DUMMY_EXAMPLE_TRIPLES,
     sep: str = '\t',
     seed: Optional[int] = None,
+    delete_database: bool = True
 ):
     """CLI to run node2vec."""
     if seed is None:
@@ -143,7 +144,7 @@ def run_node2vec(
     n_trials = 2
     study = optuna.create_study(
         study_name="Node2vec HPO on INDRA KG",
-        storage=f"sqlite:///{MODELS_DIR}/kge_indra_hpo.db",
+        storage=f"sqlite:///{KG_HPO_DIR}/kge_indra_hpo.db",
         direction='maximize',
         load_if_exists=True,
     )
@@ -152,15 +153,18 @@ def run_node2vec(
         n_trials=n_trials
     )
 
-    # # Remove all the models except for the best one :)
-    # for filename in os.listdir(KG_HPO_DIR):
-    #
-    #     if filename != "node2vec_model_{}.pickle".format(study.best_trial.number):
-    #         os.remove(os.path.join(KG_HPO_DIR, filename))
+    # Remove all the models except for the best one :)
+    for filename in os.listdir(KG_HPO_DIR):
+        if filename != "node2vec_model_{}.pickle".format(study.best_trial.number):
+            os.remove(os.path.join(KG_HPO_DIR, filename))
 
     # Load the best model
     with open(os.path.join(KG_HPO_DIR, "node2vec_model_{}.pickle".format(study.best_trial.number)), "rb") as fin:
         best_clf: Node2Vec = pickle.load(fin)
+
+    # Delete the HPO database by default
+    if delete_database:
+        optuna.delete_study(study_name="Node2vec HPO on INDRA KG", storage=f"sqlite:///{KG_HPO_DIR}/kge_indra_hpo.db")
 
     """Save the embeddings"""
     wv = best_clf.model.wv
@@ -172,10 +176,10 @@ def run_node2vec(
             # Write to vectors file
             print(word, *(repr(val) for val in vectors[vocab_.index]), sep='\t', file=emb_file)
 
-    random_walks = best_clf.walks
+    randomwalks = best_clf.walks
 
-    print(random_walks)
-    print(type(random_walks))
+    print(randomwalks)
+    print(type(randomwalks))
 
     with open(os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv", "wb")) as emb_file:
         for word, vocab_ in sorted_vocab_items:
