@@ -140,7 +140,7 @@ def run_node2vec(
         )
 
     # create study and set number of trials
-    n_trials = 50
+    n_trials = 2
     study = optuna.create_study(
         study_name="Node2vec HPO on INDRA KG",
         storage=f"sqlite:///{MODELS_DIR}/kge_indra_hpo.db",
