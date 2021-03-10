@@ -24,3 +24,7 @@ def get_train_test_splits(
     skf = StratifiedKFold(n_splits=n_splits, random_state=random_seed, shuffle=False)
 
     return [[train_idx, test_idx] for train_idx, test_idx in skf.split(X, y)]
+
+    # TODO: 1. load the tsv file with the annotation types you want to test and make the splits
+    # TODO: 2. load the embeddings from node2vec and random walks
+    # TODO: 3. Initialize the model pooling classification (make a class)

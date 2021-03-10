@@ -40,6 +40,7 @@ os.makedirs(RAW_DIR, exist_ok=True)
 os.makedirs(INPUT_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 os.makedirs(MISC_DIR, exist_ok=True)
+os.makedirs(KG_HPO_DIR, exist_ok=True)
 
 os.makedirs(ORGAN_DIR, exist_ok=True)
 os.makedirs(DISEASE_DIR, exist_ok=True)

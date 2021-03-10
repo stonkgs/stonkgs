@@ -130,7 +130,7 @@ def run_node2vec(
         node2vec_model.fit(indra_kg_pos)
 
         # Save a trained model to a file
-        with open(os.path.join(KG_HPO_DIR, "node2vec_model_{}.pickle".format(trial.number), "wb")) as fout:
+        with open(os.path.join(KG_HPO_DIR, "node2vec_model_{}.pickle".format(trial.number)), "wb") as fout:
             pickle.dump(node2vec_model, fout)
 
         # return the auc score for a LogReg classifier on the link prediction task with negative samples
@@ -159,7 +159,7 @@ def run_node2vec(
             os.remove(os.path.join(KG_HPO_DIR, filename))
 
     # Load the best model
-    with open(os.path.join(KG_HPO_DIR, "node2vec_model_{}.pickle".format(study.best_trial.number), "rb")) as fin:
+    with open(os.path.join(KG_HPO_DIR, "node2vec_model_{}.pickle".format(study.best_trial.number)), "rb") as fin:
         best_clf: Node2Vec = pickle.load(fin)
 
     """Save the embeddings"""
