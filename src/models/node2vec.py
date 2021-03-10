@@ -7,20 +7,20 @@ python -m src.models.node2vec
 """
 
 import logging
-import random
-import pickle
 import os
+import pickle
+import random
 from typing import Optional
 
-import numpy as np
-import pandas as pd
-import optuna
 import networkx as nx
+import numpy as np
+import optuna
+import pandas as pd
 from nodevectors import Node2Vec
-from stellargraph.data import EdgeSplitter
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import train_test_split
+from stellargraph.data import EdgeSplitter
 
 from ..constants import DUMMY_EXAMPLE_TRIPLES, KG_HPO_DIR, MODELS_DIR
 
@@ -181,15 +181,13 @@ def run_node2vec(
             embeddings = "\t".join(repr(val) for val in vectors[vocab_.index])
             emb_file.write(f'{word}\t{embeddings}\n')
 
-    randomwalks = best_clf.walks
+    """Save the random walks"""
+    all_random_walks = best_clf.walks
 
-    print(randomwalks)
-    print(type(randomwalks))
-
-    with open(os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv", "wb")) as emb_file:
-        for word, vocab_ in sorted_vocab_items:
-            # Write to vectors file
-            print(word, *(repr(val) for val in vectors[vocab_.index]), sep='\t', file=emb_file)
+    with open(os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv"), "w") as random_walk_file:
+        for node, random_walks in zip(wv.index2entity, all_random_walks):
+            random_walks_str = "\t".join(random_walks)
+            random_walk_file.write(f'{node}\t{random_walks_str}\n')
 
 
 if __name__ == "__main__":
