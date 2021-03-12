@@ -74,13 +74,14 @@ def run_sequence_classification_cv(
     tag2id = {label: number for number, label in enumerate(unique_tags)}
     labels = pd.Series([int(tag2id[label]) for label in labels_str])
 
-    # Initialize tokenizer and model
-    tokenizer = AutoTokenizer.from_pretrained(model_type)
-    model = AutoModelForSequenceClassification.from_pretrained(model_type, num_labels=len(unique_tags))
-
+    # Initialize the f1-score
     f1_scores = []
 
     for indices in train_test_splits:
+        # Initialize tokenizer and model
+        tokenizer = AutoTokenizer.from_pretrained(model_type)
+        model = AutoModelForSequenceClassification.from_pretrained(model_type, num_labels=len(unique_tags))
+
         # Encode all text evidences, pad and truncate to max_seq_len
         train_evidences = tokenizer(evidences_text[indices["train_idx"]].tolist(), truncation=True, padding=True)
         test_evidences = tokenizer(evidences_text[indices["test_idx"]].tolist(), truncation=True, padding=True)
