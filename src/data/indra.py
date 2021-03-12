@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 DIRECT_RELATIONS = {
     DIRECTLY_INCREASES,
     DIRECTLY_DECREASES,
-    BINDS, # TODO: @choyt remove?
+    BINDS,
 }
 
 INDIRECT_RELATIONS = {
@@ -64,9 +64,7 @@ INDIRECT_RELATIONS = {
     NEGATIVE_CORRELATION,
     POSITIVE_CORRELATION,
     ASSOCIATION,
-    PART_OF,  # @choyt remove?
-    BIOMARKER_FOR,  # @choyt remove?
-    PROGONSTIC_BIOMARKER_FOR,  # @choyt remove?
+    PART_OF,
 }
 
 
