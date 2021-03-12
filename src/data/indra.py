@@ -50,16 +50,16 @@ from ..constants import (
 logger = logging.getLogger(__name__)
 
 DIRECT_RELATIONS = {
-    INCREASES,  # TODO: @choyt
     DIRECTLY_INCREASES,
-    DECREASES,  # TODO: @choyt
     DIRECTLY_DECREASES,
-    BINDS,
+    BINDS, # TODO: @choyt remove?
 }
 
 INDIRECT_RELATIONS = {
-    REGULATES,  # TODO: @choyt
+    REGULATES,
     CORRELATION,
+    DECREASES,
+    INCREASES,
     NO_CORRELATION,
     NEGATIVE_CORRELATION,
     POSITIVE_CORRELATION,
