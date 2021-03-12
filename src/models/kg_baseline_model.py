@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 """
 KG baseline model on the fine-tuning classification task, assuming the model embeddings are pre-trained.
 
@@ -14,6 +13,7 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.model_selection import StratifiedKFold
+from sklearn.metrics import f1_score
 
 from constants import DUMMY_EXAMPLE_TRIPLES, RANDOM_WALKS_PATH, EMBEDDINGS_PATH
 
@@ -61,6 +61,7 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         self.labels = labels
 
     def __getitem__(self, idx):
+        # TODO: change?
         item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
         item['labels'] = torch.tensor(self.labels[idx])
         return item
@@ -103,7 +104,14 @@ def get_train_test_splits(
     return [{"train_idx": train_idx, "test_idx": test_idx} for train_idx, test_idx in skf.split(data_no_labels, labels)]
 
 
-def run_kg_baseline_classification_cv(triples_path, embedding_path, random_walks_path, epochs=10) -> Dict:
+def run_kg_baseline_classification_cv(
+    triples_path,
+    embedding_path,
+    random_walks_path,
+    epochs=10,
+    batch_size=16,
+    lr=1e-4
+) -> Dict:
     """Run KG baseline classification."""
 
     # Step 1. load the tsv file with the annotation types you want to test and make the splits
@@ -125,40 +133,72 @@ def run_kg_baseline_classification_cv(triples_path, embedding_path, random_walks
     embeddings_dict = _prepare_df(embedding_path)
     random_walks_dict = _prepare_df(random_walks_path)
 
-    # Initialize the KGE-based model
-    model = KGEClassificationModel(num_classes=len(triples_df["class"].unique()))
+    # Initialize
     f1_scores = []
 
     # TODO: 4. Train and test the model in a cv setting
     for indices in train_test_splits:
         # TODO: change to KG data processing
-        # train_evidences = tokenizer(evidences_text[indices["train_idx"]].tolist(), truncation=True, padding=True)
-        # test_evidences = tokenizer(evidences_text[indices["test_idx"]].tolist(), truncation=True, padding=True)
+        kg_embeds = INDRAEntityDataset()  # TODO: pass the data correctly
 
-        # TODO: define dataloaders?
+        # Sample elements randomly from a given list of ids, no replacement.
+        train_subsampler = torch.utils.data.SubsetRandomSampler(indices["train_idx"])
+        test_subsampler = torch.utils.data.SubsetRandomSampler(indices["test_idx"])
+
+        # Define data loaders for training and testing data in this fold
+        trainloader = torch.utils.data.DataLoader(
+            kg_embeds,
+            batch_size=batch_size,
+            sampler=train_subsampler)
+        testloader = torch.utils.data.DataLoader(
+            kg_embeds,
+            batch_size=batch_size,
+            sampler=test_subsampler)
+
+        model = KGEClassificationModel(num_classes=triples_df["class"].unique())
 
         # TODO: Change to CE loss for multiclass classification
-        criterion = torch.nn.MSELoss(reduction='sum')
-        optimizer = torch.optim.AdamW(model.parameters(), lr=1e-4)
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 
         # Train the model for epoch many epochs
         # TODO: tqdm?
         for epoch in range(epochs):
-            # Forward pass: Compute predicted y by passing x to the model
-            # y_pred = model(x)
+            # Iterate over the DataLoader for training data
+            for train_data in trainloader:
+                # TODO: Change Get inputs
+                train_inputs, train_labels = train_data
+                # Zero the gradients
+                optimizer.zero_grad()
+                # Perform forward pass
+                train_outputs = model(train_inputs)
 
-            # Compute and print loss
-            # loss = criterion(y_pred, y)
+                # Compute loss
+                loss = criterion(train_outputs, train_labels)
+                # Perform backward pass
+                loss.backward()
+                # Perform optimization
+                optimizer.step()
 
-            # Zero gradients, perform a backward pass, and update the weights.
-            optimizer.zero_grad()
-            # loss.backward()
-            optimizer.step()
+        # Predict
+        with torch.no_grad():
+            # Iterate over the test data and generate predictions
+            all_true_labels = []
+            all_pred_labels = []
 
-        # TODO: predict
+            # Get labels for each batch
+            for test_data in testloader:
+                # Get inputs
+                test_inputs, test_labels = test_data
+                all_true_labels.append(test_labels.tolist())
+                # Generate outputs
+                test_outputs = model(test_inputs)
+                # Class probabilities to labels
+                _, predicted_labels = torch.max(test_outputs.data, 1)
+                all_pred_labels.append(predicted_labels.tolist())
 
         # Use macro average for now
-        # f1_scores.append(f1_score(test_labels, predicted_labels, average="macro"))
+        f1_scores.append(f1_score(all_true_labels, all_pred_labels, average="macro"))
 
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
