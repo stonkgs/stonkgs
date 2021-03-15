@@ -2,17 +2,18 @@
 
 """NLP baseline model on the fine-tuning classification task, assuming the model embeddings are pre-trained."""
 
-import pandas as pd
-from sklearn.model_selection import StratifiedKFold
-from typing import List, Dict
-import numpy as np
-import torch
-from ..constants import NLP_MODEL_TYPE, DUMMY_EXAMPLE_TRIPLES, NLP_BL_OUTPUT_DIR, LOG_DIR
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
-from sklearn.metrics import f1_score
-import os
 import logging
+import os
+from typing import List, Dict
 
+import numpy as np
+import pandas as pd
+import torch
+from sklearn.metrics import f1_score
+from sklearn.model_selection import StratifiedKFold
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
+
+from ..constants import NLP_MODEL_TYPE, DUMMY_EXAMPLE_TRIPLES, NLP_BL_OUTPUT_DIR, LOG_DIR
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,7 @@ logging.basicConfig(level=logging.INFO)
 
 class INDRAEvidenceDataset(torch.utils.data.Dataset):
     """Custom Dataset class for INDRA data."""
+
     def __init__(self, encodings, labels):
         # Assumes that the labels are numerically encoded
         self.encodings = encodings
@@ -31,6 +33,7 @@ class INDRAEvidenceDataset(torch.utils.data.Dataset):
         return item
 
     def __len__(self):
+        """Get number of labels"""
         return len(self.labels)
 
 
@@ -38,7 +41,7 @@ def get_train_test_splits(
     data: pd.DataFrame,
     label_column_name: str = "class",
     random_seed: int = 42,
-    n_splits: int = 5
+    n_splits: int = 5,
 ) -> List:
     """Returns deterministic train/test indices for n_splits based on the fine-tuning dataset that is passed."""
     # Leave out the label in the dataset
@@ -62,7 +65,7 @@ def run_sequence_classification_cv(
     text_data_column_name: str = "evidence",
     epochs: int = 2,
 ) -> Dict:
-    """Runs cross-validation for the sequence classification task."""
+    """Run cross-validation for the sequence classification task."""
     # Get data splits
     indra_data = pd.read_csv(data_path, sep=sep)
     train_test_splits = get_train_test_splits(indra_data)
@@ -99,14 +102,14 @@ def run_sequence_classification_cv(
             logging_steps=100,
             # TODO: Implement report_to = ["mlflow"] later on
             do_train=True,
-            do_predict=True
+            do_predict=True,
         )
 
         # Initialize Trainer based on the training dataset
         trainer = Trainer(
             model=model,
             args=training_args,
-            train_dataset=train_dataset
+            train_dataset=train_dataset,
         )
         # Train
         trainer.train()

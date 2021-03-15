@@ -13,10 +13,9 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
+from constants import DUMMY_EXAMPLE_TRIPLES, RANDOM_WALKS_PATH, EMBEDDINGS_PATH
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
-
-from constants import DUMMY_EXAMPLE_TRIPLES, RANDOM_WALKS_PATH, EMBEDDINGS_PATH
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -32,8 +31,14 @@ class KGEClassificationModel(pl.LightningModule):
         d_in: int = 768,
         lr: float = 1e-4
     ):
-        """
-        Initialize the components of the KGE based classification model, consisting of
+        """Initialize the components of the KGE based classification model.
+
+        :param num_classes: number of classes
+        :param class_weights: class weights
+        :param d_in: dimensions
+        :param lr: learning rate
+
+        The model consists of
         1) "Max-Pooling" (embedding-dimension-wise max)
         2) Linear layer (d_in x num_classes)
         3) Softmax
@@ -98,6 +103,7 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
     """Custom dataset class for INDRA data."""
 
     def __init__(self, embedding_dict, random_walk_dict, sources, targets, labels, max_len=256):
+        """Initialize object."""
         self.max_length = max_len
         # Two entities (source, target) of each triple
         self.sources = sources
@@ -123,8 +129,10 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         return len(self.labels)
 
     def get_embeddings(self):
-        """Get the embedding sequences for each triple in the dataset (node embeddings from sources +
-        targets random walks)."""
+        """Get the embedding sequences for each triple in the dataset.
+
+        Note: node embeddings from sources + targets random walks.
+        """
         # Number of total examples in the dataset
         number_of_triples = len(self.sources)
         # Get the embedding dimension by accessing a random element
@@ -170,9 +178,9 @@ def get_train_test_splits(
     data: pd.DataFrame,
     label_column_name: str = "class",
     random_seed: int = 42,
-    n_splits: int = 5
+    n_splits: int = 5,
 ) -> List:
-    """Returns deterministic train/test indices for n_splits based on the fine-tuning dataset that is passed."""
+    """Return deterministic train/test indices for n_splits based on the fine-tuning dataset that is passed."""
     # Leave out the label in the dataset
     data_no_labels = data.drop(label_column_name, axis=1)
     labels = data[label_column_name]
@@ -193,7 +201,7 @@ def run_kg_baseline_classification_cv(
     epochs=20,
     train_batch_size=16,
     test_batch_size=64,
-    lr=1e-4
+    lr=1e-4,
 ) -> Dict[str, float]:
     """Run KG baseline classification."""
     # Step 1. load the tsv file with the annotation types you want to test and make the splits
@@ -203,7 +211,7 @@ def run_kg_baseline_classification_cv(
         usecols=[
             'source',
             'target',
-            'class'
+            'class',
         ],
     )
     # Numerically encode labels
@@ -230,7 +238,7 @@ def run_kg_baseline_classification_cv(
         random_walks_dict,
         triples_df["source"],
         triples_df["target"],
-        labels
+        labels,
     )
 
     # Train and test the model in a cv setting

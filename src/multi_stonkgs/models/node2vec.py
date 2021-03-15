@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 def run_link_prediction(
     kg: nx.DiGraph,
-    model: Node2Vec
+    model: Node2Vec,
 ) -> float:
     """Link prediction task for a given KG and node2vec model."""
     # Preprocessing step: Generate positive and negative triples
@@ -70,11 +70,11 @@ def run_node2vec(
     positive_graph_path: str = DUMMY_EXAMPLE_TRIPLES,
     sep: str = '\t',
     seed: Optional[int] = None,
-    delete_database: bool = True
+    delete_database: bool = True,
 ):
     """CLI to run node2vec."""
     if seed is None:
-        seed = random.randint(1, 2 ** 32 - 1)
+        seed = random.randint(1, 2 ** 32 - 1)  # noqa: S311
         logger.info(f'random seed given, setting to: {seed}')
     else:
         logger.info(f'random seed set given is: {seed}')
@@ -104,9 +104,9 @@ def run_node2vec(
 
     # define HPO function for optuna
     def objective(
-        trial: optuna.trial.Trial
+        trial: optuna.trial.Trial,
     ) -> float:
-        """Runs HPO on the link prediction task on the KG, based on a LogReg classifier and the auc score."""
+        """Run HPO on the link prediction task on the KG, based on a LogReg classifier and the auc score."""
         epochs = trial.suggest_categorical('epochs', [8, 16, 32, 64, 128, 256])
         window_size = trial.suggest_int('window_size', 3, 7)
         # TODO: check best q/p values
@@ -141,7 +141,7 @@ def run_node2vec(
         # return the auc score for a LogReg classifier on the link prediction task with negative samples
         return run_link_prediction(
             kg=indra_kg_pos,
-            model=node2vec_model
+            model=node2vec_model,
         )
 
     # create study and set number of trials
@@ -154,7 +154,7 @@ def run_node2vec(
     )
     study.optimize(
         objective,
-        n_trials=n_trials
+        n_trials=n_trials,
     )
 
     # Remove all the models except for the best one :)
