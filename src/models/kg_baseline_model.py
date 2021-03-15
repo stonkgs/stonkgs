@@ -11,6 +11,7 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+import pytorch_lightning as pl
 import torch
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
@@ -21,22 +22,33 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-class KGEClassificationModel(torch.nn.Module):
+class KGEClassificationModel(pl.LightningModule):
     def __init__(
         self,
         num_classes,
+        class_weights,
         d_in: int = 768,
+        lr: float = 1e-4
     ):
         """
         Initialize the components of the KGE based classification model, consisting of
         1) "Max-Pooling" (embedding-dimension-wise max)
         2) Linear layer (d_in x num_classes)
         3) Softmax
+        (Not part of the model, but of the class: class_weights for the cross_entropy function)
         """
         super(KGEClassificationModel, self).__init__()
+
+        # Model architecture
         self.pooling = torch.max
         self.linear = torch.nn.Linear(d_in, num_classes)
         self.softmax = torch.nn.Softmax(dim=1)
+
+        # Other class-specific parameters
+        # Class weights for CE loss
+        self.class_weights = torch.tensor(class_weights)#
+        # Learning rate
+        self.lr = lr
 
     def forward(self, x):
         """
@@ -47,6 +59,37 @@ class KGEClassificationModel(torch.nn.Module):
         linear_output = self.linear(h_pooled)
         y_pred = self.softmax(linear_output)
         return y_pred
+
+    def configure_optimizers(self):
+        """Configure optimizer and scheduler."""
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.lr)
+        return optimizer
+
+    def training_step(self, batch, batch_idx):
+        """Perform one training step on one batch using CE loss."""
+        train_inputs, train_labels = batch
+        train_outputs = self.forward(train_inputs)
+        loss_fct = torch.nn.CrossEntropyLoss(reduction="mean", weight=self.class_weights)
+        loss = loss_fct(train_outputs, train_labels)
+        return loss
+
+    def test_step(self, batch, batch_nb):
+        """Perform one test step on a given batch and return the macro-averaged f1 score over all batches."""
+        test_inputs, test_labels = batch
+        test_class_probs = self.forward(test_inputs)
+        # Class probabilities to class labels
+        test_predictions = torch.argmax(test_class_probs, dim=1)
+
+        # Get the macro-averaged f1-score
+        test_f1 = f1_score(test_labels, test_predictions, average="macro")
+        return {'test_f1': torch.tensor(test_f1)}
+
+    def test_epoch_end(self, outputs):
+        """Returns average and std macro-averaged f1-score over all batches."""
+        mean_test_f1 = torch.stack([x['test_f1'] for x in outputs]).mean()
+        std_test_f1 = torch.stack([x['test_f1'] for x in outputs]).std()
+
+        return {'mean_test_f1': mean_test_f1, 'std_test_f1': std_test_f1}
 
 
 class INDRAEntityDataset(torch.utils.data.Dataset):
@@ -69,9 +112,9 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         """Get embeddings and labels for given indices."""
         # Get embeddings (of random walk sequences of source + target) for given indices
-        item = torch.tensor(self.embeddings[idx, :, :], dtype=float)
+        item = torch.tensor(self.embeddings[idx, :, :], dtype=torch.float)
         # Get labels for given indices
-        labels = torch.tensor(self.labels[idx])
+        labels = torch.tensor(self.labels[idx], dtype=torch.long)
         return item, labels
 
     def __len__(self):
@@ -145,8 +188,9 @@ def run_kg_baseline_classification_cv(
     embedding_path=EMBEDDINGS_PATH,
     random_walks_path=RANDOM_WALKS_PATH,
     n_splits=5,
-    epochs=200,
-    batch_size=32,
+    epochs=20,
+    train_batch_size=16,
+    test_batch_size=64,
     lr=1e-4
 ) -> Dict:
     """Run KG baseline classification."""
@@ -157,10 +201,7 @@ def run_kg_baseline_classification_cv(
         sep='\t',
         usecols=[
             'source',
-            # 'relation',
             'target',
-            # 'evidence',
-            # 'pmid',
             'class'
         ],
     )
@@ -169,8 +210,7 @@ def run_kg_baseline_classification_cv(
     tag2id = {label: number for number, label in enumerate(unique_tags)}
     id2tag = {value: key for key, value in tag2id.items()}
 
-    # Cross entropy loss weights based on the inverse of the class counts (Inverse Number of Samples, INS)
-    weights = [1 / len([i for i in triples_df["class"] if i == id2tag[id_num]]) for id_num in range(len(unique_tags))]
+    # Get labels
     labels = pd.Series([int(tag2id[label]) for label in triples_df["class"]])
 
     # Get the train/test split indices
@@ -183,75 +223,52 @@ def run_kg_baseline_classification_cv(
     # Initialize f1-scores
     f1_scores = []
 
+    # Initialize INDRA for KG baseline dataset
+    kg_embeds = INDRAEntityDataset(
+        embeddings_dict,
+        random_walks_dict,
+        triples_df["source"],
+        triples_df["target"],
+        labels
+    )
+
     # Train and test the model in a cv setting
     for indices in train_test_splits:
-        kg_embeds = INDRAEntityDataset(
-            embeddings_dict,
-            random_walks_dict,
-            triples_df["source"],
-            triples_df["target"],
-            labels
-        )
-
         # Sample elements randomly from a given list of ids, no replacement
         train_subsampler = torch.utils.data.SubsetRandomSampler(indices["train_idx"])
         test_subsampler = torch.utils.data.SubsetRandomSampler(indices["test_idx"])
+        # CE class weights for the model based on training data class distribution,
+        # based on the class counts (Inverse Number of Samples, INS)
+        weights = [1 / len([i for i in triples_df.iloc[indices["train_idx"], :]["class"]
+                            if i == id2tag[id_num]]) for id_num in range(len(unique_tags))]
 
         # Define data loaders for training and testing data in this fold
         trainloader = torch.utils.data.DataLoader(
             kg_embeds,
-            batch_size=batch_size,
+            batch_size=train_batch_size,
             sampler=train_subsampler)
         testloader = torch.utils.data.DataLoader(
             kg_embeds,
-            batch_size=batch_size,
+            batch_size=test_batch_size,
             sampler=test_subsampler)
 
-        model = KGEClassificationModel(num_classes=len(triples_df["class"].unique()))
+        model = KGEClassificationModel(
+            num_classes=len(triples_df["class"].unique()),
+            class_weights=weights,
+            lr=lr
+        )
 
-        # Initialize loss (with weights due to possibly imbalanced classes) and optimizer
-        criterion = torch.nn.CrossEntropyLoss(reduction="mean", weight=torch.tensor(weights))
-        optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
-
-        # Train the model for epoch many epochs
-        # TODO: tqdm
-        for epoch in range(epochs):
-            # Iterate over the DataLoader for training data
-            for train_data in trainloader:
-                train_inputs, train_labels = train_data
-                # Zero the gradients
-                optimizer.zero_grad()
-                # Perform forward pass
-                train_outputs = model(train_inputs.float())
-
-                # Compute loss
-                loss = criterion(train_outputs, train_labels)
-                # Perform backward pass
-                loss.backward()
-                # Perform optimization
-                optimizer.step()
-
-        # Predict
-        with torch.no_grad():
-            # Iterate over the test data and generate predictions
-            all_true_labels = []
-            all_pred_labels = []
-
-            # Get labels for each batch
-            for test_data in testloader:
-                # Get inputs
-                test_inputs, test_labels = test_data
-                all_true_labels = all_true_labels + test_labels.tolist()
-                # Generate outputs
-                test_outputs = model(test_inputs.float())
-                # Class probabilities to labels
-                _, predicted_labels = torch.max(test_outputs.data, 1)
-                all_pred_labels = all_pred_labels + predicted_labels.tolist()
+        # Initialize pytorch lighting Trainer for the KG baseline model
+        trainer = pl.Trainer(max_epochs=epochs)
+        # Fit on training split
+        trainer.fit(model, train_dataloader=trainloader)
+        # Predict on test split
+        test_results = trainer.test(model, test_dataloaders=testloader)
 
         # Append f1 score per split based on the macro average
-        f1_scores.append(f1_score(all_true_labels, all_pred_labels, average="macro"))
+        f1_scores.append(test_results[0]["mean_test_f1"])
 
-    # Log mean and std f1-scores from the cross validation procedure
+    # Log mean and std f1-scores from the cross validation procedure (average and std across all splits)
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
 
