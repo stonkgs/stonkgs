@@ -3,7 +3,7 @@
 """Node2vec model.
 
 run with:
-python -m src.models.node2vec
+python -m src.multi_stonkgs.models.node2vec
 """
 
 import logging

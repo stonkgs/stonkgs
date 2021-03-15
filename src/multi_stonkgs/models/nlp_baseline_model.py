@@ -4,7 +4,7 @@
 
 import logging
 import os
-from typing import List, Dict
+from typing import Dict, List
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,7 @@ from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 
-from ..constants import NLP_MODEL_TYPE, DUMMY_EXAMPLE_TRIPLES, NLP_BL_OUTPUT_DIR, LOG_DIR
+from ..constants import DUMMY_EXAMPLE_TRIPLES, LOG_DIR, NLP_BL_OUTPUT_DIR, NLP_MODEL_TYPE
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +33,7 @@ class INDRAEvidenceDataset(torch.utils.data.Dataset):
         return item
 
     def __len__(self):
-        """Get number of labels"""
+        """Get number of labels."""
         return len(self.labels)
 
 
@@ -43,7 +43,7 @@ def get_train_test_splits(
     random_seed: int = 42,
     n_splits: int = 5,
 ) -> List:
-    """Returns deterministic train/test indices for n_splits based on the fine-tuning dataset that is passed."""
+    """Return deterministic train/test indices for n_splits based on the fine-tuning dataset that is passed."""
     # Leave out the label in the dataset
     data_no_labels = data.drop(label_column_name, axis=1)
     labels = data[label_column_name]

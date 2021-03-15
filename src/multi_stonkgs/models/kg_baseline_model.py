@@ -3,7 +3,7 @@
 KG baseline model on the fine-tuning classification task, assuming the model embeddings are pre-trained.
 
 Run with:
-python -m src.models.kg_baseline_model
+python -m src.multi_stonkgs.models.kg_baseline_model
 """
 
 import logging
@@ -29,7 +29,7 @@ class KGEClassificationModel(pl.LightningModule):
         num_classes,
         class_weights,
         d_in: int = 768,
-        lr: float = 1e-4
+        lr: float = 1e-4,
     ):
         """Initialize the components of the KGE based classification model.
 
@@ -59,12 +59,11 @@ class KGEClassificationModel(pl.LightningModule):
 
     def forward(self, x):
         """Perform forward pass consisting of pooling (dimension-wise max), and a linear layer followed by softmax.
-
-        Note that the forward pass returns class probabilities.
         """
         h_pooled = self.pooling(x, dim=1).values
         linear_output = self.linear(h_pooled)
         y_pred = self.softmax(linear_output)
+        # Note that the forward pass returns class probabilities.
         return y_pred
 
     def configure_optimizers(self):
@@ -129,9 +128,7 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         return len(self.labels)
 
     def get_embeddings(self):
-        """Get the embedding sequences for each triple in the dataset.
-
-        Note: node embeddings from sources + targets random walks.
+        """Get the embedding sequences for each triple in the dataset (node emb from sources + targets random walks).
         """
         # Number of total examples in the dataset
         number_of_triples = len(self.sources)
@@ -149,7 +146,7 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
             # The total random walk has the length max_length. Therefore its split half into the random walk of source
             # and half target.
             random_walk = [source] + random_walk_source.tolist()[:(self.max_length // 2 - 1)] + \
-                          [target] + random_walk_target.tolist()[:(self.max_length // 2 - 1)]
+                          [target] + random_walk_target.tolist()[:(self.max_length // 2 - 1)]  # noqa: N400
             # 3. Get embeddings for each node using embedding_dict stated by its index in each random walk
             embeds_random_walk = np.stack([self.embedding_dict[node] for node in random_walk], axis=0)
             # The final embedding sequence for a given triple has the dimension max_length x embedding_dim
