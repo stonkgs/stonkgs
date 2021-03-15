@@ -12,7 +12,6 @@ from typing import Any, Dict, List
 
 import pandas as pd
 import pybel
-from pybel.dsl import CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna
 from pybel.constants import (
     ANNOTATIONS,
     EVIDENCE,
@@ -29,10 +28,9 @@ from pybel.constants import (
     NEGATIVE_CORRELATION,
     POSITIVE_CORRELATION,
     ASSOCIATION,
-    BIOMARKER_FOR,
-    PROGONSTIC_BIOMARKER_FOR,
     PART_OF,
 )
+from pybel.dsl import CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna
 
 from ..constants import (
     DUMMY_EXAMPLE_INDRA,
@@ -67,12 +65,80 @@ INDIRECT_RELATIONS = {
     PART_OF,
 }
 
+UP_RELATIONS = {
+    INCREASES,
+    POSITIVE_CORRELATION,
+    DIRECTLY_INCREASES
+}
+
+DOWN_RELATIONS = {
+    DECREASES,
+    NEGATIVE_CORRELATION,
+    DIRECTLY_DECREASES
+}
+
 
 def binarize_triple_direction(graph: pybel.BELGraph) -> Dict[str, Any]:
     """Binarize triples depending on the type of direction."""
     triples = []
 
     summary = {'context': '(in)direct relations'}
+
+    # Iterate through the graph and infer a subgraph
+    for u, v, data in graph.edges(data=True):
+
+        if EVIDENCE not in data or not data[EVIDENCE]:
+            logger.warning(f'not evidence found in {data}')
+            continue
+
+        # todo: check this we will focus only on molecular interactions
+        if not any(
+            isinstance(u, class_to_check)
+            for class_to_check in (CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna)
+        ):
+            continue
+
+        if not any(
+            isinstance(v, class_to_check)
+            for class_to_check in (CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna)
+        ):
+            continue
+
+        if data[RELATION] in UP_RELATIONS:
+            class_label = 'up'
+        elif data[RELATION] in DOWN_RELATIONS:
+            class_label = 'down'
+        # TODO: add more
+        elif data[RELATION] == REGULATES:
+            class_label = 'regulates'
+        else:
+            continue
+
+        triples.append({
+            'source': u,
+            'relation': data[RELATION],
+            'target': v,
+            'evidence': data[EVIDENCE],
+            'pmid': data[CITATION],
+            'class': class_label,
+        })
+
+    df = pd.DataFrame(triples)
+
+    summary['number_of_triples'] = df.shape[0]
+    summary['number_of_labels'] = len(df['class'].unique())
+    summary['labels'] = df['class'].value_counts().to_dict()
+
+    df.to_csv(os.path.join(RELATION_TYPE_DIR, f'relation_type.tsv'), sep='\t', index=False)
+
+    return summary
+
+
+def create_polarity_annotations(graph: pybel.BELGraph) -> Dict[str, Any]:
+    """Group triples depending on the type of polarity."""
+    triples = []
+
+    summary = {'context': 'polarity'}
 
     # Iterate through the graph and infer a subgraph
     for u, v, data in graph.edges(data=True):
@@ -312,7 +378,7 @@ def read_indra_triples(
         output_dir=LOCATION_DIR,
     )
 
-    # TODO: polarity ()
+    polarity_summary = binarize_triple_direction(indra_kg)
     directionality_summary = binarize_triple_direction(indra_kg)
 
     summary_df = pd.DataFrame([
@@ -323,6 +389,7 @@ def read_indra_triples(
         cell_line_summary,
         location_summary,
         directionality_summary,
+        polarity_summary,
     ])
     summary_df.to_csv(os.path.join(MISC_DIR, 'summary.tsv'), sep='\t', index=False)
 
