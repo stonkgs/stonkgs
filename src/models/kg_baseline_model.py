@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
 class KGEClassificationModel(torch.nn.Module):
     def __init__(
         self,
-        num_classes: int = 5,  # the 5 does not mean anything, it is randomly chosen
+        num_classes,
         d_in: int = 768,
     ):
         """
@@ -37,12 +37,11 @@ class KGEClassificationModel(torch.nn.Module):
         self.pooling = torch.max
         self.linear = torch.nn.Linear(d_in, num_classes)
         self.softmax = torch.nn.Softmax(dim=1)
-        # TODO: add something here?
 
     def forward(self, x):
         """
-        The pooling component of this model is not specified as a separate nn Layer, since there are no parameters
-        that need to be learned in this specific type of pooling. This layer returns the class probabilities.
+        A forward pass consisting of pooling (dimension-wise max), and a linear layer followed by softmax, in result
+        returning the class probabilities.
         """
         h_pooled = self.pooling(x, dim=1).values
         linear_output = self.linear(h_pooled)
@@ -54,17 +53,24 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
     """Custom Dataset class for INDRA data."""
 
     def __init__(self, embedding_dict, random_walk_dict, sources, targets, labels, max_len=256):
-        # Assumes that the labels are numerically encoded
         self.max_length = max_len
+        # Two entities (source, target) of each triple
         self.sources = sources
         self.targets = targets
+        # Initialize dictionary of node name -> embedding vector
         self.embedding_dict = embedding_dict
+        # Initialize dictionary of node name -> random walk node names
         self.random_walk_dict = random_walk_dict
+        # Get the embedding sequences for each triple
         self.embeddings = self.get_embeddings()
+        # Assumes that the labels are numerically encoded
         self.labels = labels
 
     def __getitem__(self, idx):
+        """Get embeddings and labels for given indices."""
+        # Get embeddings (of random walk sequences of source + target) for given indices
         item = torch.tensor(self.embeddings[idx, :, :], dtype=float)
+        # Get labels for given indices
         labels = torch.tensor(self.labels[idx])
         return item, labels
 
@@ -72,6 +78,9 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         return len(self.labels)
 
     def get_embeddings(self):
+        """Get the embedding sequences for each triple in the dataset (node embeddings from sources +
+        targets random walks)."""
+        # Number of total examples in the dataset
         number_of_triples = len(self.sources)
         # Get the embedding dimension by accessing a random element
         embedding_dim = len(next(iter(self.embedding_dict.values())))
@@ -79,15 +88,18 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         # Initialize the embedding array of dimension n x random_walk_length x embedding_dim
         embeddings = np.empty((number_of_triples, self.max_length, embedding_dim))
 
-        # 1. Get random walks for sources and targets using random_walk_dict
+        # 1. Iterate through all triples: Get random walks for sources and targets using random_walk_dict
         for idx, (source, target) in enumerate(zip(self.sources, self.targets)):
             random_walk_source = self.random_walk_dict[source]
             random_walk_target = self.random_walk_dict[target]
             # 2. Concatenate and shorten the random walks if needed
-            random_walk = [source] + random_walk_source.tolist()[:(self.max_length//2-1)] + \
-                          [target] + random_walk_target.tolist()[:(self.max_length//2-1)]
+            # The total random walk has the length max_length. Therefore its split half into the random walk of source
+            # and half target.
+            random_walk = [source] + random_walk_source.tolist()[:(self.max_length // 2 - 1)] + \
+                          [target] + random_walk_target.tolist()[:(self.max_length // 2 - 1)]
             # 3. Get embeddings for each node using embedding_dict stated by its index in each random walk
             embeds_random_walk = np.stack([self.embedding_dict[node] for node in random_walk], axis=0)
+            # The final embedding sequence for a given triple has the dimension max_length x embedding_dim
             embeddings[idx, :, :] = embeds_random_walk
 
         return embeddings
@@ -102,7 +114,7 @@ def _prepare_df(embedding_path: str, sep: str = '\t') -> Dict[str, List[str]]:
         header=None,
         index_col=0,
     )
-    # node id -> embeddings
+    # Node id -> embeddings
     return {
         index: row.values
         for index, row in df.iterrows()
@@ -124,14 +136,16 @@ def get_train_test_splits(
     # It is shuffled deterministically (determined by random_seed)
     skf = StratifiedKFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
 
+    # Return a list of dictionaries for train and test indices
     return [{"train_idx": train_idx, "test_idx": test_idx} for train_idx, test_idx in skf.split(data_no_labels, labels)]
 
 
 def run_kg_baseline_classification_cv(
-    triples_path,
-    embedding_path,
-    random_walks_path,
-    epochs=100,
+    triples_path=DUMMY_EXAMPLE_TRIPLES,
+    embedding_path=EMBEDDINGS_PATH,
+    random_walks_path=RANDOM_WALKS_PATH,
+    n_splits=5,
+    epochs=200,
     batch_size=32,
     lr=1e-4
 ) -> Dict:
@@ -154,17 +168,19 @@ def run_kg_baseline_classification_cv(
     unique_tags = set(label for label in triples_df["class"])
     tag2id = {label: number for number, label in enumerate(unique_tags)}
     id2tag = {value: key for key, value in tag2id.items()}
-    # Cross entropy loss weights based on the inverse of the class counts
-    # weights = [1/len([i for i in triples_df["class"] if i == id2tag[id_num]) for id_num in range(len(unique_tags))]
-    # print(weights)
+
+    # Cross entropy loss weights based on the inverse of the class counts (Inverse Number of Samples, INS)
+    weights = [1 / len([i for i in triples_df["class"] if i == id2tag[id_num]]) for id_num in range(len(unique_tags))]
     labels = pd.Series([int(tag2id[label]) for label in triples_df["class"]])
 
-    train_test_splits = get_train_test_splits(triples_df)
+    # Get the train/test split indices
+    train_test_splits = get_train_test_splits(triples_df, n_splits=n_splits)
 
+    # Prepare embeddings and random walks
     embeddings_dict = _prepare_df(embedding_path)
     random_walks_dict = _prepare_df(random_walks_path)
 
-    # Initialize
+    # Initialize f1-scores
     f1_scores = []
 
     # Train and test the model in a cv setting
@@ -176,8 +192,6 @@ def run_kg_baseline_classification_cv(
             triples_df["target"],
             labels
         )
-
-        print(triples_df["class"].value_counts())
 
         # Sample elements randomly from a given list of ids, no replacement
         train_subsampler = torch.utils.data.SubsetRandomSampler(indices["train_idx"])
@@ -195,12 +209,12 @@ def run_kg_baseline_classification_cv(
 
         model = KGEClassificationModel(num_classes=len(triples_df["class"].unique()))
 
-        # TODO: add weights
-        criterion = torch.nn.CrossEntropyLoss(reduction="mean") # weight=torch.tensor(
+        # Initialize loss (with weights due to possibly imbalanced classes) and optimizer
+        criterion = torch.nn.CrossEntropyLoss(reduction="mean", weight=torch.tensor(weights))
         optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
 
         # Train the model for epoch many epochs
-        # TODO: tqdm?
+        # TODO: tqdm
         for epoch in range(epochs):
             # Iterate over the DataLoader for training data
             for train_data in trainloader:
@@ -209,12 +223,10 @@ def run_kg_baseline_classification_cv(
                 optimizer.zero_grad()
                 # Perform forward pass
                 train_outputs = model(train_inputs.float())
-                print(train_outputs)
 
                 # Compute loss
                 loss = criterion(train_outputs, train_labels)
                 # Perform backward pass
-                # TODO: Loss doesn't decrease???
                 loss.backward()
                 # Perform optimization
                 optimizer.step()
@@ -236,11 +248,10 @@ def run_kg_baseline_classification_cv(
                 _, predicted_labels = torch.max(test_outputs.data, 1)
                 all_pred_labels = all_pred_labels + predicted_labels.tolist()
 
-        # Use macro average for now
-        print(all_pred_labels)
-
+        # Append f1 score per split based on the macro average
         f1_scores.append(f1_score(all_true_labels, all_pred_labels, average="macro"))
 
+    # Log mean and std f1-scores from the cross validation procedure
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
 
@@ -248,8 +259,4 @@ def run_kg_baseline_classification_cv(
 
 
 if __name__ == "__main__":
-    run_kg_baseline_classification_cv(
-        triples_path=DUMMY_EXAMPLE_TRIPLES,
-        embedding_path=EMBEDDINGS_PATH,
-        random_walks_path=RANDOM_WALKS_PATH,
-    )
+    run_kg_baseline_classification_cv()
