@@ -312,6 +312,7 @@ def read_indra_triples(
         output_dir=LOCATION_DIR,
     )
 
+    # TODO: polarity ()
     directionality_summary = binarize_triple_direction(indra_kg)
 
     summary_df = pd.DataFrame([

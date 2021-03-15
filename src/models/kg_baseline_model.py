@@ -23,6 +23,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 class KGEClassificationModel(pl.LightningModule):
+    """KGE baseline model."""
+
     def __init__(
         self,
         num_classes,
@@ -46,14 +48,14 @@ class KGEClassificationModel(pl.LightningModule):
 
         # Other class-specific parameters
         # Class weights for CE loss
-        self.class_weights = torch.tensor(class_weights)#
+        self.class_weights = torch.tensor(class_weights)  #
         # Learning rate
         self.lr = lr
 
     def forward(self, x):
-        """
-        A forward pass consisting of pooling (dimension-wise max), and a linear layer followed by softmax, in result
-        returning the class probabilities.
+        """Perform forward pass consisting of pooling (dimension-wise max), and a linear layer followed by softmax.
+
+        Note that the forward pass returns class probabilities.
         """
         h_pooled = self.pooling(x, dim=1).values
         linear_output = self.linear(h_pooled)
@@ -85,7 +87,7 @@ class KGEClassificationModel(pl.LightningModule):
         return {'test_f1': torch.tensor(test_f1)}
 
     def test_epoch_end(self, outputs):
-        """Returns average and std macro-averaged f1-score over all batches."""
+        """Return average and std macro-averaged f1-score over all batches."""
         mean_test_f1 = torch.stack([x['test_f1'] for x in outputs]).mean()
         std_test_f1 = torch.stack([x['test_f1'] for x in outputs]).std()
 
@@ -93,7 +95,7 @@ class KGEClassificationModel(pl.LightningModule):
 
 
 class INDRAEntityDataset(torch.utils.data.Dataset):
-    """Custom Dataset class for INDRA data."""
+    """Custom dataset class for INDRA data."""
 
     def __init__(self, embedding_dict, random_walk_dict, sources, targets, labels, max_len=256):
         self.max_length = max_len
@@ -192,9 +194,8 @@ def run_kg_baseline_classification_cv(
     train_batch_size=16,
     test_batch_size=64,
     lr=1e-4
-) -> Dict:
+) -> Dict[str, float]:
     """Run KG baseline classification."""
-
     # Step 1. load the tsv file with the annotation types you want to test and make the splits
     triples_df = pd.read_csv(
         triples_path,
@@ -239,23 +240,30 @@ def run_kg_baseline_classification_cv(
         test_subsampler = torch.utils.data.SubsetRandomSampler(indices["test_idx"])
         # CE class weights for the model based on training data class distribution,
         # based on the class counts (Inverse Number of Samples, INS)
-        weights = [1 / len([i for i in triples_df.iloc[indices["train_idx"], :]["class"]
-                            if i == id2tag[id_num]]) for id_num in range(len(unique_tags))]
+        weights = [
+            1 / len([i
+                     for i in triples_df.iloc[indices["train_idx"], :]["class"]  # note that we only employ train idx
+                     if i == id2tag[id_num]
+                     ])
+            for id_num in range(len(unique_tags))
+        ]
 
         # Define data loaders for training and testing data in this fold
         trainloader = torch.utils.data.DataLoader(
             kg_embeds,
             batch_size=train_batch_size,
-            sampler=train_subsampler)
+            sampler=train_subsampler,
+        )
         testloader = torch.utils.data.DataLoader(
             kg_embeds,
             batch_size=test_batch_size,
-            sampler=test_subsampler)
+            sampler=test_subsampler,
+        )
 
         model = KGEClassificationModel(
             num_classes=len(triples_df["class"].unique()),
             class_weights=weights,
-            lr=lr
+            lr=lr,
         )
 
         # Initialize pytorch lighting Trainer for the KG baseline model
@@ -272,7 +280,8 @@ def run_kg_baseline_classification_cv(
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
 
-    return {"f1_score_mean": np.mean(f1_scores), "f1_score_std": np.std(f1_scores)}
+    # Return the final f1 score mean and the std for all CV folds
+    return {"f1_score_mean": np.mean(f1_scores), "f1_score_std": float(np.std(f1_scores))}
 
 
 if __name__ == "__main__":
