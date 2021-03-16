@@ -8,7 +8,8 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 SOURCE_DIR = os.path.join(os.path.abspath(os.path.join(HERE, os.pardir)))
 PROJECT_DIR = os.path.join(os.path.abspath(os.path.join(HERE, os.pardir)))
 
-DATA_DIR = os.path.join(PROJECT_DIR, 'data')
+# Move to parent folder by os.sep.join(PROJECT_DIR.split(os.sep)[:-1]) to get to the data folder
+DATA_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'data')
 
 # Sub-directories of data
 RAW_DIR = os.path.join(DATA_DIR, 'raw')
@@ -25,7 +26,8 @@ CELL_LINE_DIR = os.path.join(INPUT_DIR, 'cell_line')
 SPECIES_DIR = os.path.join(INPUT_DIR, 'species')
 RELATION_TYPE_DIR = os.path.join(INPUT_DIR, 'relation_type')
 
-MODELS_DIR = os.path.join(PROJECT_DIR, 'models')
+# Move to parent folder by os.sep.join(PROJECT_DIR.split(os.sep)[:-1]) to get to the models folder
+MODELS_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'models')
 NLP_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'nlp-baseline')
 KG_HPO_DIR = os.path.join(MODELS_DIR, 'kg-hpo')
 KG_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'kg-baseline')
@@ -34,7 +36,8 @@ STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, 'stonkgs')
 EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, 'embeddings_best_model.tsv')
 RANDOM_WALKS_PATH = os.path.join(KG_HPO_DIR, 'random_walks_best_model.tsv')
 
-LOG_DIR = os.path.join(PROJECT_DIR, 'logs')
+# Move to parent folder by os.sep.join(PROJECT_DIR.split(os.sep)[:-1]) to get to the logs folder
+LOG_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'logs')
 
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(MODELS_DIR, exist_ok=True)
