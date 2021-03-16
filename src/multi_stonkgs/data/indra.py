@@ -126,7 +126,7 @@ def binarize_triple_direction(graph: pybel.BELGraph) -> Dict[str, Any]:
     df = pd.DataFrame(triples)
 
     summary['number_of_triples'] = df.shape[0]
-    summary['number_of_labels'] = len(df['class'].unique())
+    summary['number_of_labels'] = df['class'].unique().size
     summary['labels'] = df['class'].value_counts().to_dict()
 
     df.to_csv(os.path.join(RELATION_TYPE_DIR, f'relation_type.tsv'), sep='\t', index=False)
@@ -174,7 +174,7 @@ def create_polarity_annotations(graph: pybel.BELGraph) -> Dict[str, Any]:
     df = pd.DataFrame(triples)
 
     summary['number_of_triples'] = df.shape[0]
-    summary['number_of_labels'] = len(df['class'].unique())
+    summary['number_of_labels'] = df['class'].unique().size
     summary['labels'] = df['class'].value_counts().to_dict()
 
     df.to_csv(os.path.join(RELATION_TYPE_DIR, f'relation_type.tsv'), sep='\t', index=False)
@@ -287,10 +287,10 @@ def dump_edgelist(
     logger.info(f'triples after filtering {df.shape[0]}')
 
     final_labels = df["class"].unique()
-    logger.info(f' final number of classes {len(final_labels)}')
+    logger.info(f' final number of classes {final_labels.size}')
 
     summary['number_of_triples'] = df.shape[0]
-    summary['number_of_labels'] = len(final_labels)
+    summary['number_of_labels'] = final_labels.size
     summary['labels'] = df['class'].value_counts().to_dict()
 
     df.to_csv(os.path.join(output_dir, f'{name}.tsv'), sep='\t', index=False)
