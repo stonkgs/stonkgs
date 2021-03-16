@@ -14,8 +14,7 @@ def get_train_test_splits(
     random_seed: int = 42,
     n_splits: int = 5,
 ) -> List:
-    """ Return train/test indices for n_splits many splits based on the fine-tuning dataset that is passed."""
-
+    """Return train/test indices for n_splits many splits based on the fine-tuning dataset that is passed."""
     # Leave out the label in the dataset
     X = train_data.drop(type_column_name, axis=1)  # noqa: N806
     y = train_data[type_column_name]

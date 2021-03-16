@@ -13,9 +13,10 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
-from constants import DUMMY_EXAMPLE_TRIPLES, RANDOM_WALKS_PATH, EMBEDDINGS_PATH
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
+
+from ..constants import DUMMY_EXAMPLE_TRIPLES, EMBEDDINGS_PATH, RANDOM_WALKS_PATH
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -59,6 +60,9 @@ class KGEClassificationModel(pl.LightningModule):
 
     def forward(self, x):
         """Perform forward pass consisting of pooling (dimension-wise max), and a linear layer followed by softmax.
+
+        :param x: embedding sequences (random walk embeddings) for the given triples
+        :return: class probabilities for the given triples
         """
         h_pooled = self.pooling(x, dim=1).values
         linear_output = self.linear(h_pooled)
@@ -102,7 +106,7 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
     """Custom dataset class for INDRA data."""
 
     def __init__(self, embedding_dict, random_walk_dict, sources, targets, labels, max_len=256):
-        """Initialize object."""
+        """Initialize INDRA Dataset based on random walk embeddings for 2 nodes in each triple."""
         self.max_length = max_len
         # Two entities (source, target) of each triple
         self.sources = sources
@@ -125,10 +129,13 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         return item, labels
 
     def __len__(self):
+        """Return the length of the dataset."""
         return len(self.labels)
 
     def get_embeddings(self):
         """Get the embedding sequences for each triple in the dataset (node emb from sources + targets random walks).
+
+        :return: embedding sequences for each triple in the dataset
         """
         # Number of total examples in the dataset
         number_of_triples = len(self.sources)

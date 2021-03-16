@@ -11,7 +11,7 @@ import pandas as pd
 import torch
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
-from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
 
 from ..constants import DUMMY_EXAMPLE_TRIPLES, LOG_DIR, NLP_BL_OUTPUT_DIR, NLP_MODEL_TYPE
 
@@ -23,17 +23,19 @@ class INDRAEvidenceDataset(torch.utils.data.Dataset):
     """Custom Dataset class for INDRA data."""
 
     def __init__(self, encodings, labels):
+        """Initialize INDRA Dataset based on token embeddings for each text evidence."""
         # Assumes that the labels are numerically encoded
         self.encodings = encodings
         self.labels = labels
 
     def __getitem__(self, idx):
+        """Return data entries (text evidences) for given indices."""
         item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
         item['labels'] = torch.tensor(self.labels[idx])
         return item
 
     def __len__(self):
-        """Get number of labels."""
+        """Return the length of the dataset."""
         return len(self.labels)
 
 
