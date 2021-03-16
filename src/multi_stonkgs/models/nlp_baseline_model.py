@@ -6,15 +6,23 @@ import logging
 import os
 from typing import Dict, List
 
+
+import mlflow
 import numpy as np
 import pandas as pd
 import torch
+from dotenv import load_dotenv
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
 
-from ..constants import DUMMY_EXAMPLE_TRIPLES, LOG_DIR, NLP_BL_OUTPUT_DIR, NLP_MODEL_TYPE
+from ..constants import DUMMY_EXAMPLE_TRIPLES, NLP_BL_OUTPUT_DIR, NLP_MODEL_TYPE
 
+# Load environment variables TODO: Move to the constants class later on?
+load_dotenv()
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
+
+# Initialize logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -61,8 +69,8 @@ def run_sequence_classification_cv(
     data_path: str = DUMMY_EXAMPLE_TRIPLES,
     sep: str = "\t",
     model_type: str = NLP_MODEL_TYPE,
-    logging_dir: str = LOG_DIR,
     output_dir: str = NLP_BL_OUTPUT_DIR,
+    logging_uri_mlflow: str = MLFLOW_TRACKING_URI,
     label_column_name: str = "class",
     text_data_column_name: str = "evidence",
     epochs: int = 2,
@@ -82,6 +90,16 @@ def run_sequence_classification_cv(
     # Initialize the f1-score
     f1_scores = []
 
+    # End previous run
+    mlflow.end_run()
+    # Initialize mlflow run, set tracking URI to use the same experiment for all runs,
+    # so that one can compare them
+    mlflow.set_tracking_uri(logging_uri_mlflow)
+    mlflow.set_experiment('NLP Baseline for MultiSTonKGs')
+
+    # Start a parent run so that all CV splits are tracked as nested runs
+    mlflow.start_run(run_name='Parent Run')
+
     for indices in train_test_splits:
         # Initialize tokenizer and model
         tokenizer = AutoTokenizer.from_pretrained(model_type)
@@ -95,14 +113,14 @@ def run_sequence_classification_cv(
         train_dataset = INDRAEvidenceDataset(encodings=train_evidences, labels=train_labels)
         test_dataset = INDRAEvidenceDataset(encodings=test_evidences, labels=test_labels)
 
-        # Note that due to the randomization in the batches, the training/evaluation is slightly different every time
+        # Note that due to the randomization in the batches, the training/evaluation is slightly
+        # different every time
         training_args = TrainingArguments(
             # label_names
             output_dir=output_dir,
             num_train_epochs=epochs,  # total number of training epochs
-            logging_dir=logging_dir,  # directory for storing logs
             logging_steps=100,
-            # TODO: Implement report_to = ["mlflow"] later on
+            report_to=["mlflow"],  # log via mlflow
             do_train=True,
             do_predict=True,
         )
