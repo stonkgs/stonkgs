@@ -65,4 +65,4 @@ DUMMY_EXAMPLE_INDRA = os.path.join(RAW_DIR, 'statements_2021-01-30-17-21-54.json
 DUMMY_EXAMPLE_TRIPLES = os.path.join(LOCATION_DIR, 'location.tsv')
 
 # Specify the (huggingface) language model that is used in this project
-NLP_MODEL_TYPE = "monologg/biobert_v1.1_pubmed"
+NLP_MODEL_TYPE = "dmis-lab/biobert-v1.1"
