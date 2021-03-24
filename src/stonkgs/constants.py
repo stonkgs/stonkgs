@@ -61,7 +61,7 @@ os.makedirs(RELATION_TYPE_DIR, exist_ok=True)
 
 # Download from https://emmaa.s3.amazonaws.com/assembled/covid19/statements_2021-03-08-18-24-29.gz
 DUMMY_EXAMPLE_INDRA = os.path.join(RAW_DIR, 'statements_2021-01-30-17-21-54.json')
-# Can be created by running python -m src.multi_stonkgs.data.indra
+# Can be created by running python -m src.stonkgs.data.indra
 DUMMY_EXAMPLE_TRIPLES = os.path.join(LOCATION_DIR, 'location.tsv')
 
 # Specify the (huggingface) language model that is used in this project

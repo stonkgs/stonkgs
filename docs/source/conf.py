@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath('../../src'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'multi_stonkgs'
+project = 'stonkgs'
 copyright = f'{date.today().year}, helena balabin'
 author = 'helena balabin'
 
@@ -50,7 +50,7 @@ if parsed_version.group('release'):
 add_module_names = False
 
 # A list of prefixes that are ignored when creating the module index. (new in Sphinx 0.6)
-modindex_common_prefix = ["multi_stonkgs."]
+modindex_common_prefix = ["stonkgs."]
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -136,7 +136,7 @@ if os.path.exists('logo.png'):
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Multi-STonKGsdoc'
+htmlhelp_basename = 'STonKGsdoc'
 
 # -- Options for LaTeX output ------------------------------------------------
 
@@ -164,8 +164,8 @@ htmlhelp_basename = 'Multi-STonKGsdoc'
 # latex_documents = [
 #     (
 #         master_doc,
-#         'multi_stonkgs.tex',
-#         'Multi-STonKGs Documentation',
+#         'stonkgs.tex',
+#         'STonKGs Documentation',
 #         author,
 #         'manual',
 #     ),
@@ -178,8 +178,8 @@ htmlhelp_basename = 'Multi-STonKGsdoc'
 man_pages = [
     (
         master_doc,
-        'multi_stonkgs',
-        'Multi-STonKGs Documentation',
+        'stonkgs',
+        'STonKGs Documentation',
         [author],
         1,
     ),
@@ -193,8 +193,8 @@ man_pages = [
 texinfo_documents = [
     (
         master_doc,
-        'multi_stonkgs',
-        'Multi-STonKGs Documentation',
+        'stonkgs',
+        'STonKGs Documentation',
         author,
         'helena balabin',
         'todo',

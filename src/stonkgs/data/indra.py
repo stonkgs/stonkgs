@@ -3,7 +3,7 @@
 """Reads and prepares triples/statements for INDRA.
 
 Run with:
-python -m src.multi_stonkgs.data.indra
+python -m src.stonkgs.data.indra
 """
 
 import logging
@@ -330,7 +330,7 @@ def read_indra_triples(
     annotation types (each of them will contain multiple classes).
 
     We would like to note that the pre-training dataset is significantly larger than the fine-tuning dataset.
-    Naturally, MultiSTonKGs requires a pre-training similar to the other two baselines models (i.e., KG-based has been
+    Naturally, STonKGs requires a pre-training similar to the other two baselines models (i.e., KG-based has been
     trained based on node2vec on the INDRA KG and BioBERT was trained on PubMed).
     """
     organ_subgraph = create_context_type_specific_subgraph(indra_kg, ['MeSHAnatomy'])

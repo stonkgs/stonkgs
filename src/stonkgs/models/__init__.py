@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-"""Multi-STonKGs."""
+"""STonKGs models."""

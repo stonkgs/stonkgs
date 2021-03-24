@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-"""Version information for :mod:`multi_stonkgs`.
+"""Version information for :mod:`stonkgs`.
 
-Run with ``python -m multi_stonkgs.version``
+Run with ``python -m stonkgs.version``
 """
 
 import os
@@ -18,7 +18,7 @@ VERSION = '0.0.1-dev'
 
 
 def get_git_hash() -> str:
-    """Get the :mod:`multi_stonkgs` git hash."""
+    """Get the :mod:`stonkgs` git hash."""
     with open(os.devnull, 'w') as devnull:
         try:
             ret = check_output(  # noqa: S603,S607
@@ -33,7 +33,7 @@ def get_git_hash() -> str:
 
 
 def get_version(with_git_hash: bool = False):
-    """Get the :mod:`multi_stonkgs` version string, including a git hash."""
+    """Get the :mod:`stonkgs` version string, including a git hash."""
     return f'{VERSION}-{get_git_hash()}' if with_git_hash else VERSION
 
 

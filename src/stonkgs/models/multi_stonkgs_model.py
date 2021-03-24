@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""MultiSTonKGs model on the fine-tuning classification task, assuming the model embeddings are pre-trained."""
+"""STonKGs model on the fine-tuning classification task, assuming the model embeddings are pre-trained."""
 
 from typing import List
 

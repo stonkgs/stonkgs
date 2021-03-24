@@ -1,3 +1,3 @@
 # -*- coding: utf-8 -*-
 
-"""Tests for :mod:`multi_stonkgs`."""
+"""Tests for :mod:`stonkgs`."""

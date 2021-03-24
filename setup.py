@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""Setup module for :mod:`multi_stonkgs`."""
+"""Setup module for :mod:`stonkgs`."""
 
 import setuptools
 

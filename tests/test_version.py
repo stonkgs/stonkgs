@@ -4,7 +4,7 @@
 
 import unittest
 
-from multi_stonkgs.version import get_version
+from stonkgs.version import get_version
 
 
 class TestVersion(unittest.TestCase):

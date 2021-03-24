@@ -3,7 +3,7 @@
 KG baseline model on the fine-tuning classification task, assuming the model embeddings are pre-trained.
 
 Run with:
-python -m src.multi_stonkgs.models.kg_baseline_model
+python -m src.stonkgs.models.kg_baseline_model
 """
 
 import logging

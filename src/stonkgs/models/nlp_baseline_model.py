@@ -95,7 +95,7 @@ def run_sequence_classification_cv(
     # Initialize mlflow run, set tracking URI to use the same experiment for all runs,
     # so that one can compare them
     mlflow.set_tracking_uri(logging_uri_mlflow)
-    mlflow.set_experiment('NLP Baseline for MultiSTonKGs')
+    mlflow.set_experiment('NLP Baseline for STonKGs')
 
     # Start a parent run so that all CV splits are tracked as nested runs
     mlflow.start_run(run_name='Parent Run')

@@ -1,4 +1,4 @@
-Multi-STonKGs |release| Documentation
+STonKGs |release| Documentation
 =====================================
 
 .. toctree::
