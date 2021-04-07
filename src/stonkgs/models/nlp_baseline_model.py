@@ -6,21 +6,15 @@ import logging
 import os
 from typing import Dict, List
 
-
 import mlflow
 import numpy as np
 import pandas as pd
 import torch
-from dotenv import load_dotenv
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
 
-from ..constants import DUMMY_EXAMPLE_TRIPLES, NLP_BL_OUTPUT_DIR, NLP_MODEL_TYPE
-
-# Load environment variables TODO: Move to the constants class later on?
-load_dotenv()
-MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
+from ..constants import DUMMY_EXAMPLE_TRIPLES, MLFLOW_TRACKING_URI, NLP_BL_OUTPUT_DIR, NLP_MODEL_TYPE
 
 # Initialize logger
 logger = logging.getLogger(__name__)

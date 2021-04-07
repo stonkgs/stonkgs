@@ -4,6 +4,8 @@
 
 import os
 
+from dotenv import load_dotenv
+
 HERE = os.path.dirname(os.path.realpath(__file__))
 SOURCE_DIR = os.path.join(os.path.abspath(os.path.join(HERE, os.pardir)))
 PROJECT_DIR = os.path.join(os.path.abspath(os.path.join(HERE, os.pardir)))
@@ -38,6 +40,10 @@ RANDOM_WALKS_PATH = os.path.join(KG_HPO_DIR, 'random_walks_best_model.tsv')
 
 # Move to parent folder by os.sep.join(PROJECT_DIR.split(os.sep)[:-1]) to get to the logs folder
 LOG_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'logs')
+
+# Load mlflow tracking URI from environment variables
+load_dotenv()
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
 
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(MODELS_DIR, exist_ok=True)
