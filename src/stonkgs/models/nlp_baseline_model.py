@@ -12,13 +12,89 @@ import pandas as pd
 import torch
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainerCallback, TrainingArguments
+from transformers.integrations import MLflowCallback
 
 from ..constants import DUMMY_EXAMPLE_TRIPLES, MLFLOW_TRACKING_URI, NLP_BL_OUTPUT_DIR, NLP_MODEL_TYPE
 
 # Initialize logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+class NestedMLFlowCallback(TrainerCallback):
+    """A :class:`~transformers.TrainerCallback` that sends the logs to `MLflow <https://www.mlflow.org/>`__."""
+
+    def __init__(self):
+        """Set up some mlflow parameters."""
+        self._MAX_PARAM_VAL_LENGTH = mlflow.utils.validation.MAX_PARAM_VAL_LENGTH
+        self._MAX_PARAMS_TAGS_PER_BATCH = mlflow.utils.validation.MAX_PARAMS_TAGS_PER_BATCH
+
+        self._initialized = False
+        self._log_artifacts = False
+        self._ml_flow = mlflow
+
+    def setup(self, args, state, model):
+        """Set up the optional MLflow integration."""
+        log_artifacts = os.getenv("HF_MLFLOW_LOG_ARTIFACTS", "FALSE").upper()
+        if log_artifacts in {"TRUE", "1"}:
+            self._log_artifacts = True
+        if state.is_world_process_zero:
+            # Start nested runs here
+            self._ml_flow.start_run(nested=True)
+            combined_dict = args.to_dict()
+            if hasattr(model, "config") and model.config is not None:
+                model_config = model.config.to_dict()
+                combined_dict = {**model_config, **combined_dict}
+            # Remove params that are too long for MLflow
+            for name, value in list(combined_dict.items()):
+                # Internally, all values are converted to str in MLflow
+                if len(str(value)) > self._MAX_PARAM_VAL_LENGTH:
+                    logger.warning(
+                        "Trainer is attempting to log a value of ",
+                        f'"{value}" for key "{name}" as a parameter. '
+                        "MLflow's log_param() only accepts values no longer than ",
+                        "250 characters so we dropped this attribute.",
+                    )
+                    del combined_dict[name]
+            # MLflow cannot log more than 100 values in one go, so we have to split it
+            combined_dict_items = list(combined_dict.items())
+            for i in range(0, len(combined_dict_items), self._MAX_PARAMS_TAGS_PER_BATCH):
+                self._ml_flow.log_params(dict(combined_dict_items[i: i + self._MAX_PARAMS_TAGS_PER_BATCH]))
+        self._initialized = True
+
+    def on_train_begin(self, args, state, control, model=None, **kwargs):
+        """Set up the callback when the training procedure begins."""
+        if not self._initialized:
+            self.setup(args, state, model)
+
+    def on_log(self, args, state, control, logs, model=None, **kwargs):
+        """Perform logging actions."""
+        if not self._initialized:
+            self.setup(args, state, model)
+        if state.is_world_process_zero:
+            for k, v in logs.items():
+                if isinstance(v, (int, float)):
+                    self._ml_flow.log_metric(k, v, step=state.global_step)
+                else:
+                    logger.warning(
+                        "Trainer is attempting to log a value of ",
+                        f'"{v}" of type {type(v)} for key "{k}" as a metric. ',
+                        "MLflow's log_metric() only accepts float and ",
+                        "int types so we dropped this attribute.",
+                    )
+
+    def on_train_end(self, args, state, control, **kwargs):
+        """Log artifacts after training."""
+        if self._initialized and state.is_world_process_zero:
+            if self._log_artifacts:
+                logger.info("Logging artifacts. This may take time.")
+                self._ml_flow.log_artifacts(args.output_dir)
+
+    def __del__(self):
+        """Kill run."""
+        if self._ml_flow.active_run is not None:
+            self._ml_flow.end_run()
 
 
 class INDRAEvidenceDataset(torch.utils.data.Dataset):
@@ -92,7 +168,7 @@ def run_sequence_classification_cv(
     mlflow.set_experiment('NLP Baseline for STonKGs')
 
     # Start a parent run so that all CV splits are tracked as nested runs
-    # mlflow.start_run(run_name='Parent Run')
+    mlflow.start_run(run_name='Parent Run')
 
     for indices in train_test_splits:
         # Initialize tokenizer and model
@@ -114,7 +190,7 @@ def run_sequence_classification_cv(
             output_dir=output_dir,
             num_train_epochs=epochs,  # total number of training epochs
             logging_steps=100,
-            report_to=["mlflow"],  # log via mlflow
+            # report_to=["mlflow"],  # log via mlflow
             do_train=True,
             do_predict=True,
         )
@@ -125,6 +201,10 @@ def run_sequence_classification_cv(
             args=training_args,
             train_dataset=train_dataset,
         )
+        # Remove the default MLflowCallback
+        trainer.remove_callback(MLflowCallback)
+        # Add the custom nested callback
+        trainer.add_callback(NestedMLFlowCallback())
         # Train
         trainer.train()
 
@@ -138,7 +218,7 @@ def run_sequence_classification_cv(
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
 
     # End parent run
-    # mlflow.end_run()
+    mlflow.end_run()
 
     return {"f1_score_mean": np.mean(f1_scores), "f1_score_std": np.std(f1_scores)}
 
