@@ -98,7 +98,7 @@ def run_sequence_classification_cv(
     mlflow.set_experiment('NLP Baseline for STonKGs')
 
     # Start a parent run so that all CV splits are tracked as nested runs
-    mlflow.start_run(run_name='Parent Run')
+    # mlflow.start_run(run_name='Parent Run')
 
     for indices in train_test_splits:
         # Initialize tokenizer and model
@@ -142,6 +142,9 @@ def run_sequence_classification_cv(
 
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
+
+    # End parent run
+    # mlflow.end_run()
 
     return {"f1_score_mean": np.mean(f1_scores), "f1_score_std": np.std(f1_scores)}
 
