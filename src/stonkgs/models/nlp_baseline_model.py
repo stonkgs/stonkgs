@@ -67,7 +67,7 @@ def run_sequence_classification_cv(
     logging_uri_mlflow: str = MLFLOW_TRACKING_URI,
     label_column_name: str = "class",
     text_data_column_name: str = "evidence",
-    epochs: int = 2,
+    epochs: int = 3,
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
     # Get data splits
@@ -113,7 +113,7 @@ def run_sequence_classification_cv(
             # label_names
             output_dir=output_dir,
             num_train_epochs=epochs,  # total number of training epochs
-            logging_steps=100,
+            logging_steps=10,
             report_to=["mlflow"],  # log via mlflow
             do_train=True,
             do_predict=True,
@@ -132,10 +132,20 @@ def run_sequence_classification_cv(
         predictions = trainer.predict(test_dataset=test_dataset).predictions
         predicted_labels = np.argmax(predictions, axis=1)
         # Use macro average for now
-        f1_scores.append(f1_score(test_labels, predicted_labels, average="macro"))
+        f1_sc = f1_score(test_labels, predicted_labels, average="macro")
+        f1_scores.append(f1_sc)
+
+        # Log the final f1 score of the split (seems like it can only be done in a separate run)
+        with mlflow.start_run():
+            mlflow.log_metric('f1_score_macro', f1_sc)
 
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
+
+    # Log the mean and std f1 score of all splits
+    with mlflow.start_run():
+        mlflow.log_metric('f1_score_mean', np.mean(f1_scores))
+        mlflow.log_metric('f1_score_mean', np.std(f1_scores))
 
     # End parent run
     # mlflow.end_run()
