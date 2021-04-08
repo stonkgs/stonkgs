@@ -14,7 +14,6 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
-from pytorch_lightning.loggers import MLFlowLogger
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
 
@@ -56,9 +55,12 @@ class KGEClassificationModel(pl.LightningModule):
 
         # Other class-specific parameters
         # Class weights for CE loss
-        self.class_weights = torch.tensor(class_weights)  #
+        self.class_weights = torch.tensor(class_weights)
         # Learning rate
         self.lr = lr
+
+        # Log the additional parameters
+        self.log_dict({"num_classes": num_classes, "class_weights": class_weights, "lr": lr})
 
     def forward(self, x):
         """Perform forward pass consisting of pooling (dimension-wise max), and a linear layer followed by softmax.
@@ -83,6 +85,10 @@ class KGEClassificationModel(pl.LightningModule):
         train_outputs = self.forward(train_inputs)
         loss_fct = torch.nn.CrossEntropyLoss(reduction="mean", weight=self.class_weights)
         loss = loss_fct(train_outputs, train_labels)
+
+        # Log loss at each training step
+        self.log('loss', loss.item(), on_step=True)
+
         return loss
 
     def test_step(self, batch, batch_nb):
@@ -100,6 +106,9 @@ class KGEClassificationModel(pl.LightningModule):
         """Return average and std macro-averaged f1-score over all batches."""
         mean_test_f1 = torch.stack([x['test_f1'] for x in outputs]).mean()
         std_test_f1 = torch.stack([x['test_f1'] for x in outputs]).std()
+
+        # Log the final f1 score
+        self.log('f1_score_macro', mean_test_f1.item())
 
         return {'mean_test_f1': mean_test_f1, 'std_test_f1': std_test_f1}
 
@@ -248,11 +257,10 @@ def run_kg_baseline_classification_cv(
         labels,
     )
 
-    # Initialize the logger
-    mlf_logger = MLFlowLogger(
-        experiment_name="KG Baseline for STonKGs",
-        tracking_uri=logging_uri_mlflow,
-    )
+    mlflow.set_tracking_uri(logging_uri_mlflow)
+    mlflow.set_experiment('KG Baseline for STonKGs')
+
+    mlflow.pytorch.autolog()
 
     # Train and test the model in a cv setting
     for indices in train_test_splits:
@@ -288,15 +296,14 @@ def run_kg_baseline_classification_cv(
         )
 
         # Initialize pytorch lighting Trainer for the KG baseline model
-        trainer = pl.Trainer(max_epochs=epochs, logger=mlf_logger)
-        # Fit on training split
-        trainer.fit(model, train_dataloader=trainloader)
-        # Predict on test split
-        test_results = trainer.test(model, test_dataloaders=testloader)
+        trainer = pl.Trainer(max_epochs=epochs)
 
-        # Log the final f1 score of the split (seems like it can only be done in a separate run)
+        # Train and predict in a separate run for each split
         with mlflow.start_run():
-            mlflow.log_metric('f1_score_macro', test_results[0]["mean_test_f1"])
+            # Fit on training split
+            trainer.fit(model, train_dataloader=trainloader)
+            # Predict on test split
+            test_results = trainer.test(model, test_dataloaders=testloader)
 
         # Append f1 score per split based on the macro average
         f1_scores.append(test_results[0]["mean_test_f1"])
