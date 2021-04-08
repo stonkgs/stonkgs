@@ -9,14 +9,16 @@ python -m src.stonkgs.models.kg_baseline_model
 import logging
 from typing import Dict, List
 
+import mlflow
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
+from pytorch_lightning.loggers import MLFlowLogger
 
-from ..constants import DUMMY_EXAMPLE_TRIPLES, EMBEDDINGS_PATH, RANDOM_WALKS_PATH
+from ..constants import DUMMY_EXAMPLE_TRIPLES, EMBEDDINGS_PATH, MLFLOW_TRACKING_URI, RANDOM_WALKS_PATH
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -201,6 +203,7 @@ def run_kg_baseline_classification_cv(
     triples_path=DUMMY_EXAMPLE_TRIPLES,
     embedding_path=EMBEDDINGS_PATH,
     random_walks_path=RANDOM_WALKS_PATH,
+    logging_uri_mlflow=MLFLOW_TRACKING_URI,
     n_splits=5,
     epochs=20,
     train_batch_size=16,
@@ -245,6 +248,12 @@ def run_kg_baseline_classification_cv(
         labels,
     )
 
+    # Initialize the logger
+    mlf_logger = MLFlowLogger(
+        experiment_name="KG Baseline for STonKGs",
+        tracking_uri=logging_uri_mlflow,
+    )
+
     # Train and test the model in a cv setting
     for indices in train_test_splits:
         # Sample elements randomly from a given list of ids, no replacement
@@ -279,16 +288,26 @@ def run_kg_baseline_classification_cv(
         )
 
         # Initialize pytorch lighting Trainer for the KG baseline model
-        trainer = pl.Trainer(max_epochs=epochs)
+        trainer = pl.Trainer(max_epochs=epochs, logger=mlf_logger)
         # Fit on training split
         trainer.fit(model, train_dataloader=trainloader)
         # Predict on test split
         test_results = trainer.test(model, test_dataloaders=testloader)
 
+        # Log the final f1 score of the split (seems like it can only be done in a separate run)
+        with mlflow.start_run():
+            mlflow.log_metric('f1_score_macro', test_results[0]["mean_test_f1"])
+
         # Append f1 score per split based on the macro average
         f1_scores.append(test_results[0]["mean_test_f1"])
 
-    # Log mean and std f1-scores from the cross validation procedure (average and std across all splits)
+    # Log the mean and std f1 score from the cross validation procedure to mlflow
+    with mlflow.start_run():
+        mlflow.log_metric('f1_score_mean', np.mean(f1_scores))
+        mlflow.log_metric('f1_score_std', np.std(f1_scores))
+
+    # Log mean and std f1-scores from the cross validation procedure (average and std across all splits) to the
+    # standard logger
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
 
