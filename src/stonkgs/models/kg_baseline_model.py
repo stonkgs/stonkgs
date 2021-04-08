@@ -14,9 +14,9 @@ import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning.loggers import MLFlowLogger
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
-from pytorch_lightning.loggers import MLFlowLogger
 
 from ..constants import DUMMY_EXAMPLE_TRIPLES, EMBEDDINGS_PATH, MLFLOW_TRACKING_URI, RANDOM_WALKS_PATH
 
