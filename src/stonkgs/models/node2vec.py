@@ -17,12 +17,13 @@ import numpy as np
 import optuna
 import pandas as pd
 from nodevectors import Node2Vec
+from optuna.integration import MLflowCallback
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from stellargraph.data import EdgeSplitter
 
-from ..constants import DUMMY_EXAMPLE_TRIPLES, KG_HPO_DIR, MODELS_DIR
+from ..constants import DUMMY_EXAMPLE_TRIPLES, KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +72,8 @@ def run_node2vec(
     sep: str = '\t',
     seed: Optional[int] = None,
     delete_database: bool = True,
+    mlflow_tracking_uri: str = MLFLOW_TRACKING_URI,
+    n_optimization_trials: int = 5,
 ):
     """CLI to run node2vec."""
     if seed is None:
@@ -144,8 +147,13 @@ def run_node2vec(
             model=node2vec_model,
         )
 
-    # create study and set number of trials
-    n_trials = 2
+    # Add mlflow callback to log the HPO in mlflow
+    mlflow_callback = MLflowCallback(
+        tracking_uri=mlflow_tracking_uri,
+        metric_name="ROC AUC Score",
+    )
+
+    # Create study and run it
     study = optuna.create_study(
         study_name="Node2vec HPO on INDRA KG",
         storage=f"sqlite:///{MODELS_DIR}/kge_indra_hpo.db",
@@ -154,7 +162,8 @@ def run_node2vec(
     )
     study.optimize(
         objective,
-        n_trials=n_trials,
+        n_trials=n_optimization_trials,
+        callbacks=[mlflow_callback],
     )
 
     # Remove all the models except for the best one :)
