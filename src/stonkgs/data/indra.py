@@ -200,12 +200,13 @@ def create_context_type_specific_subgraph(graph: pybel.BELGraph, context_annotat
             edges_to_remove.append((u, v, k))
 
     number_of_edges_before = graph.number_of_edges()
-    graph.remove_edges_from(edges_to_remove)
-    number_of_edges_after_removing_annotations = graph.number_of_edges()
+    # graph.remove_edges_from(edges_to_remove)
+    # number_of_edges_after_removing_annotations = graph.number_of_edges()
 
-    logger.info(
-        f'Original graph was reduced from {number_of_edges_before} to {number_of_edges_after_removing_annotations} edges'
-    )
+    # logger.info(
+    #     f'Original graph was reduced from {number_of_edges_before} to {number_of_edges_after_removing_annotations}
+    #     edges'
+    # )
 
     string = f'Number of nodes/edges in the inferred subgraph "{context_annotations}": \
     {subgraph.number_of_nodes()} {subgraph.number_of_edges()}'
