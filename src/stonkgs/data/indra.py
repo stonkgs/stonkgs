@@ -32,7 +32,7 @@ from pybel.constants import (
 )
 from pybel.dsl import CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna
 
-from ..constants import (
+from stonkgs.constants import (
     DUMMY_EXAMPLE_INDRA,
     MISC_DIR,
     INPUT_DIR,
