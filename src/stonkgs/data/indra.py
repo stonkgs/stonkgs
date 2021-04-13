@@ -87,8 +87,8 @@ def binarize_triple_direction(graph: pybel.BELGraph) -> Dict[str, Any]:
     # Iterate through the graph and infer a subgraph
     for u, v, data in graph.edges(data=True):
 
-        if EVIDENCE not in data or not data[EVIDENCE]:
-            logger.warning(f'not evidence found in {data}')
+        if EVIDENCE not in data or not data[EVIDENCE] or data[EVIDENCE] == 'No evidence text.':
+            # logger.warning(f'not evidence found in {data}')
             continue
 
         # todo: check this we will focus only on molecular interactions
@@ -143,7 +143,7 @@ def create_polarity_annotations(graph: pybel.BELGraph) -> Dict[str, Any]:
     # Iterate through the graph and infer a subgraph
     for u, v, data in graph.edges(data=True):
 
-        if EVIDENCE not in data or not data[EVIDENCE]:
+        if EVIDENCE not in data or not data[EVIDENCE] or data[EVIDENCE] == 'No evidence text.':
             logger.warning(f'not evidence found in {data}')
             continue
 
@@ -232,7 +232,8 @@ def dump_edgelist(
     # Iterate through the graph and infer a subgraph with edges that contain the annotation of interest
     for u, v, data in graph.edges(data=True):
 
-        if not data[EVIDENCE]:
+        # If the data entry has no text evidence or the following filler text, don't add it
+        if not data[EVIDENCE] or data[EVIDENCE] == 'No evidence text.':
             continue
 
         # Multiple annotations
@@ -280,10 +281,10 @@ def dump_edgelist(
         if count < cutoff
     }
 
-    logger.warning(f'labels removed due to low occurrence {labels_to_remove}')
+    logger.warning(f'labels for {name} removed due to low occurrence {labels_to_remove}')
 
     logger.info(f'raw triples {df.shape[0]}')
-    df = df[df['class'].isin(list(labels_to_remove.keys()))]
+    df = df[~df['class'].isin(list(labels_to_remove.keys()))]
 
     logger.info(f'triples after filtering {df.shape[0]}')
 
