@@ -402,7 +402,7 @@ def read_indra_triples(
     for u, v, data in indra_kg.edges(data=True):
         # Skip relations without evidences
         # TODO: skip specific relations
-        if not EVIDENCE in data:
+        if not EVIDENCE in data or data[EVIDENCE] == "No evidence text.":
             continue
 
         triples.append({
