@@ -11,8 +11,9 @@ from torch import nn
 from transformers import BertConfig, BertForPreTraining, BertModel
 from transformers.models.bert.modeling_bert import BertForPreTrainingOutput, BertLMPredictionHead
 
-from stonkgs.models.kg_baseline_model import _prepare_df
 from stonkgs.constants import EMBEDDINGS_PATH, NLP_MODEL_TYPE
+from stonkgs.models.kg_baseline_model import _prepare_df
+
 
 def get_train_test_splits(
     train_data: pd.DataFrame,
