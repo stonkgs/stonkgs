@@ -8,8 +8,8 @@ import pandas as pd
 import torch
 from sklearn.model_selection import StratifiedKFold
 from torch import nn
-from transformers import BertConfig, BertForPreTraining
-from transformers.models.bert.modeling_bert import BertLMPredictionHead
+from transformers import BertConfig, BertForPreTraining, BertModel
+from transformers.models.bert.modeling_bert import BertForPreTrainingOutput, BertLMPredictionHead
 
 
 def get_train_test_splits(
@@ -61,11 +61,12 @@ class SToNKGsELMPredictionHead(BertLMPredictionHead):
         # transform is initialized in the parent BertLMPredictionHead class
         hidden_states = self.transform(hidden_states)
 
-        # The first half is processed with the text decoder, the second with the entity decoder
-        hidden_states[:self.half_length] = self.text_decoder(hidden_states[:self.half_length])
-        hidden_states[self.half_length:] = self.entity_decoder(hidden_states[self.half_length:])
+        # The first half is processed with the text decoder, the second with the entity decoder to map to the text
+        # vocab size and kg vocab size, respectively
+        text_hidden_states_to_vocab = self.text_decoder(hidden_states[:self.half_length])
+        ent_hidden_states_to_kg_vocab = self.entity_decoder(hidden_states[self.half_length:])
 
-        return hidden_states
+        return text_hidden_states_to_vocab, ent_hidden_states_to_kg_vocab
 
 
 class STonKGsForPreTraining(BertForPreTraining):
@@ -73,29 +74,31 @@ class STonKGsForPreTraining(BertForPreTraining):
 
     def __init__(self, nlp_model_type, kg_embedding_dict):
         """Initialize the model architecture components of STonKGs."""
-        # Add the number of KG entities to the default config
-        config = BertConfig.from_pretrained(nlp_model_type)
+        # Add the number of KG entities to the default config of a standard BERT model
+        config = BertConfig.from_pretrained()
         config.update({'kg_vocab_size': len(kg_embedding_dict)})
-
-        # TODO: map KG embedding dictionary keys onto indices (it's deterministic)
-
-        # Initialize the BertForPretraining model based on the specified model type (e.g., BioBERT) with the updated
-        # config
+        # Initialize the underlying BertForPreTraining model that will be used to build the STonKGs Transformer layers
         super().__init__(config)
 
-        # TODO: keep two different BERT encoders in mind
+        # Override the standard MLM head: In the underlying BertForPreTraining model, change the MLM head to the custom
+        # STonKGsELMPredictionHead so that it can be used on the concatenated text/entity input
+        self.cls.predictions = SToNKGsELMPredictionHead(config)
 
-        # TODO: Override the BertLMPrediction head with the custom STonKGsELMPredictionHead
-
-        # TODO: index to name for kg_embedding_dict (sort keys alphabetically first maybe?? which is probably not good
-        #  for such a large KG)
-        # TODO: initialize KG embeddings? -> just a normal dictionary/index?
-        # kg_embeddings = ... something with kg_embedding_dict
-
-        # TODO: freeze the underlying BERT model for generating the initial text embeds, but don't freeze the new
-        #  STonKGs encoder
-        for param in self.bert.bert.parameters():
+        # LM backbone initialization (pre-trained BERT to get the initial embeddings) based on the specified
+        # nlp_model_type (e.g. BioBERT)
+        self.lm_backbone = BertModel.from_pretrained(nlp_model_type)
+        # Freeze the parameters of the LM backbone so that they're not updated during training
+        # (We only want to train the STonKGs Transformer layers)
+        for param in self.lm_backbone.parameters():
             param.requires_grad = False
+
+        # KG backbone initialization
+        # TODO: move that to a custom dataset class maybe?
+        # Generate numeric indices for the KG node names (iterating .keys() is deterministic)
+        self.kg_idx_to_name = {i: key for i, key in enumerate(kg_embedding_dict.keys())}
+        # Initialize KG index to embeddings based on the provided kg_embedding_dict
+        self.kg_backbone = {i: kg_embedding_dict[self.kg_idx_to_name[i]]
+                            for i in self.kg_idx_to_name.keys()}
 
     def forward(
         self,
@@ -106,58 +109,76 @@ class STonKGsForPreTraining(BertForPreTraining):
         head_mask=None,
         masked_lm_labels=None,
         ent_masked_lm_labels=None,
-        n_word_nodes=None,
-        ent_index=None,
-        labels=None,
-        next_sentence_label=None,
+        next_sentence_labels=None,
         return_dict=None,
     ):
         """Perform one forward pass for a given sequence of text_input_ids + ent_input_ids."""
         # The code is based on CoLAKE: https://github.com/txsun1997/CoLAKE/blob/master/pretrain/model.py
-        # Number of tokens (the rest are entity embeddings)
-        n_word_nodes = n_word_nodes[0]
-        word_embeddings = self.bert.embeddings.word_embeddings(
-            input_ids[:, :n_word_nodes])  # batch x n_word_nodes x hidden_size
 
-        ent_embeddings = self.kg_embeddings(
-            input_ids[:, n_word_nodes:])
+        # Use the LM backbone to get the pre-trained token embeddings
+        # batch x half_length x hidden_size
+        # The first element of the returned tuple from the LM backbone forward() pass is the sequence of hidden states
+        token_embeddings = self.lm_backbone(input_ids[:, :self.cls.predictions.half_length])[0]
 
-        inputs_embeds = torch.cat([word_embeddings, ent_embeddings],
-                                  dim=1)  # batch x seq_len x hidden_size
+        # Use the KG backbone to obtain the pre-trained entity embeddings
+        # batch x half_length x hidden_size
+        ent_embeddings = torch.tensor(
+            [self.kg_backbone(i) for i in input_ids[:, self.cls.predictions.half_length:]],
+        )
 
-        # TODO: define the encoder and stuff in init
-        outputs = self.encoder(
-            input_ids=None,
+        # Concatenate token and entity embeddings obtained from the LM and KG backbones
+        inputs_embeds = torch.cat([token_embeddings, ent_embeddings], dim=1)  # batch x seq_len x hidden_size
+
+        # Get the hidden states from the basic STonKGs Transformer layers
+        # batch x half_length x hidden_size
+        outputs = self.bert(
+            inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
             position_ids=position_ids,
             head_mask=head_mask,
-            inputs_embeds=inputs_embeds,
+            return_dict=None,
         )
-        sequence_output = outputs[0]  # batch x seq_len x hidden_size
+        # batch x seq_len x hidden_size
+        sequence_output, pooled_output = outputs[:2]
 
-        loss_fct = torch.nn.CrossEntropyLoss(ignore_index=-1, reduction='mean')
+        # Generate the prediction scores (mapping to text and entity vocab sizes + NSP) for the training objectives
+        # Seq_relationship_score = NSP score
+        # prediction_scores = Text MLM and Entity "MLM" scores
+        prediction_scores, seq_relationship_score = self.cls(sequence_output, pooled_output)
+        # The custom SToNKGsELMPredictionHead returns a pair of prediction score sequences for tokens and entities,
+        # respectively
+        token_prediction_scores, entity_predictions_scores = prediction_scores
 
-        # TODO: integrate NSP loss here (Is a given text evidence matching with an entity sequence?)
-        nsp_loss = 0
+        # Calculate the loss
+        total_loss = None
+        if masked_lm_labels is not None and ent_masked_lm_labels is not None and next_sentence_labels is not None:
+            loss_fct = nn.CrossEntropyLoss()
+            # 1. Text-based MLM
+            masked_lm_loss = loss_fct(
+                token_prediction_scores.view(-1, self.config.vocab_size),
+                masked_lm_labels.view(-1),
+            )
+            # 2. Entity-based masked "language" (entity) modeling
+            ent_masked_lm_loss = loss_fct(
+                entity_predictions_scores.view(-1, self.config.kg_vocab_size),
+                ent_masked_lm_labels.view(-1),
+            )
+            # 3. Next "sentence" loss: Whether a text and random walk sequence belong together or not
+            next_sentence_loss = loss_fct(
+                seq_relationship_score.view(-1, 2),
+                next_sentence_labels.view(-1),
+            )
+            total_loss = masked_lm_loss + ent_masked_lm_loss + next_sentence_loss
 
-        # TODO: initialize a LM head
-        word_logits = self.lm_head(sequence_output[:, :n_word_nodes, :])
-        word_predict = torch.argmax(word_logits, dim=-1)
-        masked_lm_loss = loss_fct(word_logits.view(-1, self.config.vocab_size), masked_lm_labels.view(-1))
+        if not return_dict:
+            output = (prediction_scores, seq_relationship_score) + outputs[2:]
+            return ((total_loss,) + output) if total_loss is not None else output
 
-        ent_cls_weight = self.ent_embeddings(ent_index[0].view(1, -1)).squeeze()
-        ent_logits = self.ent_lm_head(
-            sequence_output[:, n_word_nodes:, :],
-            ent_cls_weight,
+        return BertForPreTrainingOutput(
+            loss=total_loss,
+            prediction_logits=prediction_scores,
+            seq_relationship_logits=seq_relationship_score,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
         )
-        ent_predict = torch.argmax(ent_logits, dim=-1)
-        ent_masked_lm_loss = loss_fct(ent_logits.view(-1, ent_logits.size(-1)), ent_masked_lm_labels.view(-1))
-
-        loss = masked_lm_loss + ent_masked_lm_loss + nsp_loss
-
-        return {
-            'loss': loss,
-            'word_pred': word_predict,
-            'entity_pred': ent_predict,
-        }
