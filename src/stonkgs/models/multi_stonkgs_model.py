@@ -11,6 +11,8 @@ from torch import nn
 from transformers import BertConfig, BertForPreTraining, BertModel
 from transformers.models.bert.modeling_bert import BertForPreTrainingOutput, BertLMPredictionHead
 
+from stonkgs.models.kg_baseline_model import _prepare_df
+from stonkgs.constants import EMBEDDINGS_PATH, NLP_MODEL_TYPE
 
 def get_train_test_splits(
     train_data: pd.DataFrame,
@@ -30,7 +32,7 @@ def get_train_test_splits(
     return [[train_idx, test_idx] for train_idx, test_idx in skf.split(X, y)]
 
 
-class SToNKGsELMPredictionHead(BertLMPredictionHead):
+class STonKGsELMPredictionHead(BertLMPredictionHead):
     """Custom masked entity and language modeling (ELM) head used to predict both entities and text tokens."""
 
     def __init__(self, config):
@@ -75,14 +77,14 @@ class STonKGsForPreTraining(BertForPreTraining):
     def __init__(self, nlp_model_type, kg_embedding_dict):
         """Initialize the model architecture components of STonKGs."""
         # Add the number of KG entities to the default config of a standard BERT model
-        config = BertConfig.from_pretrained()
+        config = BertConfig.from_pretrained(nlp_model_type)
         config.update({'kg_vocab_size': len(kg_embedding_dict)})
         # Initialize the underlying BertForPreTraining model that will be used to build the STonKGs Transformer layers
         super().__init__(config)
 
         # Override the standard MLM head: In the underlying BertForPreTraining model, change the MLM head to the custom
         # STonKGsELMPredictionHead so that it can be used on the concatenated text/entity input
-        self.cls.predictions = SToNKGsELMPredictionHead(config)
+        self.cls.predictions = STonKGsELMPredictionHead(config)
 
         # LM backbone initialization (pre-trained BERT to get the initial embeddings) based on the specified
         # nlp_model_type (e.g. BioBERT)
@@ -182,3 +184,9 @@ class STonKGsForPreTraining(BertForPreTraining):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
+
+
+if __name__ == "__main__":
+    # Just a simple test to see if the model can be initialized without errors
+    kg_embed_dict = _prepare_df(EMBEDDINGS_PATH)
+    stonkgs_dummy_model = STonKGsForPreTraining(NLP_MODEL_TYPE, kg_embed_dict)
