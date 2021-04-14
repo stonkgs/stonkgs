@@ -68,12 +68,12 @@ def run_link_prediction(
 # TODO: add parameters/click later on
 # @click.group()
 def run_node2vec(
-    positive_graph_path: str = DUMMY_EXAMPLE_TRIPLES,
-    sep: str = '\t',
+    positive_graph_path: Optional[str] = DUMMY_EXAMPLE_TRIPLES,
+    sep: Optional[str] = '\t',
+    delete_database: Optional[bool] = True,
+    mlflow_tracking_uri: Optional[str] = MLFLOW_TRACKING_URI,
+    n_optimization_trials: Optional[int] = 5,
     seed: Optional[int] = None,
-    delete_database: bool = True,
-    mlflow_tracking_uri: str = MLFLOW_TRACKING_URI,
-    n_optimization_trials: int = 5,
 ):
     """CLI to run node2vec."""
     if seed is None:

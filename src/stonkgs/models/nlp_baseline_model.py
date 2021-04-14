@@ -4,7 +4,7 @@
 
 import logging
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import mlflow
 import numpy as np
@@ -60,14 +60,14 @@ def get_train_test_splits(
 
 
 def run_sequence_classification_cv(
-    data_path: str = DUMMY_EXAMPLE_TRIPLES,
-    sep: str = "\t",
-    model_type: str = NLP_MODEL_TYPE,
-    output_dir: str = NLP_BL_OUTPUT_DIR,
-    logging_uri_mlflow: str = MLFLOW_TRACKING_URI,
-    label_column_name: str = "class",
-    text_data_column_name: str = "evidence",
-    epochs: int = 3,
+    data_path: Optional[str] = DUMMY_EXAMPLE_TRIPLES,
+    sep: Optional[str] = "\t",
+    model_type: Optional[str] = NLP_MODEL_TYPE,
+    output_dir: Optional[str] = NLP_BL_OUTPUT_DIR,
+    logging_uri_mlflow: Optional[str] = MLFLOW_TRACKING_URI,
+    label_column_name: Optional[str] = "class",
+    text_data_column_name: Optional[str] = "evidence",
+    epochs: Optional[int] = 3,
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
     # Get data splits
