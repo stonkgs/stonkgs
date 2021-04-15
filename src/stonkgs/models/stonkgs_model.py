@@ -96,6 +96,8 @@ class STonKGsForPreTraining(BertForPreTraining):
             param.requires_grad = False
         # Get the separator token id (needed in the forward pass) from a nlp_model_type specific tokenizer
         self.lm_sep_id = BertTokenizer.from_pretrained(nlp_model_type).sep_token_id
+        # Get the mask token id (needed in the forward pass) from a nlp_model_type specific tokenizer
+        self.lm_mask_id = BertTokenizer.from_pretrained(nlp_model_type).mask_token_id
 
         # KG backbone initialization
         # TODO: move that to a custom dataset class maybe?
@@ -127,8 +129,13 @@ class STonKGsForPreTraining(BertForPreTraining):
 
         # Use the KG backbone to obtain the pre-trained entity embeddings
         # batch x half_length x hidden_size
+        # i = -1 indicates that this entity is masked, therefore it is replaced with the embedding vector of the
+        # [MASK] token
+        # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
         ent_embeddings = torch.tensor(
-            [self.kg_backbone(i) for i in input_ids[:, self.cls.predictions.half_length:]],
+            [self.kg_backbone(i) if i > 0
+             else self.lm_backbone([[self.mask_sep_id]])[0][0][0]
+             for i in input_ids[:, self.cls.predictions.half_length:]],
         )
         # TODO (later on): Just use random walks of length 127 and concatenate with [SEP] instead
         # Replace the middle with the [SEP] embedding vector to distinguish between the first and second random walk
