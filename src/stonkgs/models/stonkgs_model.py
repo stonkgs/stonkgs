@@ -8,7 +8,7 @@ import pandas as pd
 import torch
 from sklearn.model_selection import StratifiedKFold
 from torch import nn
-from transformers import BertConfig, BertForPreTraining, BertModel
+from transformers import BertConfig, BertForPreTraining, BertModel, BertTokenizer
 from transformers.models.bert.modeling_bert import BertForPreTrainingOutput, BertLMPredictionHead
 
 from stonkgs.constants import EMBEDDINGS_PATH, NLP_MODEL_TYPE
@@ -94,6 +94,8 @@ class STonKGsForPreTraining(BertForPreTraining):
         # (We only want to train the STonKGs Transformer layers)
         for param in self.lm_backbone.parameters():
             param.requires_grad = False
+        # Get the separator token id (needed in the forward pass) from a nlp_model_type specific tokenizer
+        self.lm_sep_id = BertTokenizer.from_pretrained(nlp_model_type).sep_token_id
 
         # KG backbone initialization
         # TODO: move that to a custom dataset class maybe?
@@ -128,6 +130,12 @@ class STonKGsForPreTraining(BertForPreTraining):
         ent_embeddings = torch.tensor(
             [self.kg_backbone(i) for i in input_ids[:, self.cls.predictions.half_length:]],
         )
+        # TODO (later on): Just use random walks of length 127 and concatenate with [SEP] instead
+        # Replace the middle with the [SEP] embedding vector to distinguish between the first and second random walk
+        # sequences and also add the [SEP] embedding vector at the end
+        # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
+        ent_embeddings[len(ent_embeddings)//2] = self.lm_backbone([[self.lm_sep_id]])[0][0][0]
+        ent_embeddings[-1] = self.lm_backbone([[self.lm_sep_id]])[0][0][0]
 
         # Concatenate token and entity embeddings obtained from the LM and KG backbones
         inputs_embeds = torch.cat([token_embeddings, ent_embeddings], dim=1)  # batch x seq_len x hidden_size
