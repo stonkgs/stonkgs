@@ -23,7 +23,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from stellargraph.data import EdgeSplitter
 
-from ..constants import DUMMY_EXAMPLE_TRIPLES, KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR
+from ..constants import KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR, PRETRAINING_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -68,11 +68,11 @@ def run_link_prediction(
 # TODO: add parameters/click later on
 # @click.group()
 def run_node2vec(
-    positive_graph_path: Optional[str] = DUMMY_EXAMPLE_TRIPLES,
+    positive_graph_path: Optional[str] = PRETRAINING_PATH,
     sep: Optional[str] = '\t',
     delete_database: Optional[bool] = True,
     mlflow_tracking_uri: Optional[str] = MLFLOW_TRACKING_URI,
-    n_optimization_trials: Optional[int] = 5,
+    n_optimization_trials: Optional[int] = 2,
     seed: Optional[int] = None,
 ):
     """CLI to run node2vec."""
