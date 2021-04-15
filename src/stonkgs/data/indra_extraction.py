@@ -3,7 +3,7 @@
 """Reads and prepares triples/statements for INDRA.
 
 Run with:
-python -m src.stonkgs.data.indra
+python -m src.stonkgs.data.indra_extraction
 """
 
 import logging
