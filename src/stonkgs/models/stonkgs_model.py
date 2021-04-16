@@ -145,7 +145,7 @@ class STonKGsForPreTraining(BertForPreTraining):
         # Replace the middle with the [SEP] embedding vector to distinguish between the first and second random walk
         # sequences and also add the [SEP] embedding vector at the end
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
-        ent_embeddings[len(ent_embeddings)//2] = self.lm_backbone([[self.lm_sep_id]])[0][0][0]
+        ent_embeddings[len(ent_embeddings) // 2] = self.lm_backbone([[self.lm_sep_id]])[0][0][0]
         ent_embeddings[-1] = self.lm_backbone([[self.lm_sep_id]])[0][0][0]
 
         # Concatenate token and entity embeddings obtained from the LM and KG backbones
