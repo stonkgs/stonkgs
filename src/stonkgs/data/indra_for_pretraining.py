@@ -161,7 +161,7 @@ def indra_to_pretraining_df(
             logger.info(f'Processing positive examples for row number {idx} of {len(pretraining_df)}')
 
         # 1. "Token type IDs": 0 for text tokens, 1 for entity tokens
-        token_type_ids = [0] * half_length + 1 * [half_length]
+        token_type_ids = [0] * half_length + [1] * half_length
 
         # 2. Tokenization for getting the input ids and attention masks for the text
         # Use encode_plus to also get the attention mask ("padding" mask)
