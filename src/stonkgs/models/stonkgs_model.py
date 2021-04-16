@@ -167,8 +167,9 @@ class STonKGsForPreTraining(BertForPreTraining):
         ent_embeddings[len(ent_embeddings) // 2] = self.lm_backbone(torch.tensor([[self.lm_sep_id]]))[0][0][0]
         ent_embeddings[-1] = self.lm_backbone(torch.tensor([[self.lm_sep_id]]))[0][0][0]
 
-        # Concatenate token and entity embeddings obtained from the LM and KG backbones
-        inputs_embeds = torch.cat([token_embeddings, ent_embeddings], dim=1)  # batch x seq_len x hidden_size
+        # Concatenate token and entity embeddings obtained from the LM and KG backbones and cast to float
+        # batch x seq_len x hidden_size
+        inputs_embeds = torch.cat([token_embeddings, ent_embeddings], dim=1).type(torch.FloatTensor)
 
         # Get the hidden states from the basic STonKGs Transformer layers
         # batch x half_length x hidden_size
@@ -233,7 +234,7 @@ if __name__ == "__main__":
     # Load the data and get a first example
     pretraining_data = _load_pre_training_data()
     # Put it into a data loader
-    pretraining_dataloader = torch.utils.data.DataLoader(pretraining_data, batch_size=32)
+    pretraining_dataloader = torch.utils.data.DataLoader(pretraining_data, batch_size=4)
 
     # Get a batch as an example
     example = next(iter(pretraining_dataloader))
@@ -243,7 +244,7 @@ if __name__ == "__main__":
         input_ids=example['input_ids'],
         attention_mask=example['attention_mask'],
         token_type_ids=example['token_type_ids'],
-        masked_lm_labels=example['input_ids'],
+        masked_lm_labels=example['masked_lm_labels'],
         ent_masked_lm_labels=example['ent_masked_lm_labels'],
         next_sentence_labels=example['next_sentence_labels'],
     )
