@@ -109,15 +109,19 @@ class STonKGsForPreTraining(BertForPreTraining):
 
     def forward(
         self,
+        # required parameters
         input_ids=None,
         attention_mask=None,
         token_type_ids=None,
-        position_ids=None,
-        head_mask=None,
         masked_lm_labels=None,
         ent_masked_lm_labels=None,
         next_sentence_labels=None,
+        # determined the return type
         return_dict=None,
+        # position_ids will usually stay None here so that default BERT position_ids are used
+        position_ids=None,
+        # in case certain masks do need to be canceled out
+        head_mask=None,
     ):
         """Perform one forward pass for a given sequence of text_input_ids + ent_input_ids."""
         # The code is based on CoLAKE: https://github.com/txsun1997/CoLAKE/blob/master/pretrain/model.py
