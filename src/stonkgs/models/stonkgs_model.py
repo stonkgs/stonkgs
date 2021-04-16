@@ -63,7 +63,7 @@ class STonKGsELMPredictionHead(BertLMPredictionHead):
         self.entity_decoder = nn.Linear(config.hidden_size, config.kg_vocab_size, bias=False)
 
         # Determine half of the maximum sequence length based on the config
-        self.half_length = config.max_position_embeddings / 2
+        self.half_length = config.max_position_embeddings // 2
 
         # Set the biases differently for the decoder layers
         self.text_bias = nn.Parameter(torch.zeros(config.vocab_size))
@@ -119,8 +119,13 @@ class STonKGsForPreTraining(BertForPreTraining):
         # Generate numeric indices for the KG node names (iterating .keys() is deterministic)
         self.kg_idx_to_name = {i: key for i, key in enumerate(kg_embedding_dict.keys())}
         # Initialize KG index to embeddings based on the provided kg_embedding_dict
-        self.kg_backbone = {i: kg_embedding_dict[self.kg_idx_to_name[i]]
+        self.kg_backbone = {i: torch.tensor(kg_embedding_dict[self.kg_idx_to_name[i]])
                             for i in self.kg_idx_to_name.keys()}
+        # Add the MASK (LM backbone) embedding vector to the KG backbone for masked entity tokens
+        # i = -1 indicates that this entity is masked, therefore it is replaced with the embedding vector of the
+        # [MASK] token
+        # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
+        self.kg_backbone[-1] = self.lm_backbone(torch.tensor([[self.lm_mask_id]]))[0][0][0]
 
     def forward(
         self,
@@ -148,21 +153,19 @@ class STonKGsForPreTraining(BertForPreTraining):
 
         # Use the KG backbone to obtain the pre-trained entity embeddings
         # batch x half_length x hidden_size
-        # i = -1 indicates that this entity is masked, therefore it is replaced with the embedding vector of the
-        # [MASK] token
-        # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
-        # TODO: adapt to batch dimension
-        ent_embeddings = torch.tensor(
-            [self.kg_backbone(i) if i > 0
-             else self.lm_backbone([[self.mask_sep_id]])[0][0][0]
-             for i in input_ids[:, self.cls.predictions.half_length:]],
+        ent_embeddings = torch.stack([
+            # for each numeric index in the random walks sequence: get the embedding vector from the KG backbone
+            torch.stack([self.kg_backbone[i.item()] for i in j])
+            # for each example in the batch: get the random walks sequence
+            for j in input_ids[:, self.cls.predictions.half_length:]],
         )
+
         # TODO (later on): Just use random walks of length 127 and concatenate with [SEP] instead
         # Replace the middle with the [SEP] embedding vector to distinguish between the first and second random walk
         # sequences and also add the [SEP] embedding vector at the end
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
-        ent_embeddings[len(ent_embeddings) // 2] = self.lm_backbone([[self.lm_sep_id]])[0][0][0]
-        ent_embeddings[-1] = self.lm_backbone([[self.lm_sep_id]])[0][0][0]
+        ent_embeddings[len(ent_embeddings) // 2] = self.lm_backbone(torch.tensor([[self.lm_sep_id]]))[0][0][0]
+        ent_embeddings[-1] = self.lm_backbone(torch.tensor([[self.lm_sep_id]]))[0][0][0]
 
         # Concatenate token and entity embeddings obtained from the LM and KG backbones
         inputs_embeds = torch.cat([token_embeddings, ent_embeddings], dim=1)  # batch x seq_len x hidden_size
@@ -235,8 +238,7 @@ if __name__ == "__main__":
     # Get a batch as an example
     example = next(iter(pretraining_dataloader))
 
-    # TODO: replace with batch
-    # Simple test of a forward pass
+    # Simple test of a forward pass of one batch
     stonkgs_dummy_model(
         input_ids=example['input_ids'],
         attention_mask=example['attention_mask'],
