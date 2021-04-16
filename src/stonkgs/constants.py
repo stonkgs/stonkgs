@@ -31,6 +31,7 @@ RELATION_TYPE_DIR = os.path.join(INPUT_DIR, 'relation_type')
 # Path for the pretraining data
 PRETRAINING_DIR = os.path.join(INPUT_DIR, 'pretraining')
 PRETRAINING_PATH = os.path.join(PRETRAINING_DIR, 'pretraining_triples.tsv')
+PRETRAINING_PREPROCESSED_DF_PATH = os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed.pkl')
 
 # Move to parent folder by os.sep.join(PROJECT_DIR.split(os.sep)[:-1]) to get to the models folder
 MODELS_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'models')
