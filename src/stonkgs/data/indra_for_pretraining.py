@@ -91,7 +91,11 @@ def _add_negative_nsp_samples(
         for i in negative_sample_idx
     ]
 
-    for i, j in zip(negative_sample_idx, negative_sample_idx_partner):
+    for idx, (i, j) in enumerate(zip(negative_sample_idx, negative_sample_idx_partner)):
+        # Log the progress
+        if idx % 1000 == 0:
+            logger.info(f'Processing negative examples for row number {idx} of {len(processed_df)}')
+
         # Get the features from i
         text_features = processed_df.iloc[i]
         # Get the features from j
@@ -142,7 +146,7 @@ def indra_to_pretraining_df(
         return
 
     # Get the length of the text or entity embedding sequences (2 random walks = entity embedding sequence length)
-    half_length = len(random_walk_idx_dict.values()[0]) * 2
+    half_length = len(next(iter(random_walk_idx_dict.values()))) * 2
 
     # Initialize a tokenizer used for getting the text token ids
     tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
@@ -151,6 +155,10 @@ def indra_to_pretraining_df(
     pre_training_preprocessed = []
 
     for idx, row in pretraining_df.iterrows():
+        # Log the progress
+        if idx % 1000 == 0:
+            logger.info(f'Processing positive examples for row number {idx} of {len(pretraining_df)}')
+
         # 1. "Token type IDs": 0 for text tokens, 1 for entity tokens
         token_type_ids = [0] * half_length + 1 * [half_length]
 
@@ -206,7 +214,9 @@ def indra_to_pretraining_df(
     )
 
     # And append them to the original data
-    pre_training_preprocessed_df.append(pre_training_negative_samples)
+    pre_training_preprocessed_df = pre_training_preprocessed_df.append(
+        pre_training_negative_samples
+    ).reset_index()
 
     # Shuffle the dataframe just to be sure
     pre_training_preprocessed_df_shuffled = pre_training_preprocessed_df.iloc[
