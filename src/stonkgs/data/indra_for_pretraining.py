@@ -25,9 +25,9 @@ logging.basicConfig(level=logging.INFO)
 def _replace_mlm_tokens(
     tokens: List[int],
     vocab_len: int,
-    mask_id: Optional[int] = 103,
-    masked_tokens_percentage: Optional[float] = 0.15,
-    unmasked_label_id: Optional[int] = -100,
+    mask_id: int = 103,
+    masked_tokens_percentage: float = 0.15,
+    unmasked_label_id: int = -100,
 ):
     """Applies masking to the given sequence with numeric indices and returns the manipulated sequence + labels."""
     # This code is taken from: https://d2l.ai/chapter_natural-language-processing-pretraining/
@@ -71,7 +71,7 @@ def _replace_mlm_tokens(
 
 def _add_negative_nsp_samples(
     processed_df: pd.DataFrame,
-    nsp_negative_proportion: Optional[float] = 0.5,
+    nsp_negative_proportion: float = 0.5,
 ):
     """Generates non-matching text-entity pairs (negative NSP samples)."""
     negative_samples = []
@@ -120,11 +120,11 @@ def _add_negative_nsp_samples(
 
 
 def indra_to_pretraining_df(
-    embedding_name_to_vector_path: Optional[str] = EMBEDDINGS_PATH,
-    embedding_name_to_random_walk_path: Optional[str] = RANDOM_WALKS_PATH,
-    pre_training_path: Optional[str] = PRETRAINING_PATH,
-    nlp_model_type: Optional[str] = NLP_MODEL_TYPE,
-    nsp_negative_proportion: Optional[float] = 0.5,
+    embedding_name_to_vector_path: str = EMBEDDINGS_PATH,
+    embedding_name_to_random_walk_path: str = RANDOM_WALKS_PATH,
+    pre_training_path: str = PRETRAINING_PATH,
+    nlp_model_type: str = NLP_MODEL_TYPE,
+    nsp_negative_proportion: float = 0.5,
 ):
     """Preprocesses the INDRA statements from the pre-training file so that it contains all the necessary attributes."""
 
