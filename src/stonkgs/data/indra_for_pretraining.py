@@ -94,7 +94,8 @@ def _add_negative_nsp_samples(
     for idx, (i, j) in enumerate(zip(negative_sample_idx, negative_sample_idx_partner)):
         # Log the progress
         if idx % 1000 == 0:
-            logger.info(f'Processing negative examples for row number {idx} of {len(processed_df)}')
+            logger.info(f'Processing negative examples for row number {idx} of '
+                        f'{int(len(processed_df) * nsp_negative_proportion)}')
 
         # Get the features from i
         text_features = processed_df.iloc[i]
@@ -228,6 +229,10 @@ def indra_to_pretraining_df(
         os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed.tsv'),
         sep='\t',
         index=False,
+    )
+    # Pickle it, too (easier for reading in the lists in the pandas dataframe)
+    pre_training_preprocessed_df_shuffled.to_pickle(
+        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed.pkl'),
     )
 
     return pre_training_preprocessed_df
