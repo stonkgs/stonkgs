@@ -6,13 +6,28 @@ from typing import List
 
 import pandas as pd
 import torch
+from datasets import Dataset
 from sklearn.model_selection import StratifiedKFold
 from torch import nn
 from transformers import BertConfig, BertForPreTraining, BertModel, BertTokenizer
 from transformers.models.bert.modeling_bert import BertForPreTrainingOutput, BertLMPredictionHead
 
-from stonkgs.constants import EMBEDDINGS_PATH, NLP_MODEL_TYPE
+from stonkgs.constants import EMBEDDINGS_PATH, NLP_MODEL_TYPE, PRETRAINING_PREPROCESSED_DF_PATH
 from stonkgs.models.kg_baseline_model import _prepare_df
+
+
+def _load_pre_training_data(
+    pretraining_preprocessed_path: str = PRETRAINING_PREPROCESSED_DF_PATH,
+    dataset_format: str = 'torch',
+):
+    """Creates a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
+    # Load the pickled preprocessed dataframe
+    pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)
+    # TODO (later on): Use device='cuda' for format_kwargs in set_format?
+    pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
+    pretraining_dataset.set_format(dataset_format)
+
+    return pretraining_dataset
 
 
 def get_train_test_splits(
@@ -136,6 +151,7 @@ class STonKGsForPreTraining(BertForPreTraining):
         # i = -1 indicates that this entity is masked, therefore it is replaced with the embedding vector of the
         # [MASK] token
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
+        # TODO: adapt to batch dimension
         ent_embeddings = torch.tensor(
             [self.kg_backbone(i) if i > 0
              else self.lm_backbone([[self.mask_sep_id]])[0][0][0]
@@ -210,3 +226,22 @@ if __name__ == "__main__":
     # Just a simple test to see if the model can be initialized without errors
     kg_embed_dict = _prepare_df(EMBEDDINGS_PATH)
     stonkgs_dummy_model = STonKGsForPreTraining(NLP_MODEL_TYPE, kg_embed_dict)
+
+    # Load the data and get a first example
+    pretraining_data = _load_pre_training_data()
+    # Put it into a data loader
+    pretraining_dataloader = torch.utils.data.DataLoader(pretraining_data, batch_size=32)
+
+    # Get a batch as an example
+    example = next(iter(pretraining_dataloader))
+
+    # TODO: replace with batch
+    # Simple test of a forward pass
+    stonkgs_dummy_model(
+        input_ids=example['input_ids'],
+        attention_mask=example['attention_mask'],
+        token_type_ids=example['token_type_ids'],
+        masked_lm_labels=example['input_ids'],
+        ent_masked_lm_labels=example['ent_masked_lm_labels'],
+        next_sentence_labels=example['next_sentence_labels'],
+    )
