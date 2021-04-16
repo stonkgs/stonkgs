@@ -20,7 +20,7 @@ def _load_pre_training_data(
     pretraining_preprocessed_path: str = PRETRAINING_PREPROCESSED_DF_PATH,
     dataset_format: str = 'torch',
 ):
-    """Creates a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
+    """Create a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
     # Load the pickled preprocessed dataframe
     pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)
     # TODO (later on): Use device='cuda' for format_kwargs in set_format?
