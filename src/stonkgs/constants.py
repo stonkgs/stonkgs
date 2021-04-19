@@ -38,6 +38,7 @@ MODELS_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'models')
 NLP_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'nlp-baseline')
 KG_HPO_DIR = os.path.join(MODELS_DIR, 'kg-hpo')
 KG_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'kg-baseline')
+STONKGS_PRETRAINING_DIR = os.path.join(MODELS_DIR, 'stonkgs-pretraining')
 STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, 'stonkgs')
 
 EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, 'embeddings_best_model.tsv')
