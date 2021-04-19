@@ -40,7 +40,7 @@ logging.basicConfig(level=logging.INFO)
 def _load_pre_training_data(
     pretraining_preprocessed_path: str = PRETRAINING_PREPROCESSED_DF_PATH,
     dataset_format: str = 'torch',
-):
+) -> Dataset:
     """Create a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
     # Load the pickled preprocessed dataframe
     pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)
