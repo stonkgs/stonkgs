@@ -190,17 +190,17 @@ class STonKGsForPreTraining(BertForPreTraining):
         # sequences and also add the [SEP] embedding vector at the end
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
         ent_embeddings[len(ent_embeddings) // 2] = self.lm_backbone(
-            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device)
+            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device),
         )[0][0][0]
         ent_embeddings[-1] = self.lm_backbone(
-            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device)
+            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device),
         )[0][0][0]
 
         # Concatenate token and entity embeddings obtained from the LM and KG backbones and cast to float
         # batch x seq_len x hidden_size
         inputs_embeds = torch.cat(
             [token_embeddings, ent_embeddings.to(token_embeddings.device)],
-            dim=1
+            dim=1,
         ).type(torch.FloatTensor)
 
         # Get the hidden states from the basic STonKGs Transformer layers
