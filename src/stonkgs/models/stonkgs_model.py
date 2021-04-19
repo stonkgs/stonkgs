@@ -44,9 +44,12 @@ def _load_pre_training_data(
     """Create a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
     # Load the pickled preprocessed dataframe
     pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)
-    # TODO (later on): Use device='cuda' for format_kwargs in set_format?
     pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
-    pretraining_dataset.set_format(dataset_format)
+    # Put the dataset on the GPU if available
+    if torch.cuda.is_available():
+        pretraining_dataset.set_format(dataset_format, device='cuda')
+    else:
+        pretraining_dataset.set_format(dataset_format)
 
     return pretraining_dataset
 
@@ -126,6 +129,9 @@ class STonKGsForPreTraining(BertForPreTraining):
         # LM backbone initialization (pre-trained BERT to get the initial embeddings) based on the specified
         # nlp_model_type (e.g. BioBERT)
         self.lm_backbone = BertModel.from_pretrained(nlp_model_type)
+        # Put the LM backbone on the GPU if possible
+        if torch.cuda.is_available():
+            self.lm_backbone.to('cuda')
         # Freeze the parameters of the LM backbone so that they're not updated during training
         # (We only want to train the STonKGs Transformer layers)
         for param in self.lm_backbone.parameters():
@@ -140,13 +146,13 @@ class STonKGsForPreTraining(BertForPreTraining):
         # Generate numeric indices for the KG node names (iterating .keys() is deterministic)
         self.kg_idx_to_name = {i: key for i, key in enumerate(kg_embedding_dict.keys())}
         # Initialize KG index to embeddings based on the provided kg_embedding_dict
-        self.kg_backbone = {i: torch.tensor(kg_embedding_dict[self.kg_idx_to_name[i]])
+        self.kg_backbone = {i: torch.tensor(kg_embedding_dict[self.kg_idx_to_name[i]]).to(self.lm_backbone.device)
                             for i in self.kg_idx_to_name.keys()}
         # Add the MASK (LM backbone) embedding vector to the KG backbone for masked entity tokens
         # i = -1 indicates that this entity is masked, therefore it is replaced with the embedding vector of the
         # [MASK] token
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
-        self.kg_backbone[-1] = self.lm_backbone(torch.tensor([[self.lm_mask_id]]))[0][0][0]
+        self.kg_backbone[-1] = self.lm_backbone(torch.tensor([[self.lm_mask_id]]).to(self.lm_backbone.device))[0][0][0]
 
     def forward(
         self,
@@ -159,8 +165,6 @@ class STonKGsForPreTraining(BertForPreTraining):
         next_sentence_labels=None,
         # determined the return type
         return_dict=None,
-        # position_ids will usually stay None here so that default BERT position_ids are used
-        position_ids=None,
         # in case certain masks do need to be canceled out
         head_mask=None,
     ):
@@ -185,12 +189,19 @@ class STonKGsForPreTraining(BertForPreTraining):
         # Replace the middle with the [SEP] embedding vector to distinguish between the first and second random walk
         # sequences and also add the [SEP] embedding vector at the end
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
-        ent_embeddings[len(ent_embeddings) // 2] = self.lm_backbone(torch.tensor([[self.lm_sep_id]]))[0][0][0]
-        ent_embeddings[-1] = self.lm_backbone(torch.tensor([[self.lm_sep_id]]))[0][0][0]
+        ent_embeddings[len(ent_embeddings) // 2] = self.lm_backbone(
+            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device)
+        )[0][0][0]
+        ent_embeddings[-1] = self.lm_backbone(
+            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device)
+        )[0][0][0]
 
         # Concatenate token and entity embeddings obtained from the LM and KG backbones and cast to float
         # batch x seq_len x hidden_size
-        inputs_embeds = torch.cat([token_embeddings, ent_embeddings], dim=1).type(torch.FloatTensor)
+        inputs_embeds = torch.cat(
+            [token_embeddings, ent_embeddings.to(token_embeddings.device)],
+            dim=1
+        ).type(torch.FloatTensor)
 
         # Get the hidden states from the basic STonKGs Transformer layers
         # batch x half_length x hidden_size
@@ -198,7 +209,6 @@ class STonKGsForPreTraining(BertForPreTraining):
             inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
             token_type_ids=token_type_ids,
-            position_ids=position_ids,
             head_mask=head_mask,
             return_dict=None,
         )
@@ -328,4 +338,5 @@ def pretrain_stonkgs(
 
 if __name__ == "__main__":
     # TODO: divide this class into three classes: stonkgs_model, stonkgs_pretraining, stonkgs_finetuning
+    # TODO: make it use the GPU
     pretrain_stonkgs(overwrite_output_dir=True)
