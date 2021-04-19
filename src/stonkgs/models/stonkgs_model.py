@@ -81,8 +81,8 @@ class STonKGsELMPredictionHead(BertLMPredictionHead):
 
         # The first half is processed with the text decoder, the second with the entity decoder to map to the text
         # vocab size and kg vocab size, respectively
-        text_hidden_states_to_vocab = self.text_decoder(hidden_states[:self.half_length])
-        ent_hidden_states_to_kg_vocab = self.entity_decoder(hidden_states[self.half_length:])
+        text_hidden_states_to_vocab = self.text_decoder(hidden_states[:, :self.half_length])
+        ent_hidden_states_to_kg_vocab = self.entity_decoder(hidden_states[:, self.half_length:])
 
         return text_hidden_states_to_vocab, ent_hidden_states_to_kg_vocab
 
