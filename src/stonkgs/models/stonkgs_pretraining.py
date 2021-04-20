@@ -9,6 +9,7 @@ from typing import Optional
 import mlflow
 import pandas as pd
 import torch
+# import torch.autograd.profiler as profiler
 from accelerate import Accelerator
 from datasets import Dataset
 from transformers import (
@@ -53,7 +54,7 @@ def pretrain_stonkgs(
     batch_size: int = 8,
     lr: float = 1e-4,
     logging_dir: Optional[str] = MLFLOW_TRACKING_URI,
-    logging_steps: int = 100,
+    logging_steps: int = 200,
     max_steps: int = 10000,
     overwrite_output_dir: bool = False,
     save_limit: int = 5,
@@ -140,3 +141,10 @@ def pretrain_stonkgs(
 if __name__ == '__main__':
     # Run the pre-training procedure, overwrite the output dir for now (since we're only working with dummy data)
     pretrain_stonkgs(overwrite_output_dir=True)
+
+    # (Optional) examine the runtime
+    # with profiler.profile() as prof:
+    #    with profiler.record_function("model_inference"):
+    #        pretrain_stonkgs(overwrite_output_dir=True, max_steps=3)
+
+    # logger.info(prof.key_averages().table(sort_by="cpu_time_total"))  # or replace by something like gpu_time_total
