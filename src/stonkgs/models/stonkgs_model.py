@@ -1,76 +1,22 @@
 # -*- coding: utf-8 -*-
 
-"""STonKGs model on the fine-tuning classification task, assuming the model embeddings are pre-trained."""
+"""STonKGs model architecture components."""
 
 import logging
-import os
-from typing import List, Optional
 
-import mlflow
-import pandas as pd
 import torch
-from accelerate import Accelerator
-from datasets import Dataset
-from sklearn.model_selection import StratifiedKFold
 from torch import nn
 from transformers import (
     BertConfig,
     BertForPreTraining,
     BertModel,
     BertTokenizer,
-    Trainer,
-    TrainingArguments,
 )
 from transformers.models.bert.modeling_bert import BertForPreTrainingOutput, BertLMPredictionHead
-from transformers.trainer_utils import get_last_checkpoint
-
-from stonkgs.constants import (
-    EMBEDDINGS_PATH,
-    MLFLOW_TRACKING_URI,
-    NLP_MODEL_TYPE,
-    PRETRAINING_PREPROCESSED_DF_PATH,
-    STONKGS_PRETRAINING_DIR,
-)
-from stonkgs.models.kg_baseline_model import _prepare_df
 
 # Initialize logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
-
-
-def _load_pre_training_data(
-    pretraining_preprocessed_path: str = PRETRAINING_PREPROCESSED_DF_PATH,
-    dataset_format: str = 'torch',
-) -> Dataset:
-    """Create a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
-    # Load the pickled preprocessed dataframe
-    pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)
-    pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
-    # Put the dataset on the GPU if available
-    if torch.cuda.is_available():
-        pretraining_dataset.set_format(dataset_format, device='cuda')
-    else:
-        pretraining_dataset.set_format(dataset_format)
-
-    return pretraining_dataset
-
-
-def get_train_test_splits(
-    train_data: pd.DataFrame,
-    type_column_name: str = "class",
-    random_seed: int = 42,
-    n_splits: int = 5,
-) -> List:
-    """Return train/test indices for n_splits many splits based on the fine-tuning dataset that is passed."""
-    # Leave out the label in the dataset
-    X = train_data.drop(type_column_name, axis=1)  # noqa: N806
-    y = train_data[type_column_name]
-
-    # TODO: think about whether a validation split is necessary
-    # For now: implement stratified train/test splits
-    skf = StratifiedKFold(n_splits=n_splits, random_state=random_seed, shuffle=False)
-
-    return [[train_idx, test_idx] for train_idx, test_idx in skf.split(X, y)]
 
 
 class STonKGsELMPredictionHead(BertLMPredictionHead):
@@ -127,8 +73,8 @@ class STonKGsForPreTraining(BertForPreTraining):
         # STonKGsELMPredictionHead so that it can be used on the concatenated text/entity input
         self.cls.predictions = STonKGsELMPredictionHead(config)
 
-        # LM backbone initialization (pre-trained BERT to get the initial embeddings) based on the specified
-        # nlp_model_type (e.g. BioBERT)
+        # Language Model (LM) backbone initialization (pre-trained BERT to get the initial embeddings)
+        # based on the specified nlp_model_type (e.g. BioBERT)
         self.lm_backbone = BertModel.from_pretrained(nlp_model_type)
         # Put the LM backbone on the GPU if possible
         if torch.cuda.is_available():
@@ -220,7 +166,7 @@ class STonKGsForPreTraining(BertForPreTraining):
         # Seq_relationship_score = NSP score
         # prediction_scores = Text MLM and Entity "MLM" scores
         prediction_scores, seq_relationship_score = self.cls(sequence_output, pooled_output)
-        # The custom SToNKGsELMPredictionHead returns a pair of prediction score sequences for tokens and entities,
+        # The custom STonKGsELMPredictionHead returns a pair of prediction score sequences for tokens and entities,
         # respectively
         token_prediction_scores, entity_predictions_scores = prediction_scores
 
@@ -256,97 +202,3 @@ class STonKGsForPreTraining(BertForPreTraining):
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
         )
-
-
-def pretrain_stonkgs(
-    batch_size: int = 8,
-    lr: float = 1e-4,
-    logging_dir: Optional[str] = MLFLOW_TRACKING_URI,
-    logging_steps: int = 100,
-    max_steps: int = 10000,
-    overwrite_output_dir: bool = False,
-    save_limit: int = 5,
-    save_steps: int = 5000,
-    training_dir: str = STONKGS_PRETRAINING_DIR,
-):
-    """Run the pre-training procedure for the STonKGs model based on the transformers Trainer and TrainingArguments."""
-    # Part of this code is taken from
-    # https://github.com/huggingface/transformers/blob/master/examples/language-modeling/run_mlm.py
-
-    # Logging with mlflow
-    # End previous run
-    mlflow.end_run()
-    # Initialize mlflow run, set tracking URI to use the same experiment for all runs,
-    # so that one can compare them
-    mlflow.set_tracking_uri(logging_dir)
-    mlflow.set_experiment('STonKGs Pre-Training')
-
-    # Initialize the STonKGs model
-    kg_embed_dict = _prepare_df(EMBEDDINGS_PATH)
-    stonkgs_model = STonKGsForPreTraining(NLP_MODEL_TYPE, kg_embed_dict)
-
-    # Add the huggingface accelerator
-    accelerator = Accelerator()
-    # Use the device given by the `accelerator` object and put the model on there
-    device = accelerator.device
-    stonkgs_model.to(device)
-
-    # Initialize the dataset
-    pretraining_data = _load_pre_training_data()
-
-    # Accelerate the model
-    stonkgs_model = accelerator.prepare(stonkgs_model)
-
-    # Initialize the TrainingArguments
-    training_args = TrainingArguments(
-        output_dir=training_dir,
-        overwrite_output_dir=overwrite_output_dir,
-        do_train=True,
-        per_device_train_batch_size=batch_size,
-        max_steps=max_steps,  # Use max_steps rather than num_training_epochs
-        learning_rate=lr,  # Default is to use that lr with a linear scheduler
-        logging_dir=logging_dir,
-        logging_steps=logging_steps,
-        save_steps=save_steps,
-        save_total_limit=save_limit,
-        report_to=['mlflow'],
-    )
-
-    # Detecting last checkpoint
-    last_checkpoint = None
-    if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
-        last_checkpoint = get_last_checkpoint(training_args.output_dir)
-        if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
-            raise ValueError(
-                f"Output directory ({training_args.output_dir}) already exists and is not empty. ",
-                "Use --overwrite_output_dir to overcome.",
-            )
-        elif last_checkpoint is not None:
-            logger.info(
-                f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change ",
-                "the `--output_dir` or add `--overwrite_output_dir` to train from scratch.",
-            )
-
-    # Initialize the Trainer
-    trainer = Trainer(
-        model=stonkgs_model,
-        args=training_args,
-        train_dataset=pretraining_data,
-    )
-    # And train STonKGs to the moon
-    train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
-    trainer.save_model()  # Saves the tokenizer too for easy upload
-    metrics = train_result.metrics
-
-    # Log the number of pre-training samples
-    metrics["train_samples"] = len(pretraining_data)
-    # Log all metrics
-    trainer.log_metrics("train", metrics)
-    trainer.save_metrics("train", metrics)
-    trainer.save_state()
-
-
-if __name__ == "__main__":
-    # TODO: divide this class into three classes: stonkgs_model, stonkgs_pretraining, stonkgs_finetuning
-    # TODO: make it use the GPU
-    pretrain_stonkgs(overwrite_output_dir=True)
