@@ -9,6 +9,7 @@ from typing import List, Optional
 import mlflow
 import pandas as pd
 import torch
+from accelerate import Accelerator
 from datasets import Dataset
 from sklearn.model_selection import StratifiedKFold
 from torch import nn
@@ -201,7 +202,7 @@ class STonKGsForPreTraining(BertForPreTraining):
         inputs_embeds = torch.cat(
             [token_embeddings, ent_embeddings.to(token_embeddings.device)],
             dim=1,
-        ).type(torch.FloatTensor)
+        ).type(torch.FloatTensor).to(self.device)
 
         # Get the hidden states from the basic STonKGs Transformer layers
         # batch x half_length x hidden_size
@@ -284,6 +285,18 @@ def pretrain_stonkgs(
     kg_embed_dict = _prepare_df(EMBEDDINGS_PATH)
     stonkgs_model = STonKGsForPreTraining(NLP_MODEL_TYPE, kg_embed_dict)
 
+    # Add the huggingface accelerator
+    accelerator = Accelerator()
+    # Use the device given by the `accelerator` object and put the model on there
+    device = accelerator.device
+    stonkgs_model.to(device)
+
+    # Initialize the dataset
+    pretraining_data = _load_pre_training_data()
+
+    # Accelerate the model
+    stonkgs_model = accelerator.prepare(stonkgs_model)
+
     # Initialize the TrainingArguments
     training_args = TrainingArguments(
         output_dir=training_dir,
@@ -313,9 +326,6 @@ def pretrain_stonkgs(
                 f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change ",
                 "the `--output_dir` or add `--overwrite_output_dir` to train from scratch.",
             )
-
-    # Initialize the dataset
-    pretraining_data = _load_pre_training_data()
 
     # Initialize the Trainer
     trainer = Trainer(
