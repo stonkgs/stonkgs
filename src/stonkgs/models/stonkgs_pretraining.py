@@ -8,7 +8,6 @@ from typing import Optional
 
 import mlflow
 import pandas as pd
-import torch
 # import torch.autograd.profiler as profiler
 from accelerate import Accelerator
 from datasets import Dataset
@@ -41,11 +40,9 @@ def _load_pre_training_data(
     # Load the pickled preprocessed dataframe
     pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)
     pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
-    # Put the dataset on the GPU if available
-    if torch.cuda.is_available():
-        pretraining_dataset.set_format(dataset_format, device='cuda')
-    else:
-        pretraining_dataset.set_format(dataset_format)
+    # Do not put the dataset on the GPU even if possible, it is only stealing GPU space, use the dataloader instead
+    # Putting it on the GPU might only be worth it if 4+ GPUs are used
+    pretraining_dataset.set_format(dataset_format)
 
     return pretraining_dataset
 
@@ -53,8 +50,10 @@ def _load_pre_training_data(
 def pretrain_stonkgs(
     batch_size: int = 8,
     lr: float = 1e-4,
+    dataloader_num_workers: int = 8,  # empirically determined value, I'm open to changing it :)
+    gradient_accumulation_steps: int = 1,
     logging_dir: Optional[str] = MLFLOW_TRACKING_URI,
-    logging_steps: int = 200,
+    logging_steps: int = 100,
     max_steps: int = 10000,
     overwrite_output_dir: bool = False,
     save_limit: int = 5,
@@ -102,6 +101,11 @@ def pretrain_stonkgs(
         save_steps=save_steps,
         save_total_limit=save_limit,
         report_to=['mlflow'],
+        # Make the dataloader faster by using pinning the memory and using multiple workers
+        dataloader_pin_memory=True,
+        dataloader_num_workers=dataloader_num_workers,
+        # Effectively increase the batch size by gradient acc: batch_size = old_batch_size x grad_acc_steps
+        gradient_accumulation_steps=gradient_accumulation_steps,
     )
 
     # Detecting last checkpoint
@@ -140,7 +144,8 @@ def pretrain_stonkgs(
 
 if __name__ == '__main__':
     # Run the pre-training procedure, overwrite the output dir for now (since we're only working with dummy data)
-    pretrain_stonkgs(overwrite_output_dir=True)
+    # Effective batch size in this example: 32 x 8 = 256
+    pretrain_stonkgs(overwrite_output_dir=True, max_steps=200, batch_size=32, gradient_accumulation_steps=8)
 
     # (Optional) examine the runtime
     # with profiler.profile() as prof:
