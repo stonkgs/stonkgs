@@ -19,6 +19,7 @@ from transformers.trainer_utils import get_last_checkpoint
 
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
+    LOCAL_EXECUTION,
     MLFLOW_TRACKING_URI,
     NLP_MODEL_TYPE,
     PRETRAINING_PREPROCESSED_DF_PATH,
@@ -55,6 +56,7 @@ def pretrain_stonkgs(
     logging_dir: Optional[str] = MLFLOW_TRACKING_URI,
     logging_steps: int = 100,
     max_steps: int = 10000,
+    monitor_each_loss: bool = False,
     overwrite_output_dir: bool = False,
     save_limit: int = 5,
     save_steps: int = 5000,
@@ -74,7 +76,7 @@ def pretrain_stonkgs(
 
     # Initialize the STonKGs model
     kg_embed_dict = _prepare_df(EMBEDDINGS_PATH)
-    stonkgs_model = STonKGsForPreTraining(NLP_MODEL_TYPE, kg_embed_dict)
+    stonkgs_model = STonKGsForPreTraining(NLP_MODEL_TYPE, kg_embed_dict, monitor_each_loss)
 
     # Add the huggingface accelerator
     accelerator = Accelerator()
@@ -144,8 +146,25 @@ def pretrain_stonkgs(
 
 if __name__ == '__main__':
     # Run the pre-training procedure, overwrite the output dir for now (since we're only working with dummy data)
-    # Effective batch size in this example: 32 x 8 = 256
-    pretrain_stonkgs(overwrite_output_dir=True, max_steps=200, batch_size=32, gradient_accumulation_steps=8)
+    # Distinguish between local and cluster execution depending on what's set in the .env file and read in constants.py
+    if LOCAL_EXECUTION.lower() in ['true', '1']:
+        # Small batch size and number of steps for local execution
+        pretrain_stonkgs(
+            overwrite_output_dir=True,
+            max_steps=10,
+            batch_size=4,
+            monitor_each_loss=True,  # log the individual losses for now
+        )
+    else:
+        # Effective batch size in this example: 32 x 8 = 256
+        # TODO: use a config file for cluster execution
+        pretrain_stonkgs(
+            overwrite_output_dir=True,
+            max_steps=200,
+            batch_size=32,
+            gradient_accumulation_steps=8,
+            monitor_each_loss=True,  # log the individual losses for now
+        )
 
     # (Optional) examine the runtime
     # with profiler.profile() as prof:
