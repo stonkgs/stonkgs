@@ -47,9 +47,11 @@ RANDOM_WALKS_PATH = os.path.join(KG_HPO_DIR, 'random_walks_best_model.tsv')
 # Move to parent folder by os.sep.join(PROJECT_DIR.split(os.sep)[:-1]) to get to the logs folder
 LOG_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'logs')
 
-# Load mlflow tracking URI from environment variables
+# Load constants from environment variables (set in the .env file)
 load_dotenv()
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
+# Load a constant for distinguishing between local and cluster execution (default = True)
+LOCAL_EXECUTION = os.getenv("LOCAL_EXECUTION") or "True"
 
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(MODELS_DIR, exist_ok=True)
