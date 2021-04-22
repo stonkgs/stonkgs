@@ -56,7 +56,6 @@ def pretrain_stonkgs(
     logging_dir: Optional[str] = MLFLOW_TRACKING_URI,
     logging_steps: int = 100,
     max_steps: int = 10000,
-    monitor_each_loss: bool = False,
     overwrite_output_dir: bool = False,
     save_limit: int = 5,
     save_steps: int = 5000,
@@ -76,7 +75,7 @@ def pretrain_stonkgs(
 
     # Initialize the STonKGs model
     kg_embed_dict = _prepare_df(EMBEDDINGS_PATH)
-    stonkgs_model = STonKGsForPreTraining(NLP_MODEL_TYPE, kg_embed_dict, monitor_each_loss)
+    stonkgs_model = STonKGsForPreTraining(NLP_MODEL_TYPE, kg_embed_dict)
 
     # Add the huggingface accelerator
     accelerator = Accelerator()
@@ -154,7 +153,6 @@ if __name__ == '__main__':
             logging_steps=1,
             max_steps=10,
             batch_size=4,
-            monitor_each_loss=True,  # log the individual losses for now
         )
     else:
         # Effective batch size in this example: 32 x 8 = 256
@@ -165,7 +163,6 @@ if __name__ == '__main__':
             max_steps=200,
             batch_size=32,
             gradient_accumulation_steps=8,
-            monitor_each_loss=True,  # log the individual losses for now
         )
 
     # (Optional) examine the runtime

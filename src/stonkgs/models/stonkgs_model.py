@@ -4,7 +4,6 @@
 
 import logging
 
-import mlflow
 import torch
 from torch import nn
 from transformers import (
@@ -66,7 +65,6 @@ class STonKGsForPreTraining(BertForPreTraining):
         self,
         nlp_model_type: str,
         kg_embedding_dict: dict,
-        log_individual_losses: bool = False,
     ):
         """Initialize the model architecture components of STonKGs."""
         # Add the number of KG entities to the default config of a standard BERT model
@@ -74,9 +72,6 @@ class STonKGsForPreTraining(BertForPreTraining):
         config.update({'kg_vocab_size': len(kg_embedding_dict)})
         # Initialize the underlying BertForPreTraining model that will be used to build the STonKGs Transformer layers
         super().__init__(config)
-
-        # Initialize an attribute for controlling if the three loss parts should be logged separately or not
-        self.log_individual_losses = log_individual_losses
 
         # Override the standard MLM head: In the underlying BertForPreTraining model, change the MLM head to the custom
         # STonKGsELMPredictionHead so that it can be used on the concatenated text/entity input
@@ -198,17 +193,6 @@ class STonKGsForPreTraining(BertForPreTraining):
                 seq_relationship_score.view(-1, 2),
                 next_sentence_labels.view(-1),
             )
-            # Manually log the three parts of the loss with mlflow if specified
-            # (since it can't be integrated through the HF trainer)
-            if self.log_individual_losses:
-                # Important: This mlflow call assumes there's already a run that has been started before
-                # Since there is no notion of steps here, these losses can only be viewed through the "time" axis in
-                # mlflow
-                mlflow.log_metrics({
-                    'mlm_loss': masked_lm_loss.item(),
-                    'emlm_loss': ent_masked_lm_loss.item(),
-                    'nsp_loss': next_sentence_loss.item(),
-                })
             # Total loss = the sum of the individual training objective losses
             total_loss = masked_lm_loss + ent_masked_lm_loss + next_sentence_loss
 
