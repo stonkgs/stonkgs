@@ -151,6 +151,7 @@ if __name__ == '__main__':
         # Small batch size and number of steps for local execution
         pretrain_stonkgs(
             overwrite_output_dir=True,
+            logging_steps=1,
             max_steps=10,
             batch_size=4,
             monitor_each_loss=True,  # log the individual losses for now
@@ -160,6 +161,7 @@ if __name__ == '__main__':
         # TODO: use a config file for cluster execution
         pretrain_stonkgs(
             overwrite_output_dir=True,
+            logging_steps=5,
             max_steps=200,
             batch_size=32,
             gradient_accumulation_steps=8,
