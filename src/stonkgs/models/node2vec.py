@@ -100,7 +100,7 @@ def run_node2vec(
     negative: int = 5
     iterations: int = 15
     batch_words: int = 1000
-    walk_length: int = 128
+    walk_length: int = 127
     # has to be the same as the embedding dimension of the NLP model
     # TODO double check later on
     dimensions: int = 768
