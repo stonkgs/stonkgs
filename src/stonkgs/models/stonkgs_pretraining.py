@@ -31,6 +31,8 @@ from stonkgs.models.stonkgs_model import STonKGsForPreTraining
 # Initialize logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+# Disable alembic info
+logging.getLogger("alembic").setLevel(logging.WARNING)
 
 
 def _load_pre_training_data(
