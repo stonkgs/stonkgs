@@ -6,6 +6,7 @@ import logging
 import os
 from typing import Optional
 
+import click
 import mlflow
 import pandas as pd
 # import torch.autograd.profiler as profiler
@@ -50,6 +51,18 @@ def _load_pre_training_data(
     return pretraining_dataset
 
 
+@click.command()
+@click.option('-b', '--batch_size', default=8, help='Batch size for training (per device)', type=int)
+@click.option('--lr', default=1e-4, help='Learning rate', type=float)
+@click.option('--dataloader_num_workers', default=8, help='Number of dataloader workers', type=int)
+@click.option('--gradient_accumulation_steps', default=1, help='Number of gradient accumulation steps', type=int)
+@click.option('--logging_dir', default=MLFLOW_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
+@click.option('--logging_steps', default=100, help='Logging interval', type=int)
+@click.option('-m', '--max_steps', default=200, help='Number of training steps', type=int)
+@click.option('--overwrite_output_dir', default=False, help='Whether to override the output dir or not', type=bool)
+@click.option('--save_limit', default=5, help='Maximum number of saved models/checkpoints', type=int)
+@click.option('--save_steps', default=5000, help='Checkpointing interval', type=int)
+@click.option('--training_dir', default=STONKGS_PRETRAINING_DIR, help='Whether to override the output dir', type=str)
 def pretrain_stonkgs(
     batch_size: int = 8,
     lr: float = 1e-4,
@@ -147,25 +160,9 @@ def pretrain_stonkgs(
 
 if __name__ == '__main__':
     # Run the pre-training procedure, overwrite the output dir for now (since we're only working with dummy data)
-    # Distinguish between local and cluster execution depending on what's set in the .env file and read in constants.py
-    if LOCAL_EXECUTION.lower() in ['true', '1']:
-        # Small batch size and number of steps for local execution
-        pretrain_stonkgs(
-            overwrite_output_dir=True,
-            logging_steps=1,
-            max_steps=10,
-            batch_size=4,
-        )
-    else:
-        # Effective batch size in this example: 32 x 8 = 256
-        # TODO: use a config file for cluster execution
-        pretrain_stonkgs(
-            overwrite_output_dir=True,
-            logging_steps=5,
-            max_steps=200,
-            batch_size=32,
-            gradient_accumulation_steps=8,
-        )
+    # Distinguish between local and cluster execution by using different values (steps, batch size etc.) in the
+    # CLI arguments
+    pretrain_stonkgs()
 
     # (Optional) examine the runtime
     # with profiler.profile() as prof:
