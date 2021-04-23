@@ -94,8 +94,13 @@ class STonKGsForPreTraining(BertForPreTraining):
 
         # KG backbone initialization
         # TODO: move that to a custom dataset class maybe?
+        # Get numeric indices for the KG embedding vectors except for the sep id which is reserved for the LM [SEP]
+        # embedding vector (see below)
+        numeric_indices = list(range(len(kg_embedding_dict)+1))
+        numeric_indices = numeric_indices[:self.lm_sep_id] + numeric_indices[self.lm_sep_id + 1:]
+
         # Generate numeric indices for the KG node names (iterating .keys() is deterministic)
-        self.kg_idx_to_name = {i: key for i, key in enumerate(kg_embedding_dict.keys())}
+        self.kg_idx_to_name = {i: key for i, key in zip(numeric_indices, kg_embedding_dict.keys())}
         # Initialize KG index to embeddings based on the provided kg_embedding_dict
         self.kg_backbone = {i: torch.tensor(kg_embedding_dict[self.kg_idx_to_name[i]]).to(self.lm_backbone.device)
                             for i in self.kg_idx_to_name.keys()}
@@ -104,6 +109,13 @@ class STonKGsForPreTraining(BertForPreTraining):
         # [MASK] token
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
         self.kg_backbone[-1] = self.lm_backbone(torch.tensor([[self.lm_mask_id]]).to(self.lm_backbone.device))[0][0][0]
+        # Add the SEP (LM backbone) embedding vector to the KG backbone so that the label is correctly identified in
+        # the loss function later on
+        # i = 102 indicates that it's a [SEP] token, therefore it is replaced with the emb. vector of the [SEP] token
+        # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
+        self.kg_backbone[self.lm_sep_id] = self.lm_backbone(
+            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device)
+        )[0][0][0]
 
     def forward(
         self,
