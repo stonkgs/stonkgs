@@ -20,7 +20,6 @@ from transformers.trainer_utils import get_last_checkpoint
 
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
-    LOCAL_EXECUTION,
     MLFLOW_TRACKING_URI,
     NLP_MODEL_TYPE,
     PRETRAINING_PREPROCESSED_DF_PATH,
