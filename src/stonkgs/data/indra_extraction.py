@@ -13,7 +13,6 @@ from typing import Any, Dict, List
 
 import pandas as pd
 import pybel
-from tqdm import tqdm
 from pybel.constants import (
     ANNOTATIONS,
     EVIDENCE,
@@ -33,6 +32,7 @@ from pybel.constants import (
     PART_OF,
 )
 from pybel.dsl import CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna
+from tqdm import tqdm
 
 from stonkgs.constants import (
     INDRA_RAW_JSON,
@@ -310,7 +310,11 @@ def read_indra_triples(
     errors = []
     lines = []
     with open(path) as file:
-        for line_number, line in tqdm(enumerate(file), desc='parsing file'):
+        for line_number, line in tqdm(
+            enumerate(file),
+            desc='parsing file',
+            total=35150093,  # TODO: hard coded
+        ):
             try:
                 line_dict = json.loads(line)
             except:
