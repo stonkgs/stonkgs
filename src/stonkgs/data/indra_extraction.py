@@ -6,12 +6,14 @@ Run with:
 python -m src.stonkgs.data.indra_extraction
 """
 
+import json
 import logging
 import os
 from typing import Any, Dict, List
 
 import pandas as pd
 import pybel
+from tqdm import tqdm
 from pybel.constants import (
     ANNOTATIONS,
     EVIDENCE,
@@ -305,7 +307,21 @@ def read_indra_triples(
 ):
     """Parse indra statements in JSON and returns context specific graphs."""
     #: Read file INDRA KG
-    indra_kg = pybel.io.indra.from_indra_statements_json_file(path)
+    errors = []
+    lines = []
+    with open(path) as file:
+        for line_number, line in tqdm(enumerate(file), desc='parsing file'):
+            try:
+                line_dict = json.loads(line)
+            except:
+                errors.append(line_number)
+                continue
+
+            lines.append(line_dict)
+
+    logger.warning(f'{len(errors)} statements with errors')
+
+    indra_kg = pybel.io.indra.from_indra_statements_json(lines)
 
     #: Summarize content of the KG
     logger.info(indra_kg.summarize())
