@@ -73,6 +73,8 @@ os.makedirs(CELL_LINE_DIR, exist_ok=True)
 os.makedirs(SPECIES_DIR, exist_ok=True)
 os.makedirs(RELATION_TYPE_DIR, exist_ok=True)
 
+# Specify the raw (complete) INDRA json file
+INDRA_RAW_JSON = os.path.join(RAW_DIR, 'raw_statements.json')
 # Download from https://emmaa.s3.amazonaws.com/assembled/covid19/statements_2021-03-08-18-24-29.gz
 DUMMY_EXAMPLE_INDRA = os.path.join(RAW_DIR, 'statements_2021-01-30-17-21-54.json')
 # Can be created by running python -m src.stonkgs.data.indra

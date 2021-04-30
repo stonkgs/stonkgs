@@ -33,9 +33,9 @@ from pybel.constants import (
 from pybel.dsl import CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna
 
 from stonkgs.constants import (
-    DUMMY_EXAMPLE_INDRA,
+    INDRA_RAW_JSON,
     MISC_DIR,
-    INPUT_DIR,
+    PRETRAINING_DIR,
     SPECIES_DIR,
     ORGAN_DIR,
     CELL_TYPE_DIR,
@@ -301,11 +301,11 @@ def dump_edgelist(
 
 
 def read_indra_triples(
-    path: str = DUMMY_EXAMPLE_INDRA,  # TODO: change
+    path: str = INDRA_RAW_JSON,
 ):
     """Parse indra statements in JSON and returns context specific graphs."""
     #: Read file INDRA KG
-    indra_kg = pybel.io.indra.from_indra_statements_json_file(DUMMY_EXAMPLE_INDRA)
+    indra_kg = pybel.io.indra.from_indra_statements_json_file(path)
 
     #: Summarize content of the KG
     logger.info(indra_kg.summarize())
@@ -415,7 +415,7 @@ def read_indra_triples(
 
     pretraining_triples = pd.DataFrame(triples)
     del triples
-    pretraining_triples.to_csv(os.path.join(INPUT_DIR, 'pretraining_triples.tsv'), sep='\t', index=False)
+    pretraining_triples.to_csv(os.path.join(PRETRAINING_DIR, 'pretraining_triples.tsv'), sep='\t', index=False)
 
 
 if __name__ == '__main__':
