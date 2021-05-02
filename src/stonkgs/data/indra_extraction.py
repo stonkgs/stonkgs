@@ -31,7 +31,9 @@ from pybel.constants import (
     ASSOCIATION,
     PART_OF,
 )
-from pybel.dsl import CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna
+from pybel.dsl import (
+    CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna, BaseConcept, ListAbundance, Reaction
+)
 from tqdm import tqdm
 
 from stonkgs.constants import (
@@ -302,6 +304,18 @@ def dump_edgelist(
     return summary
 
 
+def munge_evidence_text(text: str) -> str:
+    """Clean evidence."""
+    # Deal with the xrefs in text
+    if 'XREF_BIBR' in text:
+        text = text.replace('XREF_BIBR, ', '')
+        text = text.replace('XREF_BIBR,', '')
+        text = text.replace('XREF_BIBR', '')
+        text = text.replace('[', '')
+        text = text.replace(']', '')
+
+    return text
+
 def read_indra_triples(
     path: str = INDRA_RAW_JSON,
 ):
@@ -309,25 +323,56 @@ def read_indra_triples(
     #: Read file INDRA KG
     errors = []
     lines = []
+
     with open(path) as file:
         for line_number, line in tqdm(
             enumerate(file),
             desc='parsing file',
             total=35150093,  # TODO: hard coded
         ):
+
             try:
                 line_dict = json.loads(line)
             except:
                 errors.append(line_number)
-                continue
 
             lines.append(line_dict)
 
-    logger.warning(f'{len(errors)} statements with errors')
+    logger.info(f'{len(errors)} statements with errors from {len(lines)} statements')
 
     indra_kg = pybel.io.indra.from_indra_statements_json(lines)
 
+    # Remove non grounded nodes
+    non_grounded_nodes = {
+        node
+        for node in indra_kg.nodes()
+        if isinstance(node, BaseConcept) and node.curie.startswith('TEXT:')
+    }
+
+    # Remove non grounded nodes from complex nodes
+    for node in indra_kg.nodes():
+        # Process Complex/Composites
+        if isinstance(node, ListAbundance):
+            for member in node.members:
+                if isinstance(member, BaseConcept) and member.curie.startswith('TEXT:'):
+                    non_grounded_nodes.add(node)
+
+        # Process Reactions
+        if isinstance(node, Reaction):
+            for member in node.reactants:
+                if isinstance(member, BaseConcept) and member.curie.startswith('TEXT:'):
+                    non_grounded_nodes.add(node)
+
+            for member in node.products:
+                if isinstance(member, BaseConcept) and member.curie.startswith('TEXT:'):
+                    non_grounded_nodes.add(node)
+
+    logger.warning(f'removing {len(non_grounded_nodes)} non grounded nodes')
+
+    indra_kg.remove_nodes_from(non_grounded_nodes)
+
     #: Summarize content of the KG
+    logger.info(f'{indra_kg.number_of_edges()} edges from {len(lines)} statements')
     logger.info(indra_kg.summarize())
 
     # Print all the annotations in the graph
@@ -339,7 +384,7 @@ def read_indra_triples(
                 all_annotations.add(key)
 
     # Summarize all annotations
-    logger.info(all_annotations)
+    logger.info(f'all annotations -> {all_annotations}')
 
     """
     Split the KG into two big chunks:
@@ -421,16 +466,16 @@ def read_indra_triples(
     # Iterate through the graph and infer a subgraph with edges that contain the annotation of interest
     for u, v, data in indra_kg.edges(data=True):
         # Skip relations without evidences
-        # TODO: skip specific relations
-        if not EVIDENCE in data or data[EVIDENCE] == "No evidence text.":
+        if EVIDENCE not in data or data[EVIDENCE] == "No evidence text.":
             continue
 
         triples.append({
             'source': u,
             'relation': data[RELATION],
             'target': v,
-            'evidence': data[EVIDENCE],
+            'evidence': munge_evidence_text(data[EVIDENCE]),
             'pmid': data[CITATION],
+            # TODO: add BELIEF score
         })
 
     pretraining_triples = pd.DataFrame(triples)
