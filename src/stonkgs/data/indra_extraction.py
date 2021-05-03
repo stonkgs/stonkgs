@@ -318,6 +318,7 @@ def munge_evidence_text(text: str) -> str:
 
 def read_indra_triples(
     path: str = INDRA_RAW_JSON,
+    batch_size: int = 10000000,
 ):
     """Parse indra statements in JSON and returns context specific graphs."""
     #: Read file INDRA KG
@@ -340,7 +341,25 @@ def read_indra_triples(
 
     logger.info(f'{len(errors)} statements with errors from {len(lines)} statements')
 
-    indra_kg = pybel.io.indra.from_indra_statements_json(lines)
+    # round down the number of chunks
+    chunks = len(lines)//batch_size
+
+    # create a list for the partial KGs that should be merged in the end
+    partial_indra_kgs = []
+    for i in range(chunks):
+        # process the lines chunk wise
+        partial_indra_kgs.append(pybel.io.indra.from_indra_statements_json(
+            lines[i*batch_size:(i+1)*batch_size]
+        ))
+    # process last chunk differently
+    partial_indra_kgs.append(pybel.io.indra.from_indra_statements_json(
+        lines[(i+1)*batch_size:]
+    ))
+    indra_kg = pybel.union(partial_indra_kgs)
+
+    del partial_indra_kgs
+
+    # indra_kg = pybel.io.indra.from_indra_statements_json(lines)
 
     # Remove non grounded nodes
     non_grounded_nodes = {
