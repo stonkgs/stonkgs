@@ -331,7 +331,6 @@ def read_indra_triples(
             desc='parsing file',
             total=35150093,  # TODO: hard coded
         ):
-
             try:
                 line_dict = json.loads(line)
             except:
@@ -358,8 +357,6 @@ def read_indra_triples(
     indra_kg = pybel.union(partial_indra_kgs)
 
     del partial_indra_kgs
-
-    # indra_kg = pybel.io.indra.from_indra_statements_json(lines)
 
     # Remove non grounded nodes
     non_grounded_nodes = {
@@ -419,47 +416,47 @@ def read_indra_triples(
     Naturally, STonKGs requires a pre-training similar to the other two baselines models (i.e., KG-based has been
     trained based on node2vec on the INDRA KG and BioBERT was trained on PubMed).
     """
-    organ_subgraph = create_context_type_specific_subgraph(indra_kg, ['MeSHAnatomy'])
-    species_subgraph = create_context_type_specific_subgraph(indra_kg, ['TAX_ID'])
-    disease_subgraph = create_context_type_specific_subgraph(indra_kg, ['MeSHDisease', 'Disease'])
-    cell_type_subgraph = create_context_type_specific_subgraph(indra_kg, ['Cell'])
-    cell_line_subgraph = create_context_type_specific_subgraph(indra_kg, ['CellLine'])
-    location_subgraph = create_context_type_specific_subgraph(indra_kg, ['CellStructure'])
+    organ_subgraph = create_context_type_specific_subgraph(indra_kg, ['organ'])
+    species_subgraph = create_context_type_specific_subgraph(indra_kg, ['species'])
+    disease_subgraph = create_context_type_specific_subgraph(indra_kg, ['disease'])
+    cell_type_subgraph = create_context_type_specific_subgraph(indra_kg, ['cell_type'])
+    cell_line_subgraph = create_context_type_specific_subgraph(indra_kg, ['cell_line'])
+    location_subgraph = create_context_type_specific_subgraph(indra_kg, ['location'])
 
     #: Dump the 6+1 annotation type specific subgraphs (triples)
     organ_summary = dump_edgelist(
         graph=organ_subgraph,
-        annotations=['MeSHAnatomy'],
+        annotations=['organ'],
         name='organ',
         output_dir=ORGAN_DIR,
     )
     species_summary = dump_edgelist(
         graph=species_subgraph,
-        annotations=['TAX_ID'],
+        annotations=['species'],
         name='species',
         output_dir=SPECIES_DIR,
     )
     disease_summary = dump_edgelist(
         graph=disease_subgraph,
-        annotations=['MeSHDisease', 'Disease'],
+        annotations=['disease'],
         name='disease',
         output_dir=DISEASE_DIR,
     )
     cell_type_summary = dump_edgelist(
         graph=cell_type_subgraph,
-        annotations=['Cell'],
+        annotations=['cell_type'],
         name='cell_type',
         output_dir=CELL_TYPE_DIR,
     )
     cell_line_summary = dump_edgelist(
         graph=cell_line_subgraph,
-        annotations=['CellLine'],
+        annotations=['cell_line'],
         name='cell_line',
         output_dir=CELL_LINE_DIR,
     )
     location_summary = dump_edgelist(
         graph=location_subgraph,
-        annotations=['CellStructure'],
+        annotations=['location'],
         name='location',
         output_dir=LOCATION_DIR,
     )
@@ -494,7 +491,7 @@ def read_indra_triples(
             'target': v,
             'evidence': munge_evidence_text(data[EVIDENCE]),
             'pmid': data[CITATION],
-            # TODO: add BELIEF score
+            'belief_score': data[ANNOTATIONS].get('belief', ''),
         })
 
     pretraining_triples = pd.DataFrame(triples)

@@ -4,8 +4,6 @@
 
 import os
 
-from dotenv import load_dotenv
-
 HERE = os.path.dirname(os.path.realpath(__file__))
 SOURCE_DIR = os.path.join(os.path.abspath(os.path.join(HERE, os.pardir)))
 PROJECT_DIR = os.path.join(os.path.abspath(os.path.join(HERE, os.pardir)))
@@ -48,11 +46,11 @@ RANDOM_WALKS_PATH = os.path.join(KG_HPO_DIR, 'random_walks_best_model.tsv')
 LOG_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'logs')
 
 # Load constants from environment variables (set in the .env file)
-load_dotenv()
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
 # Load a constant for distinguishing between local and cluster execution (default = True)
 LOCAL_EXECUTION = os.getenv("LOCAL_EXECUTION") or "True"
 
+"""Create directories"""
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(MODELS_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -66,6 +64,7 @@ os.makedirs(STONKGS_OUTPUT_DIR, exist_ok=True)
 os.makedirs(NLP_BL_OUTPUT_DIR, exist_ok=True)
 
 os.makedirs(ORGAN_DIR, exist_ok=True)
+os.makedirs(PRETRAINING_DIR, exist_ok=True)
 os.makedirs(DISEASE_DIR, exist_ok=True)
 os.makedirs(LOCATION_DIR, exist_ok=True)
 os.makedirs(CELL_TYPE_DIR, exist_ok=True)
