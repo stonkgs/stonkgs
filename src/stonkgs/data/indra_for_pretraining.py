@@ -176,7 +176,7 @@ def indra_to_pretraining_df(
         text_attention_mask = encoded_text['attention_mask']
 
         # 3. Get the random walks sequence and the node indices, add the SEP (usually with id=102) in between
-        random_walks = random_walk_idx_dict[row['source']] + sep_id + random_walk_idx_dict[row['target']] + sep_id
+        random_walks = random_walk_idx_dict[row['source']] + [sep_id] + random_walk_idx_dict[row['target']] + [sep_id]
 
         # 4. Total attention mask (attention mask is all 1 for the entity sequence)
         attention_mask = text_attention_mask + [1] * half_length
