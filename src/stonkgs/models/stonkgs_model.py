@@ -96,7 +96,7 @@ class STonKGsForPreTraining(BertForPreTraining):
         # TODO: move that to a custom dataset class maybe?
         # Get numeric indices for the KG embedding vectors except for the sep id which is reserved for the LM [SEP]
         # embedding vector (see below)
-        numeric_indices = list(range(len(kg_embedding_dict)+1))
+        numeric_indices = list(range(len(kg_embedding_dict) + 1))
         numeric_indices = numeric_indices[:self.lm_sep_id] + numeric_indices[self.lm_sep_id + 1:]
 
         # Generate numeric indices for the KG node names (iterating .keys() is deterministic)
@@ -114,7 +114,7 @@ class STonKGsForPreTraining(BertForPreTraining):
         # i = 102 indicates that it's a [SEP] token, therefore it is replaced with the emb. vector of the [SEP] token
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
         self.kg_backbone[self.lm_sep_id] = self.lm_backbone(
-            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device)
+            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device),
         )[0][0][0]
 
     def forward(
