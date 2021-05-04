@@ -289,9 +289,9 @@ def dump_edgelist(
     logger.warning(f'labels for {name} removed due to low occurrence {labels_to_remove}')
 
     logger.info(f'raw triples {df.shape[0]}')
-    df = df[~df['class'].isin(list(labels_to_remove.keys()))]
+    df = df[~df['class'].isin(list(labels_to_remove.keys()))]"""
 
-    logger.info(f'triples after filtering {df.shape[0]}')"""
+    logger.info(f'triples (no filtering) for {name}: {df.shape[0]}')
 
     final_labels = df["class"].unique()
     logger.info(f' final number of classes {final_labels.size}')
