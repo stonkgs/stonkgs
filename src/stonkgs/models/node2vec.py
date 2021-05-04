@@ -23,7 +23,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from stellargraph.data import EdgeSplitter
 
-from ..constants import KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR, PRETRAINING_PATH
+from stonkgs.constants import KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR, PRETRAINING_PATH
 
 logger = logging.getLogger(__name__)
 
