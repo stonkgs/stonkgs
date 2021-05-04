@@ -72,7 +72,7 @@ def run_node2vec(
     sep: Optional[str] = '\t',
     delete_database: Optional[bool] = True,
     mlflow_tracking_uri: Optional[str] = MLFLOW_TRACKING_URI,
-    n_optimization_trials: Optional[int] = 2,
+    n_optimization_trials: Optional[int] = 20,
     seed: Optional[int] = None,
 ):
     """CLI to run node2vec."""
@@ -102,7 +102,6 @@ def run_node2vec(
     batch_words: int = 1000
     walk_length: int = 127
     # has to be the same as the embedding dimension of the NLP model
-    # TODO double check later on
     dimensions: int = 768
 
     # define HPO function for optuna
