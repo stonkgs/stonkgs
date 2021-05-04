@@ -273,8 +273,9 @@ def dump_edgelist(
 
     df = pd.DataFrame(triples)
 
+    # Leave out any filtering for now, keep all the classes
     """Removing labels that appear less than X% from the total"""
-    label_counts = df['class'].value_counts().to_dict()
+    """    label_counts = df['class'].value_counts().to_dict()
     # 0.05%
     percentage = 0.05
     cutoff = int(df.shape[0] * percentage)
@@ -290,7 +291,7 @@ def dump_edgelist(
     logger.info(f'raw triples {df.shape[0]}')
     df = df[~df['class'].isin(list(labels_to_remove.keys()))]
 
-    logger.info(f'triples after filtering {df.shape[0]}')
+    logger.info(f'triples after filtering {df.shape[0]}')"""
 
     final_labels = df["class"].unique()
     logger.info(f' final number of classes {final_labels.size}')
