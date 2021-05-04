@@ -81,3 +81,7 @@ DUMMY_EXAMPLE_TRIPLES = os.path.join(LOCATION_DIR, 'location.tsv')
 
 # Specify the (huggingface) language model that is used in this project
 NLP_MODEL_TYPE = "dmis-lab/biobert-v1.1"
+
+# Specify the vocab file of the language model that is used in this project
+# (the file can be obtained here: https://huggingface.co/dmis-lab/biobert-v1.1/tree/main)
+VOCAB_FILE = os.path.join("../data/misc/", 'biobert_vocab.txt')
