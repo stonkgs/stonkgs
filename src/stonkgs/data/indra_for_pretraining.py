@@ -13,9 +13,18 @@ from typing import List, Optional
 
 import numpy as np
 import pandas as pd
-from transformers import BertTokenizer
+from transformers import BertTokenizer, PreTrainedTokenizerFast
+from tokenizers import BertWordPieceTokenizer
+from tqdm import tqdm
 
-from stonkgs.constants import EMBEDDINGS_PATH, NLP_MODEL_TYPE, PRETRAINING_DIR, PRETRAINING_PATH, RANDOM_WALKS_PATH
+from stonkgs.constants import (
+    EMBEDDINGS_PATH,
+    NLP_MODEL_TYPE,
+    PRETRAINING_DIR,
+    PRETRAINING_PATH,
+    RANDOM_WALKS_PATH,
+    VOCAB_FILE,
+)
 from stonkgs.models.kg_baseline_model import _prepare_df
 
 logger = logging.getLogger(__name__)
@@ -150,17 +159,21 @@ def indra_to_pretraining_df(
     # Get the length of the text or entity embedding sequences (2 random walks = entity embedding sequence length)
     half_length = len(next(iter(random_walk_idx_dict.values()))) * 2
 
-    # Initialize a tokenizer used for getting the text token ids
-    tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
+    # Initialize a FAST tokenizer if it's the default one (BioBERT)
+    if nlp_model_type == NLP_MODEL_TYPE:
+        # Load the BioBERT tokenizer as a fast tokenizer to be able to count the tokens later on
+        tokenizer_object = BertWordPieceTokenizer(VOCAB_FILE)
+        # Initialize the fast tokenizer
+        tokenizer = PreTrainedTokenizerFast(tokenizer_object=tokenizer_object)
+    else:
+        # Initialize a tokenizer used for getting the text token ids
+        tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
 
     # Initialize the preprocessed data
     pre_training_preprocessed = []
 
-    for idx, row in pretraining_df.iterrows():
-        # Log the progress
-        if idx % 1000 == 0:
-            logger.info(f'Processing positive examples for row number {idx} of {len(pretraining_df)}')
-
+    # Log progress with a progress bar
+    for idx, row in tqdm(pretraining_df.iterrows(), total=pretraining_df.shape[0]):
         # 1. "Token type IDs": 0 for text tokens, 1 for entity tokens
         token_type_ids = [0] * half_length + [1] * half_length
 
