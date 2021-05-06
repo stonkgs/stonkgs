@@ -22,6 +22,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
 from stellargraph.data import EdgeSplitter
+from tqdm import tqdm
 
 from stonkgs.constants import KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR, PRETRAINING_PATH
 
@@ -72,7 +73,8 @@ def run_node2vec(
     sep: Optional[str] = '\t',
     delete_database: Optional[bool] = True,
     mlflow_tracking_uri: Optional[str] = MLFLOW_TRACKING_URI,
-    n_optimization_trials: Optional[int] = 20,
+    n_optimization_trials: Optional[int] = 1,  # TODO change later to 20
+    n_threads: Optional[int] = 96,  # hard coded to the cluster, change if necessary
     seed: Optional[int] = None,
 ):
     """CLI to run node2vec."""
@@ -89,9 +91,11 @@ def run_node2vec(
     triples_df = pd.read_csv(positive_graph_path, sep=sep)
     # Initialize empty Graph and fill it with the triples from the df
     indra_kg_pos = nx.DiGraph()
-    for _, row in triples_df[["source", "target"]].iterrows():
+    for _, row in tqdm(triples_df[["source", "target"]].iterrows(), total=triples_df.shape[0]):
         # FIXME add double relation for some cases
         indra_kg_pos.add_edge(row["source"], row["target"])
+
+    logger.info("Finished loading the KG")
 
     # indra_kg_pos = nx.read_edgelist(positive_graph_path, delimiter=sep)
 
@@ -123,7 +127,7 @@ def run_node2vec(
             # use inverse, see https://github.com/VHRanger/nodevectors/blob/master/nodevectors/node2vec.py#L46
             return_weight=1 / p,
             neighbor_weight=1 / q,
-            threads=0,
+            threads=n_threads,
             keep_walks=True,
             verbose=True,
             w2vparams={
@@ -152,6 +156,8 @@ def run_node2vec(
         metric_name="ROC AUC Score",
     )
 
+    logger.info("Created the MLflow Callback")
+
     # Create study and run it
     study = optuna.create_study(
         study_name="Node2vec HPO on INDRA KG",
@@ -159,6 +165,9 @@ def run_node2vec(
         direction='maximize',
         load_if_exists=True,
     )
+
+    logger.info("Created the study")
+
     study.optimize(
         objective,
         n_trials=n_optimization_trials,
