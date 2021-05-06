@@ -9,7 +9,7 @@ python -m src.stonkgs.data.indra_extraction
 import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import pandas as pd
 import pybel
@@ -87,6 +87,9 @@ def binarize_triple_direction(graph: pybel.BELGraph) -> Dict[str, Any]:
     triples = []
 
     summary = {'context': '(in)direct relations'}
+
+    # TODO: set a limit for the number of up/down edges (e.g. 1M) and remove them from the original graph after
+    #  the function call
 
     # Iterate through the graph and infer a subgraph
     for u, v, data in graph.edges(data=True):
@@ -186,8 +189,11 @@ def create_polarity_annotations(graph: pybel.BELGraph) -> Dict[str, Any]:
     return summary
 
 
-def create_context_type_specific_subgraph(graph: pybel.BELGraph, context_annotations: List[str]) -> pybel.BELGraph:
-    """Create a subgraph based on context annotations."""
+def create_context_type_specific_subgraph(
+    graph: pybel.BELGraph,
+    context_annotations: List[str],
+) -> Tuple[List, pybel.BELGraph]:
+    """Create a subgraph based on context annotations and also return edges that should be removed later on."""
     subgraph = graph.child()
     subgraph.name = f'INDRA graph contextualized for {context_annotations}'
 
@@ -203,7 +209,7 @@ def create_context_type_specific_subgraph(graph: pybel.BELGraph, context_annotat
             # Triples to be removed
             edges_to_remove.append((u, v, k))
 
-    number_of_edges_before = graph.number_of_edges()
+    # number_of_edges_before = graph.number_of_edges()
     # graph.remove_edges_from(edges_to_remove)
     # number_of_edges_after_removing_annotations = graph.number_of_edges()
 
@@ -217,7 +223,7 @@ def create_context_type_specific_subgraph(graph: pybel.BELGraph, context_annotat
 
     logger.info(string)
 
-    return subgraph
+    return edges_to_remove, subgraph
 
 
 def dump_edgelist(
@@ -317,6 +323,7 @@ def munge_evidence_text(text: str) -> str:
 
     return text
 
+
 def read_indra_triples(
     path: str = INDRA_RAW_JSON,
     batch_size: int = 10000000,
@@ -346,7 +353,7 @@ def read_indra_triples(
 
     # create a list for the partial KGs that should be merged in the end
     partial_indra_kgs = []
-    for i in range(chunks):
+    for i in tqdm(range(chunks), total=chunks, desc='processing partial KGs'):
         # process the lines chunk wise
         partial_indra_kgs.append(pybel.io.indra.from_indra_statements_json(
             lines[i*batch_size:(i+1)*batch_size]
@@ -355,6 +362,9 @@ def read_indra_triples(
     partial_indra_kgs.append(pybel.io.indra.from_indra_statements_json(
         lines[(i+1)*batch_size:]
     ))
+
+    logger.info(f'Finished processing {chunks + 1} many chunks')
+
     indra_kg = pybel.union(partial_indra_kgs)
 
     del partial_indra_kgs
@@ -417,12 +427,12 @@ def read_indra_triples(
     Naturally, STonKGs requires a pre-training similar to the other two baselines models (i.e., KG-based has been
     trained based on node2vec on the INDRA KG and BioBERT was trained on PubMed).
     """
-    organ_subgraph = create_context_type_specific_subgraph(indra_kg, ['organ'])
-    species_subgraph = create_context_type_specific_subgraph(indra_kg, ['species'])
-    disease_subgraph = create_context_type_specific_subgraph(indra_kg, ['disease'])
-    cell_type_subgraph = create_context_type_specific_subgraph(indra_kg, ['cell_type'])
-    cell_line_subgraph = create_context_type_specific_subgraph(indra_kg, ['cell_line'])
-    location_subgraph = create_context_type_specific_subgraph(indra_kg, ['location'])
+    organ_edges, organ_subgraph = create_context_type_specific_subgraph(indra_kg, ['organ'])
+    species_edges, species_subgraph = create_context_type_specific_subgraph(indra_kg, ['species'])
+    disease_edges, disease_subgraph = create_context_type_specific_subgraph(indra_kg, ['disease'])
+    cell_type_edges, cell_type_subgraph = create_context_type_specific_subgraph(indra_kg, ['cell_type'])
+    cell_line_edges, cell_line_subgraph = create_context_type_specific_subgraph(indra_kg, ['cell_line'])
+    location_edges, location_subgraph = create_context_type_specific_subgraph(indra_kg, ['location'])
 
     #: Dump the 6+1 annotation type specific subgraphs (triples)
     organ_summary = dump_edgelist(
@@ -462,6 +472,7 @@ def read_indra_triples(
         output_dir=LOCATION_DIR,
     )
 
+    # TODO: the same function is called twice? I'm confused --> discuss
     polarity_summary = binarize_triple_direction(indra_kg)
     directionality_summary = binarize_triple_direction(indra_kg)
 
@@ -477,11 +488,16 @@ def read_indra_triples(
     ])
     summary_df.to_csv(os.path.join(MISC_DIR, 'summary.tsv'), sep='\t', index=False)
 
+    # TODO also put up/down indirect/direct stuff here
+    # Remove all the fine-tuning edges from the pre-training data
+    for edges in [organ_edges, species_edges, disease_edges, cell_type_edges, cell_line_edges, location_edges]:
+        indra_kg.remove_edges_from(edges)
+
     """Dump pre training dataset."""
     triples = []
 
     # Iterate through the graph and infer a subgraph with edges that contain the annotation of interest
-    for u, v, data in indra_kg.edges(data=True):
+    for u, v, data in tqdm(indra_kg.edges(data=True), desc='Building final pre-training dataframe'):
         # Skip relations without evidences
         if EVIDENCE not in data or data[EVIDENCE] == "No evidence text.":
             continue
