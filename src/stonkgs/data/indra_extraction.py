@@ -472,9 +472,7 @@ def read_indra_triples(
         output_dir=LOCATION_DIR,
     )
 
-    # TODO: the same function is called twice? I'm confused --> discuss
-    polarity_summary = binarize_triple_direction(indra_kg)
-    directionality_summary = binarize_triple_direction(indra_kg)
+    polarity_summary, polarity_edges = binarize_triple_direction(indra_kg)
 
     summary_df = pd.DataFrame([
         organ_summary,
@@ -483,17 +481,23 @@ def read_indra_triples(
         cell_type_summary,
         cell_line_summary,
         location_summary,
-        directionality_summary,
-        polarity_summary,
+        polarity_summary,  # This is actually two tasks (polarity and direction)
     ])
     summary_df.to_csv(os.path.join(MISC_DIR, 'summary.tsv'), sep='\t', index=False)
 
-    # TODO also put up/down indirect/direct stuff here
     # Remove all the fine-tuning edges from the pre-training data
-    for edges in [organ_edges, species_edges, disease_edges, cell_type_edges, cell_line_edges, location_edges]:
+    for edges in [
+        organ_edges,
+        species_edges,
+        disease_edges,
+        cell_type_edges,
+        cell_line_edges,
+        location_edges,
+        polarity_edges,
+    ]:
         indra_kg.remove_edges_from(edges)
 
-    """Dump pre training dataset."""
+    """Dump pre-training dataset."""
     triples = []
 
     # Iterate through the graph and infer a subgraph with edges that contain the annotation of interest
