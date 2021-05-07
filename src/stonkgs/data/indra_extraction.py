@@ -124,23 +124,23 @@ def binarize_triple_direction(graph: pybel.BELGraph, triples_per_class: int = 25
             continue
 
         """Check if limit has been reached"""
-        if data[RELATION] == DIRECTLY_DECREASES and counter_dir_dec > triples_per_class:
+        if data[RELATION] == DIRECTLY_DECREASES and counter_dir_dec >= triples_per_class:
             continue
-        if data[RELATION] == INCREASES and counter_inc > triples_per_class:
+        elif data[RELATION] == INCREASES and counter_inc >= triples_per_class:
             continue
-        if data[RELATION] == DECREASES and counter_dec > triples_per_class:
+        elif data[RELATION] == DECREASES and counter_dec >= triples_per_class:
             continue
-        if data[RELATION] == DIRECTLY_INCREASES and counter_dir_inc > triples_per_class:
+        elif data[RELATION] == DIRECTLY_INCREASES and counter_dir_inc >= triples_per_class:
             continue
 
         # Add particular triple to the fine tuning set
         if data[RELATION] == INCREASES:
             counter_inc += 1
-        if data[RELATION] == DIRECTLY_INCREASES:
+        elif data[RELATION] == DIRECTLY_INCREASES:
             counter_dir_inc += 1
-        if data[RELATION] == DIRECTLY_DECREASES:
+        elif data[RELATION] == DIRECTLY_DECREASES:
             counter_dir_dec += 1
-        if data[RELATION] == DECREASES:
+        elif data[RELATION] == DECREASES:
             counter_dec += 1
         else:
             continue
