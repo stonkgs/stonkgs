@@ -115,7 +115,7 @@ def binarize_triple_direction(graph: pybel.BELGraph, triples_per_class: int = 25
 
         if data[RELATION] in {INCREASES, DECREASES}:
             interaction_label = 'indirect_interaction'
-        elif data[RELATION] in {DIRECT_RELATIONS, DIRECTLY_DECREASES}:
+        elif data[RELATION] in {DIRECTLY_INCREASES, DIRECTLY_DECREASES}:
             interaction_label = 'direct_interaction'
         else:
             continue
