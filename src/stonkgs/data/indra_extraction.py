@@ -82,42 +82,63 @@ DOWN_RELATIONS = {
 }
 
 
-def binarize_triple_direction(graph: pybel.BELGraph) -> Dict[str, Any]:
+def binarize_triple_direction(graph: pybel.BELGraph, triples_per_class: int = 25000) -> Tuple[Dict[str, Any], List]:
     """Binarize triples depending on the type of direction."""
     triples = []
 
-    summary = {'context': '(in)direct relations'}
+    edges_to_removes = []
 
-    # TODO: set a limit for the number of up/down edges (e.g. 1M) and remove them from the original graph after
-    #  the function call
+    counter_dir_inc = 0
+    counter_dir_dec = 0
+    counter_inc = 0
+    counter_dec = 0
+
+    summary = {'context': '(in)direct relations and polarity'}
 
     # Iterate through the graph and infer a subgraph
-    for u, v, data in graph.edges(data=True):
+    for u, v, k, data in graph.edges(keys=True, data=True):
 
         if EVIDENCE not in data or not data[EVIDENCE] or data[EVIDENCE] == 'No evidence text.':
             # logger.warning(f'not evidence found in {data}')
             continue
 
-        # todo: check this we will focus only on molecular interactions
-        if not any(
-            isinstance(u, class_to_check)
-            for class_to_check in (CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna)
-        ):
-            continue
-
-        if not any(
-            isinstance(v, class_to_check)
-            for class_to_check in (CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna)
-        ):
+        # Both nodes in the triple are required to be a protein/gene (complexes and other stuff are skipped)
+        if not isinstance(u, CentralDogma) and not isinstance(v, CentralDogma):
             continue
 
         if data[RELATION] in UP_RELATIONS:
-            class_label = 'up'
+            polarity_label = 'up'
         elif data[RELATION] in DOWN_RELATIONS:
-            class_label = 'down'
-        # TODO: add more
-        elif data[RELATION] == REGULATES:
-            class_label = 'regulates'
+            polarity_label = 'down'
+        else:
+            continue
+
+        if data[RELATION] in {INCREASES, DECREASES}:
+            interaction_label = 'indirect_interaction'
+        elif data[RELATION] in {DIRECT_RELATIONS, DIRECTLY_DECREASES}:
+            interaction_label = 'direct_interaction'
+        else:
+            continue
+
+        """Check if limit has been reached"""
+        if data[RELATION] == DIRECTLY_DECREASES and counter_dir_dec > triples_per_class:
+            continue
+        if data[RELATION] == INCREASES and counter_inc > triples_per_class:
+            continue
+        if data[RELATION] == DECREASES and counter_dec > triples_per_class:
+            continue
+        if data[RELATION] == DIRECTLY_INCREASES and counter_dir_inc > triples_per_class:
+            continue
+
+        # Add particular triple to the fine tuning set
+        if data[RELATION] == INCREASES:
+            counter_inc += 1
+        if data[RELATION] == DIRECTLY_INCREASES:
+            counter_dir_inc += 1
+        if data[RELATION] == DIRECTLY_DECREASES:
+            counter_dir_dec += 1
+        if data[RELATION] == DECREASES:
+            counter_dec += 1
         else:
             continue
 
@@ -127,10 +148,15 @@ def binarize_triple_direction(graph: pybel.BELGraph) -> Dict[str, Any]:
             'target': v,
             'evidence': data[EVIDENCE],
             'pmid': data[CITATION],
-            'class': class_label,
+            'polarity': polarity_label,
+            'interaction': interaction_label,
         })
 
+        edges_to_removes.append((u, v, k))
+
     df = pd.DataFrame(triples)
+
+    logger.info(f'Number of binarized triples for fine-tuning: {df.shape[0]}')
 
     summary['number_of_triples'] = df.shape[0]
     summary['number_of_labels'] = df['class'].unique().size
@@ -138,7 +164,7 @@ def binarize_triple_direction(graph: pybel.BELGraph) -> Dict[str, Any]:
 
     df.to_csv(os.path.join(RELATION_TYPE_DIR, f'relation_type.tsv'), sep='\t', index=False)
 
-    return summary
+    return summary, edges_to_removes
 
 
 def create_polarity_annotations(graph: pybel.BELGraph) -> Dict[str, Any]:
