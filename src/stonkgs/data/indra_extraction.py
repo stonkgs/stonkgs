@@ -83,7 +83,10 @@ DOWN_RELATIONS = {
 
 
 def binarize_triple_direction(graph: pybel.BELGraph, triples_per_class: int = 25000) -> Tuple[Dict[str, Any], List]:
-    """Binarize triples depending on the type of direction."""
+    """Binarize triples depending on the type of direction.
+
+    Extract the fine-tuning data for the interaction type (direct vs. indirect) and polarity (up vs. down) tasks.
+    """
     triples = []
 
     edges_to_removes = []
@@ -352,6 +355,7 @@ def munge_evidence_text(text: str) -> str:
 
 def read_indra_triples(
     path: str = INDRA_RAW_JSON,
+    batch_processing: bool = False,
     batch_size: int = 10000000,
 ):
     """Parse indra statements in JSON and returns context specific graphs."""
@@ -374,26 +378,30 @@ def read_indra_triples(
 
     logger.info(f'{len(errors)} statements with errors from {len(lines)} statements')
 
-    # round down the number of chunks
-    chunks = len(lines)//batch_size
+    if batch_processing:
+        # round down the number of chunks
+        chunks = len(lines)//batch_size
 
-    # create a list for the partial KGs that should be merged in the end
-    partial_indra_kgs = []
-    for i in tqdm(range(chunks), total=chunks, desc='processing partial KGs'):
-        # process the lines chunk wise
+        # create a list for the partial KGs that should be merged in the end
+        partial_indra_kgs = []
+        for i in tqdm(range(chunks), total=chunks, desc='processing partial KGs'):
+            # process the lines chunk wise
+            partial_indra_kgs.append(pybel.io.indra.from_indra_statements_json(
+                lines[i*batch_size:(i+1)*batch_size]
+            ))
+        # process last chunk differently
         partial_indra_kgs.append(pybel.io.indra.from_indra_statements_json(
-            lines[i*batch_size:(i+1)*batch_size]
+            lines[(i+1)*batch_size:]
         ))
-    # process last chunk differently
-    partial_indra_kgs.append(pybel.io.indra.from_indra_statements_json(
-        lines[(i+1)*batch_size:]
-    ))
 
-    logger.info(f'Finished processing {chunks + 1} many chunks')
+        logger.info(f'Finished processing {chunks + 1} many chunks')
 
-    indra_kg = pybel.union(partial_indra_kgs)
+        indra_kg = pybel.union(partial_indra_kgs)
 
-    del partial_indra_kgs
+        del partial_indra_kgs
+
+    else:
+        indra_kg = pybel.io.indra.from_indra_statements_json(lines)
 
     # Remove non grounded nodes
     non_grounded_nodes = {
