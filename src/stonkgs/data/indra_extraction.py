@@ -162,8 +162,8 @@ def binarize_triple_direction(graph: pybel.BELGraph, triples_per_class: int = 25
     logger.info(f'Number of binarized triples for fine-tuning: {df.shape[0]}')
 
     summary['number_of_triples'] = df.shape[0]
-    summary['number_of_labels'] = df['class'].unique().size
-    summary['labels'] = df['class'].value_counts().to_dict()
+    summary['number_of_labels'] = '4 or 2 depending on the task'
+    summary['labels'] = 'NA'
 
     df.to_csv(os.path.join(RELATION_TYPE_DIR, f'relation_type.tsv'), sep='\t', index=False)
 
