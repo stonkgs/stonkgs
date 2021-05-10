@@ -68,7 +68,7 @@ def run_link_prediction(
 
 # TODO: add parameters/click later on
 # @click.group()
-def run_node2vec(
+def run_node2vec_hpo(
     positive_graph_path: Optional[str] = PRETRAINING_PATH,
     sep: Optional[str] = '\t',
     delete_database: Optional[bool] = True,
@@ -116,9 +116,9 @@ def run_node2vec(
     ) -> float:
         """Run HPO on the link prediction task on the KG, based on a LogReg classifier and the auc score."""
         # Leave out large values for epochs due to runtime constraints
-        epochs = trial.suggest_categorical('epochs', [2, 4])  # 8, 16])  # 32, 64, 128, 256])
+        epochs = trial.suggest_categorical('epochs', [2, 4, 8])  # 8, 16])  # 32, 64, 128, 256])
         # Same for window size
-        window_size = trial.suggest_int('window_size', 3, 4)  # 7)
+        window_size = trial.suggest_int('window_size', 3, 5)  # 7)
         # TODO: check best q/p values
         p = trial.suggest_uniform('p', 0, 4.0)
         q = trial.suggest_uniform('q', 0, 4.0)
@@ -209,6 +209,60 @@ def run_node2vec(
         for node, random_walks in zip(wv.index2entity, all_random_walks):
             random_walks_str = "\t".join(random_walks)
             random_walk_file.write(f'{node}\t{random_walks_str}\n')
+
+
+def run_node2vec(
+    positive_graph_path: Optional[str] = PRETRAINING_PATH,
+    sep: Optional[str] = '\t',
+    n_threads: Optional[int] = 96,  # hard coded to the cluster, change if necessary
+):
+    """Run node2vec with no HPO."""
+    # Read graph, first read the triples into a dataframe
+    triples_df = pd.read_csv(positive_graph_path, sep=sep)
+    # Initialize empty Graph and fill it with the triples from the df
+    indra_kg_pos = nx.DiGraph()
+    for _, row in tqdm(triples_df[["source", "target"]].iterrows(), total=triples_df.shape[0]):
+        # FIXME add double relation for some cases
+        indra_kg_pos.add_edge(row["source"], row["target"])
+    logger.info("Finished loading the KG")
+
+    # Hyperparameters
+    # see https://github.com/seffnet/seffnet/blob/master/src/seffnet/optimization.py
+    negative: int = 5
+    # only use 1 iteration for word2vec, see
+    # https://datascience.stackexchange.com/questions/9819/number-of-epochs-in-gensim-word2vec-implementation
+    iterations: int = 1
+    batch_words: int = 1000  # batch words default value in Gensim is 10,000
+    walk_length: int = 127
+    # has to be the same as the embedding dimension of the NLP model
+    dimensions: int = 768
+    epochs = 4
+    window_size = 3
+
+    # train the KGE model
+    node2vec_model = Node2Vec(
+        n_components=dimensions,
+        walklen=walk_length,
+        epochs=epochs,
+        # use inverse, see https://github.com/VHRanger/nodevectors/blob/master/nodevectors/node2vec.py#L46
+        return_weight=1.0,
+        neighbor_weight=1.0,
+        threads=n_threads,
+        keep_walks=True,
+        verbose=True,
+        w2vparams={
+            'window': window_size,
+            'negative': negative,
+            'iter': iterations,
+            'batch_words': batch_words,
+        },
+    )
+
+    logger.info('Successfully created the model')
+
+    node2vec_model.fit(indra_kg_pos)
+
+    logger.info('Successfully trained the model')
 
 
 if __name__ == "__main__":
