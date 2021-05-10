@@ -32,8 +32,9 @@ def load_entities(
 ) -> Set[str]:
     """Returns all entities in a given dataset."""
     df = pd.read_csv(df_path, sep='\t')
+    logger.info(f'Number of triples: {len(df)}')
     all_entities = set(df['source']).union(set(df['target']))
-    logger.info(f'Successfully loaded {len(all_entities)} many entities')
+    logger.info(f'Successfully loaded {len(all_entities)} many entities \n')
 
     return all_entities
 
@@ -77,14 +78,14 @@ def find_information_leakage(
 if __name__ == '__main__':
     # 1. ENTITY OVERLAP
     # Get all the pre-training and fine-tuning datasets
-    # pre_training_ents = load_entities(PRETRAINING_PATH)
-    # fine_tuning = dict()
+    pre_training_ents = load_entities(PRETRAINING_PATH)
+    fine_tuning = dict()
 
     # Iterate through all the fine-tuning stuff for ENTITIES
     paths = [CELL_TYPE_DIR, CELL_LINE_DIR, DISEASE_DIR, LOCATION_DIR, ORGAN_DIR, RELATION_TYPE_DIR, SPECIES_DIR]
     names = ['cell_type', 'cell_line', 'disease', 'location', 'organ', 'relation_type', 'species']
 
-    """   fine_tuning_dict = dict()
+    fine_tuning_dict = dict()
     for path, annot_name in zip(paths, names):
         fine_tuning_dict[annot_name] = load_entities(os.path.join(path, annot_name + '.tsv'))
 
@@ -92,7 +93,7 @@ if __name__ == '__main__':
     find_missing_entities(
         pre_training_entities=pre_training_ents,
         fine_tuning_entities_dict=fine_tuning_dict,
-    )"""
+    )
 
     # 2. INFORMATION LEAKAGE
     # Make sure that there is no information leakage, i.e. text evidence that is in both pre-training and one of
