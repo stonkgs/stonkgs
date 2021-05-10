@@ -12,6 +12,7 @@ import pickle
 import random
 from typing import Optional
 
+import csrgraph as cg
 import networkx as nx
 import numpy as np
 import optuna
@@ -217,13 +218,8 @@ def run_node2vec(
     n_threads: Optional[int] = 96,  # hard coded to the cluster, change if necessary
 ):
     """Run node2vec with no HPO."""
-    # Read graph, first read the triples into a dataframe
-    triples_df = pd.read_csv(positive_graph_path, sep=sep)
-    # Initialize empty Graph and fill it with the triples from the df
-    indra_kg_pos = nx.DiGraph()
-    for _, row in tqdm(triples_df[["source", "target"]].iterrows(), total=triples_df.shape[0]):
-        # FIXME add double relation for some cases
-        indra_kg_pos.add_edge(row["source"], row["target"])
+    # Use CSRGraph for speedup
+    indra_kg_pos = cg.read_edgelist(positive_graph_path, directed=False, sep=sep)
     logger.info("Finished loading the KG")
 
     # Hyperparameters
