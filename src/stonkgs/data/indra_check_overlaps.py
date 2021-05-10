@@ -79,7 +79,6 @@ if __name__ == '__main__':
     # 1. ENTITY OVERLAP
     # Get all the pre-training and fine-tuning datasets
     pre_training_ents = load_entities(PRETRAINING_PATH)
-    fine_tuning = dict()
 
     # Iterate through all the fine-tuning stuff for ENTITIES
     paths = [CELL_TYPE_DIR, CELL_LINE_DIR, DISEASE_DIR, LOCATION_DIR, ORGAN_DIR, RELATION_TYPE_DIR, SPECIES_DIR]
