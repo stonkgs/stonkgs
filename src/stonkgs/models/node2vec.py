@@ -10,7 +10,7 @@ import logging
 import os
 import pickle
 import random
-from typing import Optional
+from typing import Optional, Union
 
 import csrgraph as cg
 import networkx as nx
@@ -28,10 +28,16 @@ from tqdm import tqdm
 from stonkgs.constants import KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR, PRETRAINING_PATH
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+
+def negative_sampling():
+    # TODO: smarter negative sampling
+    return NotImplementedError()
 
 
 def run_link_prediction(
-    kg: nx.DiGraph,
+    kg: Union[nx.DiGraph, cg.csrgraph],
     model: Node2Vec,
 ) -> float:
     """Link prediction task for a given KG and node2vec model."""
@@ -40,8 +46,14 @@ def run_link_prediction(
     # 2. Alternative from PyKEEN -> https://pykeen.readthedocs.io/en/latest/reference/negative_sampling.html
     # 3. Alternative from xswap -> https://github.com/hetio/xswap
 
-    # follow https://stellargraph.readthedocs.io/en/stable/demos/link-prediction/node2vec-link-prediction.html
-    _, indra_kg_triples, edge_labels = EdgeSplitter(kg).train_test_split()
+    if isinstance(kg, cg.csrgraph):
+        # The sparse matrix needs to be converted first
+        kg_triples = kg.mat
+        # TODO insert negative sampling here
+
+    else:
+        # follow https://stellargraph.readthedocs.io/en/stable/demos/link-prediction/node2vec-link-prediction.html
+        _, indra_kg_triples, edge_labels = EdgeSplitter(kg).train_test_split()
 
     # 1. generate embeddings
     # 2. use dot product between two entities from negative triple
@@ -110,6 +122,10 @@ def run_node2vec_hpo(
     walk_length: int = 127
     # has to be the same as the embedding dimension of the NLP model
     dimensions: int = 768
+    # TODO: Discuss if one should use these or just set them to 1, see
+    #  "embedding a large graph" https://github.com/VHRanger/nodevectors (replace with inverse if != 1.0)
+    p = 1.0
+    q = 1.0
 
     # define HPO function for optuna
     def objective(
@@ -120,18 +136,14 @@ def run_node2vec_hpo(
         epochs = trial.suggest_categorical('epochs', [2, 4, 8])  # 8, 16])  # 32, 64, 128, 256])
         # Same for window size
         window_size = trial.suggest_int('window_size', 3, 5)  # 7)
-        # TODO: check best q/p values
-        p = trial.suggest_uniform('p', 0, 4.0)
-        q = trial.suggest_uniform('q', 0, 4.0)
 
         # train the KGE model
         node2vec_model = Node2Vec(
             n_components=dimensions,
             walklen=walk_length,
             epochs=epochs,
-            # use inverse, see https://github.com/VHRanger/nodevectors/blob/master/nodevectors/node2vec.py#L46
-            return_weight=1 / p,
-            neighbor_weight=1 / q,
+            return_weight=p,
+            neighbor_weight=q,
             threads=n_threads,
             keep_walks=True,
             verbose=True,
@@ -223,7 +235,7 @@ def run_node2vec(
         positive_graph_path,
         directed=False,
         sep=sep,
-        usecols=['source', 'relation', 'target'],
+        usecols=['source', 'target'],
         header=0,
     )
     logger.info("Finished loading the KG")
@@ -234,7 +246,7 @@ def run_node2vec(
     # only use 1 iteration for word2vec, see
     # https://datascience.stackexchange.com/questions/9819/number-of-epochs-in-gensim-word2vec-implementation
     iterations: int = 1
-    batch_words: int = 1000  # batch words default value in Gensim is 10,000
+    batch_words: int = 10000  # batch words default value in Gensim is 10,000
     walk_length: int = 127
     # has to be the same as the embedding dimension of the NLP model
     dimensions: int = 768
