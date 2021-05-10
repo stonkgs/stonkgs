@@ -219,7 +219,13 @@ def run_node2vec(
 ):
     """Run node2vec with no HPO."""
     # Use CSRGraph for speedup
-    indra_kg_pos = cg.read_edgelist(positive_graph_path, directed=False, sep=sep)
+    indra_kg_pos = cg.read_edgelist(
+        positive_graph_path,
+        directed=False,
+        sep=sep,
+        usecols=['source', 'relation', 'target'],
+        header=0,
+    )
     logger.info("Finished loading the KG")
 
     # Hyperparameters
