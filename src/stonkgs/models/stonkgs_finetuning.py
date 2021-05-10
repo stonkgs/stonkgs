@@ -29,6 +29,12 @@ def filter_for_majority_classes(
     output_path: Optional[str] = None,
 ) -> pd.DataFrame:
     """Filter out data entries that occur infrequently, return the dataframe with only n_class many majority classes."""
+    # Remove the "-1" label (str) (since it can't be mapped to any ontology)
+    df = df[df['class'] != '-1']
+
+    # Manually merge EFO:0000887 into UBERON:0002107, since it's deprecated
+    df.replace('0000887', '0002107', inplace=True)
+
     # Remove any classes that are not in the n_classes most common classes
     # (value counts returns classes in descending order)
     labels_to_remove = df['class'].value_counts()[n_classes:].to_dict()
