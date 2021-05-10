@@ -50,6 +50,10 @@ MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
 # Load a constant for distinguishing between local and cluster execution (default = True)
 LOCAL_EXECUTION = os.getenv("LOCAL_EXECUTION") or "True"
 
+# Directory for visualizations, save it in the notebooks dir for now
+NOTEBOOKS_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'notebooks')
+VISUALIZATIONS_DIR = os.path.join(NOTEBOOKS_DIR, 'visualization')
+
 """Create directories"""
 os.makedirs(DATA_DIR, exist_ok=True)
 os.makedirs(MODELS_DIR, exist_ok=True)
@@ -62,6 +66,8 @@ os.makedirs(KG_HPO_DIR, exist_ok=True)
 os.makedirs(KG_BL_OUTPUT_DIR, exist_ok=True)
 os.makedirs(STONKGS_OUTPUT_DIR, exist_ok=True)
 os.makedirs(NLP_BL_OUTPUT_DIR, exist_ok=True)
+os.makedirs(VISUALIZATIONS_DIR, exist_ok=True)
+os.makedirs(NOTEBOOKS_DIR, exist_ok=True)
 
 os.makedirs(ORGAN_DIR, exist_ok=True)
 os.makedirs(PRETRAINING_DIR, exist_ok=True)
