@@ -102,8 +102,10 @@ def run_node2vec(
     # Hyperparameters
     # see https://github.com/seffnet/seffnet/blob/master/src/seffnet/optimization.py
     negative: int = 5
-    iterations: int = 15
-    batch_words: int = 1000
+    # only use 1 iteration for word2vec, see
+    # https://datascience.stackexchange.com/questions/9819/number-of-epochs-in-gensim-word2vec-implementation
+    iterations: int = 1
+    batch_words: int = 1000  # batch words default value in Gensim is 10,000
     walk_length: int = 127
     # has to be the same as the embedding dimension of the NLP model
     dimensions: int = 768
@@ -113,8 +115,10 @@ def run_node2vec(
         trial: optuna.trial.Trial,
     ) -> float:
         """Run HPO on the link prediction task on the KG, based on a LogReg classifier and the auc score."""
-        epochs = trial.suggest_categorical('epochs', [8, 16, 32, 64, 128, 256])
-        window_size = trial.suggest_int('window_size', 3, 7)
+        # Leave out large values for epochs due to runtime constraints
+        epochs = trial.suggest_categorical('epochs', [2, 4])  # 8, 16])  # 32, 64, 128, 256])
+        # Same for window size
+        window_size = trial.suggest_int('window_size', 3, 4)  # 7)
         # TODO: check best q/p values
         p = trial.suggest_uniform('p', 0, 4.0)
         q = trial.suggest_uniform('q', 0, 4.0)
