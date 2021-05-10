@@ -32,6 +32,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def negative_sampling():
+    """Create negative samples for CSRGraph data."""
     # TODO: smarter negative sampling
     return NotImplementedError()
 
@@ -48,7 +49,7 @@ def run_link_prediction(
 
     if isinstance(kg, cg.csrgraph):
         # The sparse matrix needs to be converted first
-        kg_triples = kg.mat
+        kg_triples = kg.mat  # noqa: F841
         # TODO insert negative sampling here
 
     else:
