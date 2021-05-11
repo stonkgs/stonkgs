@@ -82,7 +82,15 @@ if __name__ == '__main__':
 
     # Iterate through all the fine-tuning stuff for ENTITIES
     paths = [CELL_TYPE_DIR, CELL_LINE_DIR, DISEASE_DIR, LOCATION_DIR, ORGAN_DIR, RELATION_TYPE_DIR, SPECIES_DIR]
-    names = ['cell_type', 'cell_line', 'disease', 'location', 'organ', 'relation_type', 'species']
+    names = [
+        'cell_type_filtered',
+        'cell_line_filtered',
+        'disease_filtered',
+        'location_filtered',
+        'organ_filtered',
+        'relation_type',
+        'species_filtered',
+    ]
 
     fine_tuning_dict = dict()
     for path, annot_name in zip(paths, names):
