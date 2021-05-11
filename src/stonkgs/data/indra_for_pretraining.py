@@ -100,12 +100,11 @@ def _add_negative_nsp_samples(
         for i in negative_sample_idx
     ]
 
-    for idx, (i, j) in enumerate(zip(negative_sample_idx, negative_sample_idx_partner)):
-        # Log the progress
-        if idx % 1000 == 0:
-            logger.info(f'Processing negative examples for row number {idx} of '
-                        f'{int(len(processed_df) * nsp_negative_proportion)}')
-
+    for i, j in tqdm(
+        zip(negative_sample_idx, negative_sample_idx_partner),
+        total=int(nsp_negative_proportion * len(processed_df)),
+        desc='Generating negative samples',
+    ):
         # Get the features from i
         text_features = processed_df.iloc[i]
         # Get the features from j
@@ -173,7 +172,11 @@ def indra_to_pretraining_df(
     pre_training_preprocessed = []
 
     # Log progress with a progress bar
-    for idx, row in tqdm(pretraining_df.iterrows(), total=pretraining_df.shape[0]):
+    for idx, row in tqdm(
+        pretraining_df.iterrows(),
+        total=pretraining_df.shape[0],
+        desc='Generating positive samples',
+    ):
         # 1. "Token type IDs": 0 for text tokens, 1 for entity tokens
         token_type_ids = [0] * half_length + [1] * half_length
 
@@ -222,6 +225,8 @@ def indra_to_pretraining_df(
     # Put the preprocessed data into a dataframe
     pre_training_preprocessed_df = pd.DataFrame(pre_training_preprocessed)
 
+    logger.info('Finished generating positive training examples')
+
     # Generate the negative NSP training samples
     pre_training_negative_samples = _add_negative_nsp_samples(
         pre_training_preprocessed_df,
@@ -233,10 +238,14 @@ def indra_to_pretraining_df(
         pre_training_negative_samples
     ).reset_index()
 
+    logger.info('Finished generating negative training examples')
+
     # Shuffle the dataframe just to be sure
     pre_training_preprocessed_df_shuffled = pre_training_preprocessed_df.iloc[
         np.random.permutation(pre_training_preprocessed_df.index)
     ].reset_index(drop=True)
+
+    logger.info('Finished shuffling the data')
 
     # Save the final dataframe
     pre_training_preprocessed_df_shuffled.to_csv(
@@ -248,6 +257,8 @@ def indra_to_pretraining_df(
     pre_training_preprocessed_df_shuffled.to_pickle(
         os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed.pkl'),
     )
+
+    logger.info(f'Saved the data under {PRETRAINING_DIR}')
 
     return pre_training_preprocessed_df
 
