@@ -320,3 +320,15 @@ scratch/
 # Models and logs folders
 /models/
 /logs/
+
+# Any data files/images/xmls
+*.json
+*.gz
+*.pkl
+*.tsv
+*.txt
+*.png
+*.xml
+
+# Idea folder
+/.idea/
