@@ -279,6 +279,33 @@ def run_node2vec(
 
     logger.info('Successfully trained the model')
 
+    # Save the trained model to a file
+    with open(os.path.join(KG_HPO_DIR, "node2vec_model_no_hpo.pickle"), "wb") as fout:
+        pickle.dump(node2vec_model, fout)
+
+    # Save the embeddings
+    wv = node2vec_model.model.wv
+    sorted_vocab_items = sorted(wv.vocab.items(), key=lambda item: item[1].count, reverse=True)
+    vectors = wv.vectors
+
+    with open(os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv"), "w") as emb_file:
+        for word, vocab_ in sorted_vocab_items:
+            # Write to vectors file
+            embeddings = "\t".join(repr(val) for val in vectors[vocab_.index])
+            emb_file.write(f'{word}\t{embeddings}\n')
+
+    logger.info('Successfully saved the embeddings')
+
+    # Save the random walks
+    all_random_walks = node2vec_model.walks
+
+    with open(os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv"), "w") as random_walk_file:
+        for node, random_walks in zip(wv.index2entity, all_random_walks):
+            random_walks_str = "\t".join(random_walks)
+            random_walk_file.write(f'{node}\t{random_walks_str}\n')
+
+    logger.info('Successfully saved the walks')
+
 
 if __name__ == "__main__":
     run_node2vec()
