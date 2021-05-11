@@ -136,13 +136,18 @@ def indra_to_pretraining_df(
     sep_id: int = 102,
 ):
     """Preprocesses the INDRA statements from the pre-training file so that it contains all the necessary attributes."""
-
     # Load the KG embedding dict to convert the names to numeric indices
     kg_embed_dict = _prepare_df(embedding_name_to_vector_path)
     kg_name_to_idx = {key: i for i, key in enumerate(kg_embed_dict.keys())}
 
     # Load the random walks for each node
     random_walk_dict = _prepare_df(embedding_name_to_random_walk_path)
+    # Assert that embeddings and random walks are generated based on the same dataset
+    assert len(kg_embed_dict) == len(random_walk_dict), 'Embeddings and random walks must cover the same entities'
+
+    # Log the number of entities
+    logger.info(f'There are {len(kg_embed_dict)} many entities in the pre-trained KG')
+
     # Convert random walk sequences to list of numeric indices
     random_walk_idx_dict = {k: [kg_name_to_idx[node] for node in v] for k, v in random_walk_dict.items()}
 
