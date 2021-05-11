@@ -117,6 +117,8 @@ class STonKGsForPreTraining(BertForPreTraining):
             torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device),
         )[0][0][0]
 
+        # TODO add [UNK] to KG backbone
+
     def forward(
         self,
         # required parameters
