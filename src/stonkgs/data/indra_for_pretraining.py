@@ -160,18 +160,29 @@ def indra_to_pretraining_df(
         logger.warning('The learned KG embeddings do not cover all of the nodes in the pre-training data')
         return
 
-    # Get the length of the text or entity embedding sequences (2 random walks = entity embedding sequence length)
-    half_length = len(next(iter(random_walk_idx_dict.values()))) * 2
+    # Get the length of the text or entity embedding sequences (2 random walks + 2 = entity embedding sequence length)
+    half_length = len(next(iter(random_walk_idx_dict.values()))) * 2 + 2
 
-    # Initialize a FAST tokenizer if it's the default one (BioBERT)
-    if nlp_model_type == NLP_MODEL_TYPE:
-        # Load the BioBERT tokenizer as a fast tokenizer to be able to count the tokens later on
-        tokenizer_object = BertWordPieceTokenizer(VOCAB_FILE)
-        # Initialize the fast tokenizer
-        tokenizer = PreTrainedTokenizerFast(tokenizer_object=tokenizer_object)
-    else:
-        # Initialize a tokenizer used for getting the text token ids
-        tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
+    # TODO (optional): Implement the fast tokenizer
+    """    # Initialize a FAST tokenizer if it's the default one (BioBERT)
+        if nlp_model_type == NLP_MODEL_TYPE:
+            # Load the BioBERT tokenizer as a fast tokenizer to be able to count the tokens later on
+            tokenizer_object = BertWordPieceTokenizer(VOCAB_FILE)
+            # Initialize the fast tokenizer
+            tokenizer = PreTrainedTokenizerFast(tokenizer_object=tokenizer_object)
+            # Special tokens need to be added manually
+            tokenizer.add_special_tokens({
+                'pad_token': '[PAD]',
+                'unk_token': '[UNK]',
+                'sep_token': '[SEP]',
+                'mask_token': '[MASK]',
+                'cls_token': '[CLS]',
+            })
+        else:"""
+
+    # Just use the normal tokenizer for now ...
+    # Initialize a tokenizer used for getting the text token ids
+    tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
 
     # Initialize the preprocessed data
     pre_training_preprocessed = []
