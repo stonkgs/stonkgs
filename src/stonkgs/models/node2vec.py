@@ -231,6 +231,11 @@ def run_node2vec(
     n_threads: Optional[int] = 96,  # hard coded to the cluster, change if necessary
 ):
     """Run node2vec with no HPO."""
+    # Double check the number of expected embeddings
+    triples_df = pd.read_csv(positive_graph_path, sep=sep)
+    n_expected_nodes = len(set(triples_df['source']).union(set(triples_df['target'])))
+    logger.info(f'{n_expected_nodes} node embeddings are expected')
+
     # Use CSRGraph for speedup
     indra_kg_pos = cg.read_edgelist(
         positive_graph_path,
@@ -270,13 +275,12 @@ def run_node2vec(
             'negative': negative,
             'iter': iterations,
             'batch_words': batch_words,
+            'min_count': 1,  # do not sort out any words (KG entities)!
         },
     )
-
     logger.info('Successfully created the model')
 
     node2vec_model.fit(indra_kg_pos)
-
     logger.info('Successfully trained the model')
 
     # Save the trained model to a file
@@ -286,6 +290,7 @@ def run_node2vec(
     # Save the embeddings
     wv = node2vec_model.model.wv
     sorted_vocab_items = sorted(wv.vocab.items(), key=lambda item: item[1].count, reverse=True)
+    logger.info(f'{len(sorted_vocab_items)} embeddings were learned')
     vectors = wv.vectors
 
     with open(os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv"), "w") as emb_file:
@@ -298,6 +303,7 @@ def run_node2vec(
 
     # Save the random walks
     all_random_walks = node2vec_model.walks
+    logger.info(f'{len(all_random_walks)} random walks were learned')
 
     with open(os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv"), "w") as random_walk_file:
         for node, random_walks in zip(wv.index2entity, all_random_walks):
