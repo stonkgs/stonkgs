@@ -131,7 +131,7 @@ def indra_to_pretraining_df(
     embedding_name_to_random_walk_path: str = RANDOM_WALKS_PATH,
     pre_training_path: str = PRETRAINING_PATH,
     nlp_model_type: str = NLP_MODEL_TYPE,
-    nsp_negative_proportion: float = 0.5,
+    nsp_negative_proportion: float = 0.25,
     sep_id: int = 102,
 ):
     """Preprocesses the INDRA statements from the pre-training file so that it contains all the necessary attributes."""
