@@ -451,7 +451,7 @@ def read_indra_triples(
         for subgraph in connected_components[1:]
         for node in subgraph
     ]
-    indra_kg.removes_nodes_from(
+    indra_kg.remove_nodes_from(
         nodes_not_in_largest_component
     )
 
