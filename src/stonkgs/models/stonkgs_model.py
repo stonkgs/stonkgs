@@ -144,16 +144,20 @@ class STonKGsForPreTraining(BertForPreTraining):
             for j in input_ids[:, self.cls.predictions.half_length:]],
         )
 
-        # TODO (later on): Just use the random walks of length 127, they are preprocessed with + [SEP]
-        # Replace the middle with the [SEP] embedding vector to distinguish between the first and second random walk
-        # sequences and also add the [SEP] embedding vector at the end
-        # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
-        ent_embeddings[len(ent_embeddings) // 2] = self.lm_backbone(
-            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device),
-        )[0][0][0]
-        ent_embeddings[-1] = self.lm_backbone(
-            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device),
-        )[0][0][0]
+        # TODO (later on): Remove this additional processing step, it's handled in preprocessing
+        #  this if covers the old training data in which the random walks had the length 128 and no [SEP]s
+        # If the SEP tokens are not at the last input index (it's expected to be there is preprocessed correctly):
+        # Add them here
+        if input_ids[0, -1] != self.lm_sep_id:
+            # Replace the middle with the [SEP] embedding vector to distinguish between the first and second random walk
+            # sequences and also add the [SEP] embedding vector at the end
+            # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
+            ent_embeddings[len(ent_embeddings) // 2] = self.lm_backbone(
+                torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device),
+            )[0][0][0]
+            ent_embeddings[-1] = self.lm_backbone(
+                torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device),
+            )[0][0][0]
 
         # Concatenate token and entity embeddings obtained from the LM and KG backbones and cast to float
         # batch x seq_len x hidden_size
