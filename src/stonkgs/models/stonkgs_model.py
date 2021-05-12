@@ -139,7 +139,8 @@ class STonKGsForPreTraining(BertForPreTraining):
         # batch x half_length x hidden_size
         ent_embeddings = torch.stack([
             # for each numeric index in the random walks sequence: get the embedding vector from the KG backbone
-            torch.stack([self.kg_backbone[i.item()] for i in j])
+            # TODO remove the if else later on, this is only for the old dummy data
+            torch.stack([self.kg_backbone[i.item() if i.item() != -1 else 100] for i in j])
             # for each example in the batch: get the random walks sequence
             for j in input_ids[:, self.cls.predictions.half_length:]],
         )
