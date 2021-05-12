@@ -462,6 +462,19 @@ def read_indra_triples(
     logger.info(f'{indra_kg.number_of_edges()} edges from {len(lines)} statements')
     logger.info(indra_kg.summarize())
 
+    # Dump the most important characteristics of the summary to a file
+    summary = {
+        'node_summary': indra_kg.count.namespaces(),
+        'relation_summary': indra_kg.count.relations(),
+        'functions_summary': indra_kg.count.functions(),
+        'annotations_summary': indra_kg.count.annotations(),
+        'names_by_namespaces': indra_kg.count.names_by_namespace(),
+    }
+    summary_list = [{'name': key, 'value': value} for key, value in summary.items()]
+
+    with open(os.path.join(MISC_DIR, 'indra_kg_overview_summary.json'), 'w') as f:
+        json.dump(summary_list, f, ensure_ascii=False)
+
     # Print all the annotations in the graph
     all_annotations = set()
 
