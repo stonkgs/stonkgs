@@ -87,37 +87,31 @@ class STonKGsForPreTraining(BertForPreTraining):
         # (We only want to train the STonKGs Transformer layers)
         for param in self.lm_backbone.parameters():
             param.requires_grad = False
-        # Get the separator token id (needed in the forward pass) from a nlp_model_type specific tokenizer
-        self.lm_sep_id = BertTokenizer.from_pretrained(nlp_model_type).sep_token_id
-        # Get the mask token id (needed in the forward pass) from a nlp_model_type specific tokenizer
-        self.lm_mask_id = BertTokenizer.from_pretrained(nlp_model_type).mask_token_id
+        # Get the separator, mask and unknown token ids from a nlp_model_type specific tokenizer
+        self.lm_sep_id = BertTokenizer.from_pretrained(nlp_model_type).sep_token_id  # usually 102
+        self.lm_mask_id = BertTokenizer.from_pretrained(nlp_model_type).mask_token_id  # usually 103
+        self.lm_unk_id = BertTokenizer.from_pretrained(nlp_model_type).unk_token_id  # usually 100
 
         # KG backbone initialization
-        # TODO: move that to a custom dataset class maybe?
-        # Get numeric indices for the KG embedding vectors except for the sep id which is reserved for the LM [SEP]
-        # embedding vector (see below)
-        numeric_indices = list(range(len(kg_embedding_dict) + 1))
-        numeric_indices = numeric_indices[:self.lm_sep_id] + numeric_indices[self.lm_sep_id + 1:]
+        # Get numeric indices for the KG embedding vectors except for the sep, unk, mask ids which are reserved for the
+        # LM [SEP] embedding vectors (see below)
+        numeric_indices = list(range(len(kg_embedding_dict) + 3))
+        # Keep the numeric indices of the special tokens free, don't put the kg embeds there
+        for special_token_id in [self.lm_sep_id, self.lm_mask_id, self.lm_unk_id]:
+            numeric_indices.remove(special_token_id)
 
         # Generate numeric indices for the KG node names (iterating .keys() is deterministic)
         self.kg_idx_to_name = {i: key for i, key in zip(numeric_indices, kg_embedding_dict.keys())}
         # Initialize KG index to embeddings based on the provided kg_embedding_dict
         self.kg_backbone = {i: torch.tensor(kg_embedding_dict[self.kg_idx_to_name[i]]).to(self.lm_backbone.device)
                             for i in self.kg_idx_to_name.keys()}
-        # Add the MASK (LM backbone) embedding vector to the KG backbone for masked entity tokens
-        # i = -1 indicates that this entity is masked, therefore it is replaced with the embedding vector of the
-        # [MASK] token
+        # Add the MASK, SEP and UNK (LM backbone) embedding vectors to the KG backbone so that the labels are correctly
+        # identified in the loss function later on
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
-        self.kg_backbone[-1] = self.lm_backbone(torch.tensor([[self.lm_mask_id]]).to(self.lm_backbone.device))[0][0][0]
-        # Add the SEP (LM backbone) embedding vector to the KG backbone so that the label is correctly identified in
-        # the loss function later on
-        # i = 102 indicates that it's a [SEP] token, therefore it is replaced with the emb. vector of the [SEP] token
-        # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
-        self.kg_backbone[self.lm_sep_id] = self.lm_backbone(
-            torch.tensor([[self.lm_sep_id]]).to(self.lm_backbone.device),
-        )[0][0][0]
-
-        # TODO add [UNK] to KG backbone
+        for special_token_id in [self.lm_sep_id, self.lm_mask_id, self.lm_unk_id]:
+            self.kg_backbone[special_token_id] = self.lm_backbone(
+                torch.tensor([[special_token_id]]).to(self.lm_backbone.device),
+            )[0][0][0]
 
     def forward(
         self,
@@ -150,7 +144,7 @@ class STonKGsForPreTraining(BertForPreTraining):
             for j in input_ids[:, self.cls.predictions.half_length:]],
         )
 
-        # TODO (later on): Just use random walks of length 127 and concatenate with [SEP] instead
+        # TODO (later on): Just use the random walks of length 127, they are preprocessed with + [SEP]
         # Replace the middle with the [SEP] embedding vector to distinguish between the first and second random walk
         # sequences and also add the [SEP] embedding vector at the end
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
