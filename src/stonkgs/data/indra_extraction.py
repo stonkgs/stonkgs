@@ -468,7 +468,6 @@ def read_indra_triples(
         'relation_summary': indra_kg.count.relations(),
         'functions_summary': indra_kg.count.functions(),
         'annotations_summary': indra_kg.count.annotations(),
-        'names_by_namespaces': indra_kg.count.names_by_namespace(),
     }
     summary_list = [{'name': key, 'value': value} for key, value in summary.items()]
 
