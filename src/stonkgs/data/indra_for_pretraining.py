@@ -13,8 +13,7 @@ from typing import List, Optional
 
 import numpy as np
 import pandas as pd
-from transformers import BertTokenizer, PreTrainedTokenizerFast
-from tokenizers import BertWordPieceTokenizer
+from transformers import BertTokenizer, BertTokenizerFast
 from tqdm import tqdm
 
 from stonkgs.constants import (
@@ -80,7 +79,7 @@ def _replace_mlm_tokens(
 
 def _add_negative_nsp_samples(
     processed_df: pd.DataFrame,
-    nsp_negative_proportion: float = 0.5,
+    nsp_negative_proportion: float = 0.25,
 ):
     """Generates non-matching text-entity pairs (negative NSP samples)."""
     negative_samples = []
@@ -163,26 +162,13 @@ def indra_to_pretraining_df(
     # Get the length of the text or entity embedding sequences (2 random walks + 2 = entity embedding sequence length)
     half_length = len(next(iter(random_walk_idx_dict.values()))) * 2 + 2
 
-    # TODO (optional): Implement the fast tokenizer
-    """    # Initialize a FAST tokenizer if it's the default one (BioBERT)
-        if nlp_model_type == NLP_MODEL_TYPE:
-            # Load the BioBERT tokenizer as a fast tokenizer to be able to count the tokens later on
-            tokenizer_object = BertWordPieceTokenizer(VOCAB_FILE)
-            # Initialize the fast tokenizer
-            tokenizer = PreTrainedTokenizerFast(tokenizer_object=tokenizer_object)
-            # Special tokens need to be added manually
-            tokenizer.add_special_tokens({
-                'pad_token': '[PAD]',
-                'unk_token': '[UNK]',
-                'sep_token': '[SEP]',
-                'mask_token': '[MASK]',
-                'cls_token': '[CLS]',
-            })
-        else:"""
-
-    # Just use the normal tokenizer for now ...
-    # Initialize a tokenizer used for getting the text token ids
-    tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
+    # Initialize a FAST tokenizer if it's the default one (BioBERT)
+    if nlp_model_type == NLP_MODEL_TYPE:
+        # Initialize the fast tokenizer for getting the text token ids
+        tokenizer = BertTokenizerFast(vocab_file=VOCAB_FILE)
+    else:
+        # Initialize a slow tokenizer used for getting the text token ids
+        tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
 
     # Initialize the preprocessed data
     pre_training_preprocessed = []
