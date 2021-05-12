@@ -11,6 +11,7 @@ import logging
 import os
 from typing import Any, Dict, List, Tuple
 
+import networkx as nx
 import pandas as pd
 import pybel
 from pybel.constants import (
@@ -431,6 +432,31 @@ def read_indra_triples(
     logger.warning(f'removing {len(non_grounded_nodes)} non grounded nodes')
 
     indra_kg.remove_nodes_from(non_grounded_nodes)
+
+    # Remove any nodes that are not in the largest component
+    connected_components = [
+        component
+        for component in sorted(nx.connected_components(indra_kg.to_undirected()), key=len, reverse=True)
+    ]
+    logger.warning(f'Components of the KG: {len(connected_components)}')
+    connected_components_size = [
+        len(c)
+        for c in connected_components
+    ]
+    logger.warning(
+        f'Largest component {connected_components_size[0]}, first 50... -> {connected_components_size[1: 50]}'
+    )
+    nodes_not_in_largest_component = [
+        node
+        for subgraph in connected_components[1:]
+        for node in subgraph
+    ]
+    indra_kg.removes_nodes_from(
+        nodes_not_in_largest_component
+    )
+
+    logger.warning(f'{len(nodes_not_in_largest_component)} nodes were removed because they are not in the largest '
+                   f'component')
 
     #: Summarize content of the KG
     logger.info(f'{indra_kg.number_of_edges()} edges from {len(lines)} statements')
