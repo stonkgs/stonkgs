@@ -205,11 +205,10 @@ def indra_to_pretraining_df(
             vocab_len=len(tokenizer.vocab),
         )
         # Apply the masking strategy to the entity tokens and get the entity (E)LM labels
-        # The mask_id is -1 for the entity vocabulary (handled by the STonKGs forward pass later on)
+        # Use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
         ent_masked_lm_token_ids, ent_masked_lm_labels = _replace_mlm_tokens(
             tokens=random_walks,
             vocab_len=len(kg_embed_dict),
-            mask_id=-1,
         )
 
         input_ids = masked_lm_token_ids + ent_masked_lm_token_ids
