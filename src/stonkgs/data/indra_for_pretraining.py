@@ -94,10 +94,11 @@ def _add_negative_nsp_samples(
     )
 
     # For each negative sample, get a random index that is not the current one for creating negative samples
-    negative_sample_idx_partner = [
-        random.choice(list(range(len(processed_df)))[:i-1] + list(range(len(processed_df)))[i:])
-        for i in negative_sample_idx
-    ]
+    # (doesn't exclude the very very small chance of getting the same index as a partner
+    negative_sample_idx_partner = random.sample(
+        range(len(processed_df)),
+        int(len(processed_df) * nsp_negative_proportion),
+    )
 
     for i, j in tqdm(
         zip(negative_sample_idx, negative_sample_idx_partner),
@@ -234,6 +235,15 @@ def indra_to_pretraining_df(
         sep='\t',
         index=False,
     )
+
+    """ Use this in case the script crashes during the generation of negative samples
+    # Load the positive examples
+    pre_training_preprocessed_df = pd.read_csv(
+        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed_positive.tsv'),
+        sep='\t',
+        index_col=None,
+    )
+    """
 
     # Generate the negative NSP training samples
     pre_training_negative_samples = _add_negative_nsp_samples(
