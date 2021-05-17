@@ -95,7 +95,7 @@ def _add_negative_nsp_samples(
 
     # For each negative sample, get a random index that is not the current one for creating negative samples
     negative_sample_idx_partner = [
-        random.choice([j for j in range(len(processed_df)) if j != i])
+        random.choice(list(range(len(processed_df)))[:i-1] + list(range(len(processed_df)))[i:])
         for i in negative_sample_idx
     ]
 
@@ -227,6 +227,13 @@ def indra_to_pretraining_df(
     pre_training_preprocessed_df = pd.DataFrame(pre_training_preprocessed)
 
     logger.info('Finished generating positive training examples')
+
+    # Save the positive examples
+    pre_training_preprocessed_df.to_csv(
+        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed_positive.tsv'),
+        sep='\t',
+        index=False,
+    )
 
     # Generate the negative NSP training samples
     pre_training_negative_samples = _add_negative_nsp_samples(
