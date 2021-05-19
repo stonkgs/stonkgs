@@ -31,7 +31,7 @@ def convert_tsv_with_str_list(
         sep="\t",
         chunksize=1000000,
         converters=converter_dict),
-        total=13609995,  # Hard coded total number
+        total=14,  # Hard coded total number
     ):
         chunks.append(chunk)
     complete_df = pd.concat(chunks, axis=0)
