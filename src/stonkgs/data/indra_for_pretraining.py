@@ -235,13 +235,15 @@ def indra_to_pretraining_df(
         sep='\t',
         index=False,
     )
+    # Pickle it, too (easier for reading in the lists in the pandas dataframe)
+    pre_training_preprocessed_df.to_pickle(
+        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed_positive.pkl'),
+    )
 
     """ Use this in case the script crashes during the generation of negative samples
     # Load the positive examples
-    pre_training_preprocessed_df = pd.read_csv(
-        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed_positive.tsv'),
-        sep='\t',
-        index_col=None,
+    pre_training_preprocessed_df = pd.read_pickle(
+        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed_positive.pkl'),
     )
     """
 
@@ -254,7 +256,7 @@ def indra_to_pretraining_df(
     # And append them to the original data
     pre_training_preprocessed_df = pre_training_preprocessed_df.append(
         pre_training_negative_samples
-    ).reset_index()
+    ).reset_index(drop=True)
 
     logger.info('Finished generating negative training examples')
 
