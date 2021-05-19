@@ -47,7 +47,7 @@ def _load_pre_training_data(
         "token_type_ids",
         "masked_lm_labels",
         "ent_masked_lm_labels",
-        "next_sentence_labels"
+        "next_sentence_labels",
     ]]
     pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
     # Do not put the dataset on the GPU even if possible, it is only stealing GPU space, use the dataloader instead
