@@ -40,8 +40,15 @@ def _load_pre_training_data(
     dataset_format: str = 'torch',
 ) -> Dataset:
     """Create a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
-    # Load the pickled preprocessed dataframe
-    pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)
+    # Load the pickled preprocessed dataframe, only select the relevant columns
+    pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)[[
+        "input_ids",
+        "attention_mask",
+        "token_type_ids",
+        "masked_lm_labels",
+        "ent_masked_lm_labels",
+        "next_sentence_labels"
+    ]]
     pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
     # Do not put the dataset on the GPU even if possible, it is only stealing GPU space, use the dataloader instead
     # Putting it on the GPU might only be worth it if 4+ GPUs are used
