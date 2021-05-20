@@ -29,9 +29,9 @@ def convert_tsv_with_str_list(
     for chunk in tqdm(pd.read_csv(
         os.path.join(path, file_name + '.tsv'),
         sep="\t",
-        chunksize=1000000,
+        chunksize=10000,
         converters=converter_dict),
-        total=14,  # Hard coded total number
+        total=10,  # Hard coded total number
     ):
         chunks.append(chunk)
     complete_df = pd.concat(chunks, axis=0)
@@ -44,4 +44,4 @@ def convert_tsv_with_str_list(
 
 if __name__ == "__main__":
     # Fixing the positive dataset
-    convert_tsv_with_str_list('pretraining_preprocessed_positive')
+    convert_tsv_with_str_list('pretraining_preprocessed_dummy')
