@@ -107,8 +107,7 @@ def pretrain_stonkgs(
     mlflow.set_experiment('STonKGs Pre-Training')
 
     # Initialize the STonKGs model
-    kg_embed_dict = _prepare_df(EMBEDDINGS_PATH)
-    stonkgs_model = STonKGsForPreTraining(NLP_MODEL_TYPE, kg_embed_dict)
+    stonkgs_model = STonKGsForPreTraining(nlp_model_type=NLP_MODEL_TYPE)
 
     # Add the huggingface accelerator
     accelerator = Accelerator()

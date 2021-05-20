@@ -14,6 +14,9 @@ from transformers import (
 )
 from transformers.models.bert.modeling_bert import BertForPreTrainingOutput, BertLMPredictionHead
 
+from stonkgs.constants import EMBEDDINGS_PATH, NLP_MODEL_TYPE
+from stonkgs.models.kg_baseline_model import _prepare_df
+
 # Initialize logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -63,10 +66,14 @@ class STonKGsForPreTraining(BertForPreTraining):
 
     def __init__(
         self,
-        nlp_model_type: str,
-        kg_embedding_dict: dict,
+        nlp_model_type: str = NLP_MODEL_TYPE,
+        kg_embedding_dict_path: str = EMBEDDINGS_PATH,
     ):
         """Initialize the model architecture components of STonKGs."""
+        # Initialize the KG dict from the file here, rather than passing it as a parameter, so that it can
+        # be loaded from a checkpoint
+        kg_embedding_dict = _prepare_df(kg_embedding_dict_path)
+
         # Add the number of KG entities to the default config of a standard BERT model
         config = BertConfig.from_pretrained(nlp_model_type)
         config.update({'kg_vocab_size': len(kg_embedding_dict)})
