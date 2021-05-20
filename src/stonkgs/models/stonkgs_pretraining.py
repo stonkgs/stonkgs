@@ -9,9 +9,10 @@ from typing import Optional
 import click
 import mlflow
 import pandas as pd
+from pyarrow import csv, list_, int16
 # import torch.autograd.profiler as profiler
 from accelerate import Accelerator
-from datasets import Dataset
+from datasets import Dataset, load_dataset
 from transformers import (
     Trainer,
     TrainingArguments,
@@ -49,7 +50,29 @@ def _load_pre_training_data(
         "ent_masked_lm_labels",
         "next_sentence_labels",
     ]]
+    logger.info('Finished reading the pickled dataframe')
     pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
+    del pretraining_preprocessed_df
+
+    """"# Try a different way of loading the data
+    csv_converter = csv.ConvertOptions(column_types={
+        'attention_mask': list_(int16()),
+        'token_type_ids': list_(int16()),
+        'masked_lm_labels': list_(int16()),
+        'ent_masked_lm_labels': list_(int16()),
+        'next_sentence_labels': list_(int16()),
+    })
+    pretraining_dataset = load_dataset(
+        'csv',
+        data_files=pretraining_preprocessed_path,
+        delimiter="\t",
+        # convert_options=csv_converter,
+    )
+
+    # Correct the list things
+    list_mapper = lambda x: [int(y) for y in x.strip('[]').split(', ')]
+    pretraining_dataset.map()"""
+
     # Do not put the dataset on the GPU even if possible, it is only stealing GPU space, use the dataloader instead
     # Putting it on the GPU might only be worth it if 4+ GPUs are used
     pretraining_dataset.set_format(dataset_format)
