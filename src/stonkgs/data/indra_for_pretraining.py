@@ -240,7 +240,8 @@ def indra_to_pretraining_df(
         os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed_positive.pkl'),
     )
 
-    """ Use this in case the script crashes during the generation of negative samples
+    """
+    # Use this in case the script crashes during the generation of negative samples
     # Load the positive examples
     pre_training_preprocessed_df = pd.read_pickle(
         os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed_positive.pkl'),
