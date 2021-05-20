@@ -53,6 +53,7 @@ def _load_pre_training_data(
     # Do not put the dataset on the GPU even if possible, it is only stealing GPU space, use the dataloader instead
     # Putting it on the GPU might only be worth it if 4+ GPUs are used
     pretraining_dataset.set_format(dataset_format)
+    logger.info('Finished loading the pretraining dataset')
 
     return pretraining_dataset
 
