@@ -71,6 +71,12 @@ def _load_pre_training_data(
 @click.option('--logging_steps', default=100, help='Logging interval', type=int)
 @click.option('-m', '--max_steps', default=200, help='Number of training steps', type=int)
 @click.option('--overwrite_output_dir', default=False, help='Whether to override the output dir or not', type=bool)
+@click.option(
+    '--pretraining_file',
+    default=PRETRAINING_PREPROCESSED_DF_PATH,
+    help='File used in pretraining containing the preprocessed training examples',
+    type=str,
+)
 @click.option('--save_limit', default=5, help='Maximum number of saved models/checkpoints', type=int)
 @click.option('--save_steps', default=5000, help='Checkpointing interval', type=int)
 @click.option('--training_dir', default=STONKGS_PRETRAINING_DIR, help='Whether to override the output dir', type=str)
@@ -83,6 +89,7 @@ def pretrain_stonkgs(
     logging_steps: int = 100,
     max_steps: int = 10000,
     overwrite_output_dir: bool = False,
+    pretraining_file: str = PRETRAINING_PREPROCESSED_DF_PATH,
     save_limit: int = 5,
     save_steps: int = 5000,
     training_dir: str = STONKGS_PRETRAINING_DIR,
@@ -110,7 +117,7 @@ def pretrain_stonkgs(
     stonkgs_model.to(device)
 
     # Initialize the dataset
-    pretraining_data = _load_pre_training_data()
+    pretraining_data = _load_pre_training_data(pretraining_preprocessed_path=pretraining_file)
 
     # Accelerate the model
     stonkgs_model = accelerator.prepare(stonkgs_model)
