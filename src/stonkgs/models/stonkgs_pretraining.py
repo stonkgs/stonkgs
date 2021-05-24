@@ -12,7 +12,7 @@ import pandas as pd
 from pyarrow import csv, list_, int16
 # import torch.autograd.profiler as profiler
 from accelerate import Accelerator
-from datasets import Dataset, total_allocated_bytes  # load_dataset
+from datasets import Dataset, load_dataset, total_allocated_bytes
 from transformers import (
     Trainer,
     TrainingArguments,
@@ -42,7 +42,7 @@ def _load_pre_training_data(
 ) -> Dataset:
     """Create a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
     # Load the pickled preprocessed dataframe, only select the relevant columns
-    pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)[[
+    """pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)[[
         "input_ids",
         "attention_mask",
         "token_type_ids",
@@ -52,7 +52,8 @@ def _load_pre_training_data(
     ]]
     logger.info('Finished reading the pickled dataframe')
     pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
-    del pretraining_preprocessed_df
+    del pretraining_preprocessed_df"""
+    pretraining_dataset = load_dataset('pandas', data_files=pretraining_preprocessed_path)
 
     # Do not put the dataset on the GPU even if possible, it is only stealing GPU space, use the dataloader instead
     # Putting it on the GPU might only be worth it if 4+ GPUs are used
