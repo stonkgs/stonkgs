@@ -12,7 +12,7 @@ import pandas as pd
 from pyarrow import csv, list_, int16
 # import torch.autograd.profiler as profiler
 from accelerate import Accelerator
-from datasets import Dataset, load_dataset
+from datasets import Dataset, total_allocated_bytes  # load_dataset
 from transformers import (
     Trainer,
     TrainingArguments,
@@ -20,13 +20,13 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 
 from stonkgs.constants import (
-    EMBEDDINGS_PATH,
+    # EMBEDDINGS_PATH,
     MLFLOW_TRACKING_URI,
     NLP_MODEL_TYPE,
     PRETRAINING_PREPROCESSED_DF_PATH,
     STONKGS_PRETRAINING_DIR,
 )
-from stonkgs.models.kg_baseline_model import _prepare_df
+# from stonkgs.models.kg_baseline_model import _prepare_df
 from stonkgs.models.stonkgs_model import STonKGsForPreTraining
 
 # Initialize logger
@@ -118,6 +118,14 @@ def pretrain_stonkgs(
     # Initialize the dataset
     pretraining_data = _load_pre_training_data(pretraining_preprocessed_path=pretraining_file)
 
+    # Print logger statements about the allocated number of bytes of the training dataset
+    logger.info(f"The number of bytes allocated by the dataset on the drive is {pretraining_data.dataset_size}")
+    logger.info(f"For comparison, here is the number of bytes allocated in memory by the training dataset"
+                f": {total_allocated_bytes()}")
+
+    # Clean up cache files to be sure
+    pretraining_data.cleanup_cache_files()
+
     # Accelerate the model
     stonkgs_model = accelerator.prepare(stonkgs_model)
 
@@ -162,6 +170,8 @@ def pretrain_stonkgs(
         args=training_args,
         train_dataset=pretraining_data,
     )
+    # Delete the pretraining dataset from memory
+    del pretraining_data
     # And train STonKGs to the moon
     train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
     trainer.save_model()  # Saves the tokenizer too for easy upload
