@@ -53,7 +53,7 @@ def _load_pre_training_data(
     logger.info('Finished reading the pickled dataframe')
     pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
     del pretraining_preprocessed_df"""
-    pretraining_dataset = load_dataset('pandas', data_files=pretraining_preprocessed_path)
+    pretraining_dataset = load_dataset('pandas', data_files=pretraining_preprocessed_path, split='train')
 
     # Do not put the dataset on the GPU even if possible, it is only stealing GPU space, use the dataloader instead
     # Putting it on the GPU might only be worth it if 4+ GPUs are used
