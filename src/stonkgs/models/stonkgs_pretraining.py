@@ -135,6 +135,8 @@ def pretrain_stonkgs(
         output_dir=training_dir,
         overwrite_output_dir=overwrite_output_dir,
         do_train=True,
+        # Use fp16 to save space
+        fp16=True,
         per_device_train_batch_size=batch_size,
         max_steps=max_steps,  # Use max_steps rather than num_training_epochs
         learning_rate=lr,  # Default is to use that lr with a linear scheduler
