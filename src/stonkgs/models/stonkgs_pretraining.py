@@ -65,6 +65,7 @@ def _load_pre_training_data(
 
 @click.command()
 @click.option('-b', '--batch_size', default=8, help='Batch size for training (per device)', type=int)
+@click.option('--fp16', default=True, help='Whether to use fp16 precision or not', type=bool)
 @click.option('--lr', default=1e-4, help='Learning rate', type=float)
 @click.option('--dataloader_num_workers', default=8, help='Number of dataloader workers', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Number of gradient accumulation steps', type=int)
@@ -83,6 +84,7 @@ def _load_pre_training_data(
 @click.option('--training_dir', default=STONKGS_PRETRAINING_DIR, help='Whether to override the output dir', type=str)
 def pretrain_stonkgs(
     batch_size: int = 8,
+    fp16: bool = True,
     lr: float = 1e-4,
     dataloader_num_workers: int = 8,  # empirically determined value, I'm open to changing it :)
     gradient_accumulation_steps: int = 1,
@@ -136,7 +138,8 @@ def pretrain_stonkgs(
         overwrite_output_dir=overwrite_output_dir,
         do_train=True,
         # Use fp16 to save space
-        fp16=True,
+        fp16=fp16,
+        fp16_full_eval=fp16,
         per_device_train_batch_size=batch_size,
         max_steps=max_steps,  # Use max_steps rather than num_training_epochs
         learning_rate=lr,  # Default is to use that lr with a linear scheduler
