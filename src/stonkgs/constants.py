@@ -40,6 +40,7 @@ KG_HPO_DIR = os.path.join(MODELS_DIR, 'kg-hpo')
 KG_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'kg-baseline')
 STONKGS_PRETRAINING_DIR = os.path.join(MODELS_DIR, 'stonkgs-pretraining')
 STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, 'stonkgs')
+DEEPSPEED_CONFIG_PATH = os.path.join(MODELS_DIR, 'deepspeed_config_zero2.json')
 
 EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, 'embeddings_best_model.tsv')
 RANDOM_WALKS_PATH = os.path.join(KG_HPO_DIR, 'random_walks_best_model.tsv')
