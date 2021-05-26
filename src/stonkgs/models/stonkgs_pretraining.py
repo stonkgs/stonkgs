@@ -140,7 +140,7 @@ def pretrain_stonkgs(
         output_dir=training_dir,
         overwrite_output_dir=overwrite_output_dir,
         # Use deepspeed with a specified config file for speedup
-        deepspeed=deepspeed_config_path,
+        # deepspeed=deepspeed_config_path,
         do_train=True,
         # Use fp16 to save space
         fp16=fp16,
