@@ -69,7 +69,7 @@ def _load_pre_training_data(
 @click.option('--fp16', default=True, help='Whether to use fp16 precision or not', type=bool)
 @click.option('--lr', default=1e-4, help='Learning rate', type=float)
 @click.option('--dataloader_num_workers', default=8, help='Number of dataloader workers', type=int)
-@click.option('--deepspeed_config_path', default=DEEPSPEED_CONFIG_PATH, help='Deepspeed config path', type=str)
+@click.option('--deepspeed', default=False, help='Whether to use deepspeed or not', type=bool)
 @click.option('--gradient_accumulation_steps', default=1, help='Number of gradient accumulation steps', type=int)
 @click.option('--logging_dir', default=MLFLOW_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
 @click.option('--logging_steps', default=100, help='Logging interval', type=int)
@@ -86,7 +86,7 @@ def _load_pre_training_data(
 @click.option('--training_dir', default=STONKGS_PRETRAINING_DIR, help='Whether to override the output dir', type=str)
 def pretrain_stonkgs(
     batch_size: int = 8,
-    deepspeed_config_path: str = DEEPSPEED_CONFIG_PATH,
+    deepspeed: bool = False,
     fp16: bool = True,
     lr: float = 1e-4,
     dataloader_num_workers: int = 8,  # empirically determined value, I'm open to changing it :)
@@ -140,7 +140,7 @@ def pretrain_stonkgs(
         output_dir=training_dir,
         overwrite_output_dir=overwrite_output_dir,
         # Use deepspeed with a specified config file for speedup
-        # deepspeed=deepspeed_config_path,
+        deepspeed=DEEPSPEED_CONFIG_PATH if deepspeed else None,
         do_train=True,
         # Use fp16 to save space
         fp16=fp16,
