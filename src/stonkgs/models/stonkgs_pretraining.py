@@ -18,14 +18,12 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 
 from stonkgs.constants import (
-    # EMBEDDINGS_PATH,
     DEEPSPEED_CONFIG_PATH,
     MLFLOW_TRACKING_URI,
     NLP_MODEL_TYPE,
     PRETRAINING_PREPROCESSED_DF_PATH,
     STONKGS_PRETRAINING_DIR,
 )
-# from stonkgs.models.kg_baseline_model import _prepare_df
 from stonkgs.models.stonkgs_model import STonKGsForPreTraining
 
 # Initialize logger
@@ -40,18 +38,7 @@ def _load_pre_training_data(
     dataset_format: str = 'torch',
 ) -> Dataset:
     """Create a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
-    # Load the pickled preprocessed dataframe, only select the relevant columns
-    """pretraining_preprocessed_df = pd.read_pickle(pretraining_preprocessed_path)[[
-        "input_ids",
-        "attention_mask",
-        "token_type_ids",
-        "masked_lm_labels",
-        "ent_masked_lm_labels",
-        "next_sentence_labels",
-    ]]
-    logger.info('Finished reading the pickled dataframe')
-    pretraining_dataset = Dataset.from_pandas(pretraining_preprocessed_df)
-    del pretraining_preprocessed_df"""
+    # Load the pickled dataframe using the load_dataset function so that it can be cached
     pretraining_dataset = load_dataset('pandas', data_files=pretraining_preprocessed_path, split='train')
 
     # Do not put the dataset on the GPU even if possible, it is only stealing GPU space, use the dataloader instead
