@@ -98,7 +98,9 @@ def pretrain_stonkgs(
     mlflow.set_experiment('STonKGs Pre-Training')
 
     # Initialize the STonKGs model
-    stonkgs_model = STonKGsForPreTraining(nlp_model_type=NLP_MODEL_TYPE)
+    # config = None just fills up the required argument for automated method calls such as .from_pretrained, it will be
+    # overridden anyways in __init__
+    stonkgs_model = STonKGsForPreTraining(config=None, nlp_model_type=NLP_MODEL_TYPE)
 
     # Add the huggingface accelerator
     accelerator = Accelerator()

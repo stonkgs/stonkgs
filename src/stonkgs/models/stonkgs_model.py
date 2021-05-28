@@ -66,6 +66,8 @@ class STonKGsForPreTraining(BertForPreTraining):
 
     def __init__(
         self,
+        config,  # Required for automated methods such as .from_pretrained in classes that inherit from this one,
+        # the config is loaded from scratch later on anyways
         nlp_model_type: str = NLP_MODEL_TYPE,
         kg_embedding_dict_path: str = EMBEDDINGS_PATH,
     ):
