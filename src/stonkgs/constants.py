@@ -39,6 +39,7 @@ NLP_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'nlp-baseline')
 KG_HPO_DIR = os.path.join(MODELS_DIR, 'kg-hpo')
 KG_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, 'kg-baseline')
 STONKGS_PRETRAINING_DIR = os.path.join(MODELS_DIR, 'stonkgs-pretraining')
+PRETRAINED_STONKGS_DUMMY_PATH = os.path.join(STONKGS_PRETRAINING_DIR, 'pretrained-stonkgs-dummy-model')
 STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, 'stonkgs')
 DEEPSPEED_CONFIG_PATH = os.path.join(MODELS_DIR, 'deepspeed_config_zero2.json')
 
