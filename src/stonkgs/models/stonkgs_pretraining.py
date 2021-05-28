@@ -8,8 +8,6 @@ from typing import Optional
 
 import click
 import mlflow
-import pandas as pd
-from pyarrow import csv, list_, int16
 # import torch.autograd.profiler as profiler
 from accelerate import Accelerator
 from datasets import Dataset, load_dataset, total_allocated_bytes
@@ -188,8 +186,6 @@ def pretrain_stonkgs(
     trainer.save_model()  # Saves the tokenizer too for easy upload
     metrics = train_result.metrics
 
-    # Log the number of pre-training samples
-    metrics["train_samples"] = len(pretraining_data)
     # Log all metrics
     trainer.log_metrics("train", metrics)
     trainer.save_metrics("train", metrics)
