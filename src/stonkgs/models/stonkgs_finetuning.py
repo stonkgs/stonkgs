@@ -8,6 +8,7 @@ from typing import List
 import pandas as pd
 import torch
 from sklearn.model_selection import StratifiedKFold
+from transformers.configuration_utils import PretrainedConfig
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.bert import BertModel
 
@@ -149,6 +150,9 @@ class STonKGsForSequenceClassification(STonKGsForPreTraining):
 if __name__ == "__main__":
     # Add a test for loading the model
     unique_tags = 10
-    model = STonKGsForPreTraining.from_pretrained(PRETRAINED_STONKGS_DUMMY_PATH, num_labels=unique_tags)
+    # config = PretrainedConfig.from_pretrained(PRETRAINED_STONKGS_DUMMY_PATH)
+    model = STonKGsForSequenceClassification.from_pretrained(
+        pretrained_model_name_or_path=PRETRAINED_STONKGS_DUMMY_PATH,
+        num_labels=unique_tags)
     # TODO: set up fine tuning
 
