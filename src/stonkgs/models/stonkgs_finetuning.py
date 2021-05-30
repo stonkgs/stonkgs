@@ -131,7 +131,7 @@ def preprocess_fine_tuning_data(
             'input_ids': input_ids,
             'attention_mask': attention_mask,
             'token_type_ids': token_type_ids,  # Remove the MLM, ELM and NSP labels since it's not needed anymore
-            'label': row['class'],  # Add the annotation/relation label for fine-tuning instead
+            'labels': row['class'],  # Add the annotation/relation label for fine-tuning instead
         })
 
     # Put the preprocessed data into a dataframe
