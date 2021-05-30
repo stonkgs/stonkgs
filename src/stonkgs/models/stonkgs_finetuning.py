@@ -13,16 +13,16 @@ from typing import List
 import pandas as pd
 import torch
 from sklearn.model_selection import StratifiedKFold
-from transformers.modeling_outputs import SequenceClassifierOutput
 from tqdm import tqdm
+from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.bert import BertModel, BertTokenizer, BertTokenizerFast
 
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
     NLP_MODEL_TYPE,
     ORGAN_DIR,
+    # PRETRAINED_STONKGS_DUMMY_PATH,
     RANDOM_WALKS_PATH,
-    PRETRAINED_STONKGS_DUMMY_PATH,
     VOCAB_FILE,
 )
 from stonkgs.models.kg_baseline_model import _prepare_df
@@ -57,7 +57,7 @@ def preprocess_fine_tuning_data(
     sep_id: int = 102,
     unk_id: int = 100,
 ) -> pd.DataFrame:
-    """Generates input_ids, attention_mask, token_type_ids etc. based on the source, target, evidence columns."""
+    """Generate input_ids, attention_mask, token_type_ids etc. based on the source, target, evidence columns."""
     # Load the KG embedding dict to convert the names to numeric indices
     kg_embed_dict = _prepare_df(embedding_name_to_vector_path)
     kg_name_to_idx = {key: i for i, key in enumerate(kg_embed_dict.keys())}
@@ -91,7 +91,7 @@ def preprocess_fine_tuning_data(
     fine_tuning_preprocessed = []
 
     # Log progress with a progress bar
-    for idx, row in tqdm(
+    for _, row in tqdm(
         unprocessed_df.iterrows(),
         total=unprocessed_df.shape[0],
         desc='Preprocessing the fine-tuning dataset',
@@ -112,10 +112,12 @@ def preprocess_fine_tuning_data(
 
         # 3. Get the random walks sequence and the node indices, add the SEP (usually with id=102) in between
         # Use a sequence of UNK tokens if the node is not contained in the dictionary of the nodes from pre-training
-        random_w_source = random_walk_idx_dict[row['source']] if row['source'] in random_walk_idx_dict.keys() \
-            else [unk_id] * random_walk_length
-        random_w_target = random_walk_idx_dict[row['target']] if row['target'] in random_walk_idx_dict.keys() \
-            else [unk_id] * random_walk_length
+        random_w_source = random_walk_idx_dict[
+            row['source']
+        ] if row['source'] in random_walk_idx_dict.keys() else [unk_id] * random_walk_length
+        random_w_target = random_walk_idx_dict[
+            row['target']
+        ] if row['target'] in random_walk_idx_dict.keys() else [unk_id] * random_walk_length
         random_w_ids = random_w_source + [sep_id] + random_w_target + [sep_id]
 
         # 4. Total attention mask (attention mask is all 1 for the entity sequence)
