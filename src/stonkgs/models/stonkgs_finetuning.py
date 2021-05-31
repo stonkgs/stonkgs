@@ -344,6 +344,8 @@ def run_sequence_classification_cv(
         # Make predictions for the test dataset
         predictions = trainer.predict(test_dataset=test_dataset).predictions
         predicted_labels = np.argmax(predictions, axis=1)
+        logger.info(f'Predicted labels: {predicted_labels}')
+
         # Use macro average for now
         f1_sc = f1_score(test_labels, predicted_labels, average="macro")
         f1_scores.append(f1_sc)

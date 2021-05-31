@@ -104,6 +104,7 @@ class KGEClassificationModel(pl.LightningModule):
         test_class_probs = self.forward(test_inputs)
         # Class probabilities to class labels
         test_predictions = torch.argmax(test_class_probs, dim=1)
+        logger.info(f'Predicted labels: {test_predictions}')
 
         # Get the macro-averaged f1-score
         test_f1 = f1_score(test_labels, test_predictions, average="macro")
