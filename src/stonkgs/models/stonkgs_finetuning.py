@@ -325,7 +325,8 @@ def run_sequence_classification_cv(
         training_args = TrainingArguments(
             output_dir=output_dir,
             num_train_epochs=epochs,  # total number of training epochs
-            logging_steps=10,
+            logging_steps=50,  # reduce the number of logging steps to avoid collisions when writing to the shared
+            # database
             report_to=["mlflow"],  # log via mlflow
             do_train=True,
             do_predict=True,
@@ -347,9 +348,8 @@ def run_sequence_classification_cv(
         f1_sc = f1_score(test_labels, predicted_labels, average="macro")
         f1_scores.append(f1_sc)
 
-        # Log the final f1 score of the split (seems like it can only be done in a separate run)
-        with mlflow.start_run():
-            mlflow.log_metric('f1_score_macro', f1_sc)
+        # Log the final f1_score
+        mlflow.log_metric('f1_score_macro', f1_sc)
 
     # Log mean and std f1-scores from the cross validation procedure (average and std across all splits) to the
     # standard logger
