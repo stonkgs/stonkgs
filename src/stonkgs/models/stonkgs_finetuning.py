@@ -8,21 +8,27 @@ python -m src.stonkgs.models.stonkgs_finetuning
 
 import logging
 import os
-from typing import List
+from typing import Dict, List, Optional
 
+import mlflow
+import numpy as np
 import pandas as pd
 import torch
+from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
 from tqdm import tqdm
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.bert import BertModel, BertTokenizer, BertTokenizerFast
+from transformers.trainer import Trainer, TrainingArguments
 
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
+    MLFLOW_TRACKING_URI,
     NLP_MODEL_TYPE,
     ORGAN_DIR,
-    # PRETRAINED_STONKGS_DUMMY_PATH,
+    PRETRAINED_STONKGS_DUMMY_PATH,
     RANDOM_WALKS_PATH,
+    STONKGS_OUTPUT_DIR,
     VOCAB_FILE,
 )
 from stonkgs.models.kg_baseline_model import _prepare_df
@@ -34,7 +40,7 @@ logging.basicConfig(level=logging.INFO)
 
 def get_train_test_splits(
     train_data: pd.DataFrame,
-    type_column_name: str = "class",
+    type_column_name: str = "labels",
     random_seed: int = 42,
     n_splits: int = 5,
 ) -> List:
@@ -44,9 +50,9 @@ def get_train_test_splits(
     labels = train_data[type_column_name]
 
     # Implement stratified train/test splits
-    skf = StratifiedKFold(n_splits=n_splits, random_state=random_seed, shuffle=False)
+    skf = StratifiedKFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
 
-    return [[train_idx, test_idx] for train_idx, test_idx in skf.split(data, labels)]
+    return [{"train_idx": train_idx, "test_idx": test_idx} for train_idx, test_idx in skf.split(data, labels)]
 
 
 def preprocess_fine_tuning_data(
@@ -138,6 +144,30 @@ def preprocess_fine_tuning_data(
     fine_tuning_preprocessed_df = pd.DataFrame(fine_tuning_preprocessed)
 
     return fine_tuning_preprocessed_df
+
+
+class INDRAEntityEvidenceDataset(torch.utils.data.Dataset):
+    """Custom Dataset class for INDRA data containing the combination of text and KG triple data."""
+
+    def __init__(
+        self,
+        encodings,
+        labels,
+    ):
+        """Initialize INDRA Dataset based on the combined input sequence consisting of text and triple data."""
+        self.encodings = encodings
+        # Assumes that the labels are numerically encoded
+        self.labels = labels
+
+    def __getitem__(self, idx):
+        """Return data entries for given indices."""
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        item['labels'] = torch.tensor(self.labels[idx])
+        return item
+
+    def __len__(self):
+        """Return the length of the dataset."""
+        return len(self.labels)
 
 
 class STonKGsForSequenceClassification(STonKGsForPreTraining):
@@ -242,14 +272,98 @@ class STonKGsForSequenceClassification(STonKGsForPreTraining):
         )
 
 
-if __name__ == "__main__":
-    # Add a test for loading the model
-    # unique_tags = 10
-    # model = STonKGsForSequenceClassification.from_pretrained(
-    #     pretrained_model_name_or_path=PRETRAINED_STONKGS_DUMMY_PATH,
-    #     num_labels=unique_tags)
-    # TODO: set up fine tuning
+def run_sequence_classification_cv(
+    train_data_path: str,
+    model_path: str = PRETRAINED_STONKGS_DUMMY_PATH,
+    output_dir: Optional[str] = STONKGS_OUTPUT_DIR,
+    logging_uri_mlflow: Optional[str] = MLFLOW_TRACKING_URI,
+    label_column_name: str = "labels",
+    epochs: Optional[int] = 3,
+) -> Dict:
+    """Run cross-validation for the sequence classification task(s) using STonKGs."""
+    # Get data splits
+    fine_tuning_df = preprocess_fine_tuning_data(train_data_path=train_data_path)
+    train_test_splits = get_train_test_splits(fine_tuning_df)
 
-    # Add a test for loading and preprocessing the fine-tuning data
-    test_df = preprocess_fine_tuning_data(os.path.join(ORGAN_DIR, 'organ_filtered.tsv'))
-    logger.info(test_df.head())
+    # Get text evidences and labels
+    fine_tuning_data, labels_str = fine_tuning_df.drop(columns=label_column_name), fine_tuning_df[label_column_name]
+    # Numerically encode labels
+    unique_tags = set(label for label in labels_str)
+    tag2id = {label: number for number, label in enumerate(unique_tags)}
+    labels = pd.Series([int(tag2id[label]) for label in labels_str])
+
+    # Initialize the f1-score
+    f1_scores = []
+
+    # End previous run
+    mlflow.end_run()
+    # Initialize mlflow run, set tracking URI to use the same experiment for all runs,
+    # so that one can compare them
+    mlflow.set_tracking_uri(logging_uri_mlflow)
+    mlflow.set_experiment('STonKGs Fine-Tuning')
+
+    for indices in train_test_splits:
+        model = STonKGsForSequenceClassification.from_pretrained(
+            pretrained_model_name_or_path=model_path,
+            num_labels=len(unique_tags),
+        )
+
+        # Based on the preprocessed fine-tuning dataframe: Convert the data into the desired dictionary format
+        # for the INDRAEntityEvidenceDataset
+        train_data = fine_tuning_data.iloc[indices["train_idx"]].reset_index(drop=True).to_dict(orient='list')
+        test_data = fine_tuning_data.iloc[indices["test_idx"]].reset_index(drop=True).to_dict(orient='list')
+        train_labels = labels[indices["train_idx"]].tolist()
+        test_labels = labels[indices["test_idx"]].tolist()
+        train_dataset = INDRAEntityEvidenceDataset(encodings=train_data, labels=train_labels)
+        test_dataset = INDRAEntityEvidenceDataset(encodings=test_data, labels=test_labels)
+
+        # Note that due to the randomization in the batches, the training/evaluation is slightly
+        # different every time
+        # TrainingArgument uses a default batch size of 8
+        training_args = TrainingArguments(
+            output_dir=output_dir,
+            num_train_epochs=epochs,  # total number of training epochs
+            logging_steps=10,
+            report_to=["mlflow"],  # log via mlflow
+            do_train=True,
+            do_predict=True,
+        )
+
+        # Initialize Trainer based on the training dataset
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=train_dataset,
+        )
+        # Train
+        trainer.train()
+
+        # Make predictions for the test dataset
+        predictions = trainer.predict(test_dataset=test_dataset).predictions
+        predicted_labels = np.argmax(predictions, axis=1)
+        # Use macro average for now
+        f1_sc = f1_score(test_labels, predicted_labels, average="macro")
+        f1_scores.append(f1_sc)
+
+        # Log the final f1 score of the split (seems like it can only be done in a separate run)
+        with mlflow.start_run():
+            mlflow.log_metric('f1_score_macro', f1_sc)
+
+    # Log mean and std f1-scores from the cross validation procedure (average and std across all splits) to the
+    # standard logger
+    logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
+    logger.info(f'Std f1-score: {np.std(f1_scores)}')
+
+    # Log the mean and std f1 score from the cross validation procedure to mlflow
+    with mlflow.start_run():
+        mlflow.log_metric('f1_score_mean', np.mean(f1_scores))
+        mlflow.log_metric('f1_score_std', np.std(f1_scores))
+
+    return {"f1_score_mean": np.mean(f1_scores), "f1_score_std": np.std(f1_scores)}
+
+
+if __name__ == "__main__":
+    # Set the huggingface environment variable for tokenizer parallelism to false
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    # Run the CV fine-tuning task
+    run_sequence_classification_cv(train_data_path=os.path.join(ORGAN_DIR, 'organ_filtered.tsv'))
