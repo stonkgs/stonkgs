@@ -23,7 +23,7 @@ from transformers.trainer import Trainer, TrainingArguments
 
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
-    MLFLOW_TRACKING_URI,
+    MLFLOW_FINETUNING_TRACKING_URI,
     NLP_MODEL_TYPE,
     ORGAN_DIR,
     PRETRAINED_STONKGS_DUMMY_PATH,
@@ -278,7 +278,7 @@ def run_sequence_classification_cv(
     train_data_path: str,
     model_path: str = PRETRAINED_STONKGS_DUMMY_PATH,
     output_dir: Optional[str] = STONKGS_OUTPUT_DIR,
-    logging_uri_mlflow: Optional[str] = MLFLOW_TRACKING_URI,
+    logging_uri_mlflow: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     label_column_name: str = "labels",
     epochs: Optional[int] = 3,
 ) -> Dict:

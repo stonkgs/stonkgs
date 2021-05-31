@@ -53,6 +53,7 @@ LOG_DIR = os.path.join(os.sep.join(PROJECT_DIR.split(os.sep)[:-1]), 'logs')
 load_dotenv()
 # Load constants from environment variables (set in the .env file)
 MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI")
+MLFLOW_FINETUNING_TRACKING_URI = os.getenv("MLFLOW_FINETUNING_TRACKING_URI")
 # Load a constant for distinguishing between local and cluster execution (default = True)
 LOCAL_EXECUTION = os.getenv("LOCAL_EXECUTION") or "True"
 

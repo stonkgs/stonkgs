@@ -16,7 +16,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trai
 
 from stonkgs.constants import (
     DUMMY_EXAMPLE_TRIPLES,
-    MLFLOW_TRACKING_URI,
+    MLFLOW_FINETUNING_TRACKING_URI,
     NLP_BL_OUTPUT_DIR,
     NLP_MODEL_TYPE,
     ORGAN_DIR,
@@ -72,7 +72,7 @@ def run_sequence_classification_cv(
     sep: Optional[str] = "\t",
     model_type: str = NLP_MODEL_TYPE,
     output_dir: Optional[str] = NLP_BL_OUTPUT_DIR,
-    logging_uri_mlflow: Optional[str] = MLFLOW_TRACKING_URI,
+    logging_uri_mlflow: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     label_column_name: str = "class",
     text_data_column_name: str = "evidence",
     epochs: Optional[int] = 3,

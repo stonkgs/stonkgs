@@ -21,7 +21,7 @@ from sklearn.model_selection import StratifiedKFold
 from stonkgs.constants import (
     DUMMY_EXAMPLE_TRIPLES,
     EMBEDDINGS_PATH,
-    MLFLOW_TRACKING_URI,
+    MLFLOW_FINETUNING_TRACKING_URI,
     ORGAN_DIR,
     RANDOM_WALKS_PATH,
 )
@@ -219,7 +219,7 @@ def run_kg_baseline_classification_cv(
     triples_path=DUMMY_EXAMPLE_TRIPLES,
     embedding_path=EMBEDDINGS_PATH,
     random_walks_path=RANDOM_WALKS_PATH,
-    logging_uri_mlflow=MLFLOW_TRACKING_URI,
+    logging_uri_mlflow=MLFLOW_FINETUNING_TRACKING_URI,
     n_splits=5,
     epochs=20,
     train_batch_size=16,
