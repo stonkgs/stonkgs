@@ -145,14 +145,16 @@ def run_sequence_classification_cv(
         f1_sc = f1_score(test_labels, predicted_labels, average="macro")
         f1_scores.append(f1_sc)
 
-        # Log the final f1 score of the split (seems like it can only be done in a separate run)
-        with mlflow.start_run():
-            mlflow.log_metric('f1_score_macro', f1_sc)
+        # Log the final f1 score of the split
+        mlflow.log_metric('f1_score_macro', f1_sc)
 
     # Log mean and std f1-scores from the cross validation procedure (average and std across all splits) to the
     # standard logger
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
+
+    # End the previous run
+    mlflow.end_run()
 
     # Log the mean and std f1 score from the cross validation procedure to mlflow
     with mlflow.start_run():
