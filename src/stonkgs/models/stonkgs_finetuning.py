@@ -36,6 +36,8 @@ from stonkgs.models.stonkgs_model import STonKGsForPreTraining
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+# Disable alembic info
+logging.getLogger("alembic").setLevel(logging.WARNING)
 
 
 def get_train_test_splits(

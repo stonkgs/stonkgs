@@ -19,6 +19,8 @@ from ..constants import DUMMY_EXAMPLE_TRIPLES, MLFLOW_TRACKING_URI, NLP_BL_OUTPU
 # Initialize logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+# Disable alembic info
+logging.getLogger("alembic").setLevel(logging.WARNING)
 
 
 class INDRAEvidenceDataset(torch.utils.data.Dataset):
