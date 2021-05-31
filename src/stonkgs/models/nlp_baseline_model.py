@@ -14,7 +14,13 @@ from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
 
-from ..constants import DUMMY_EXAMPLE_TRIPLES, MLFLOW_TRACKING_URI, NLP_BL_OUTPUT_DIR, NLP_MODEL_TYPE
+from stonkgs.constants import (
+    DUMMY_EXAMPLE_TRIPLES,
+    MLFLOW_TRACKING_URI,
+    NLP_BL_OUTPUT_DIR,
+    NLP_MODEL_TYPE,
+    ORGAN_DIR,
+)
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -62,13 +68,13 @@ def get_train_test_splits(
 
 
 def run_sequence_classification_cv(
-    data_path: Optional[str] = DUMMY_EXAMPLE_TRIPLES,
+    data_path: str = DUMMY_EXAMPLE_TRIPLES,
     sep: Optional[str] = "\t",
-    model_type: Optional[str] = NLP_MODEL_TYPE,
+    model_type: str = NLP_MODEL_TYPE,
     output_dir: Optional[str] = NLP_BL_OUTPUT_DIR,
     logging_uri_mlflow: Optional[str] = MLFLOW_TRACKING_URI,
-    label_column_name: Optional[str] = "class",
-    text_data_column_name: Optional[str] = "evidence",
+    label_column_name: str = "class",
+    text_data_column_name: str = "evidence",
     epochs: Optional[int] = 3,
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
@@ -161,4 +167,4 @@ if __name__ == "__main__":
     # Set the huggingface environment variable for tokenizer parallelism to false
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
-    run_sequence_classification_cv()
+    run_sequence_classification_cv(data_path=os.path.join(ORGAN_DIR, 'organ_filtered.tsv'))

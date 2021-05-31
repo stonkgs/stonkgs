@@ -7,6 +7,7 @@ python -m src.stonkgs.models.kg_baseline_model
 """
 
 import logging
+import os
 from typing import Dict, List
 
 import mlflow
@@ -17,7 +18,13 @@ import torch
 from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
 
-from ..constants import DUMMY_EXAMPLE_TRIPLES, EMBEDDINGS_PATH, MLFLOW_TRACKING_URI, RANDOM_WALKS_PATH
+from stonkgs.constants import (
+    DUMMY_EXAMPLE_TRIPLES,
+    EMBEDDINGS_PATH,
+    MLFLOW_TRACKING_URI,
+    ORGAN_DIR,
+    RANDOM_WALKS_PATH,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -323,4 +330,4 @@ def run_kg_baseline_classification_cv(
 
 
 if __name__ == "__main__":
-    run_kg_baseline_classification_cv()
+    run_kg_baseline_classification_cv(triples_path=os.path.join(ORGAN_DIR, 'organ_filtered.tsv'))
