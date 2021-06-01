@@ -132,6 +132,8 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         self.targets = targets
         # Initialize dictionary of node name -> embedding vector
         self.embedding_dict = embedding_dict
+        # Add the null vector to the embedding dict for "out-of-vocabulary" nodes
+        self.embedding_dict[-1] = np.zeros(np.shape(next(iter(self.embedding_dict.values()))))
         # Initialize dictionary of node name -> random walk node names
         self.random_walk_dict = random_walk_dict
         # Get the embedding sequences for each triple
@@ -160,19 +162,27 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         number_of_triples = len(self.sources)
         # Get the embedding dimension by accessing a random element
         embedding_dim = len(next(iter(self.embedding_dict.values())))
+        # Get the random walk length
+        random_walk_length = len(next(iter(self.random_walk_dict.values())))
 
         # Initialize the embedding array of dimension n x random_walk_length x embedding_dim
         embeddings = np.empty((number_of_triples, self.max_length, embedding_dim))
 
         # 1. Iterate through all triples: Get random walks for sources and targets using random_walk_dict
         for idx, (source, target) in enumerate(zip(self.sources, self.targets)):
-            random_walk_source = self.random_walk_dict[source]
-            random_walk_target = self.random_walk_dict[target]
-            # 2. Concatenate and shorten the random walks if needed
+            # TODO: Change this later on?
+            # Use a sequence of zero vectors if the node is not contained in the pretrained embedding dict
+            random_walk_source = self.random_walk_dict[
+                source
+            ] if source in self.random_walk_dict.keys() else [-1] * random_walk_length
+            random_walk_target = self.random_walk_dict[
+                target
+            ] if target in self.random_walk_dict.keys() else [-1] * random_walk_length
+
+            # 2. Concatenate and the random walks
             # The total random walk has the length max_length. Therefore its split half into the random walk of source
             # and half target.
-            random_walk = [source] + random_walk_source.tolist()[:(self.max_length // 2 - 1)] + \
-                          [target] + random_walk_target.tolist()[:(self.max_length // 2 - 1)]  # noqa: N400
+            random_walk = random_walk_source.tolist() + random_walk_target.tolist()  # noqa: N400
             # 3. Get embeddings for each node using embedding_dict stated by its index in each random walk
             embeds_random_walk = np.stack([self.embedding_dict[node] for node in random_walk], axis=0)
             # The final embedding sequence for a given triple has the dimension max_length x embedding_dim
