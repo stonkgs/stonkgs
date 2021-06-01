@@ -124,7 +124,7 @@ class KGEClassificationModel(pl.LightningModule):
 class INDRAEntityDataset(torch.utils.data.Dataset):
     """Custom dataset class for INDRA data."""
 
-    def __init__(self, embedding_dict, random_walk_dict, sources, targets, labels, max_len=256):
+    def __init__(self, embedding_dict, random_walk_dict, sources, targets, labels, max_len=254):
         """Initialize INDRA Dataset based on random walk embeddings for 2 nodes in each triple."""
         self.max_length = max_len
         # Two entities (source, target) of each triple
@@ -172,12 +172,12 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         for idx, (source, target) in enumerate(zip(self.sources, self.targets)):
             # TODO: Change this later on?
             # Use a sequence of zero vectors if the node is not contained in the pretrained embedding dict
-            random_walk_source = [source] + self.random_walk_dict[
+            random_walk_source = self.random_walk_dict[
                 source
-            ] if source in self.random_walk_dict.keys() else [-1] * random_walk_length
-            random_walk_target = [target] + self.random_walk_dict[
+            ] if source in self.embedding_dict.keys() else np.ones(shape=random_walk_length) * -1
+            random_walk_target = self.random_walk_dict[
                 target
-            ] if target in self.random_walk_dict.keys() else [-1] * random_walk_length
+            ] if target in self.embedding_dict.keys() else np.ones(shape=random_walk_length) * -1
 
             # 2. Concatenate and the random walks
             # The total random walk has the length max_length. Therefore its split half into the random walk of source
