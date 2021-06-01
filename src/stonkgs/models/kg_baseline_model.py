@@ -172,10 +172,10 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         for idx, (source, target) in enumerate(zip(self.sources, self.targets)):
             # TODO: Change this later on?
             # Use a sequence of zero vectors if the node is not contained in the pretrained embedding dict
-            random_walk_source = self.random_walk_dict[
+            random_walk_source = [source] + self.random_walk_dict[
                 source
             ] if source in self.random_walk_dict.keys() else [-1] * random_walk_length
-            random_walk_target = self.random_walk_dict[
+            random_walk_target = [target] + self.random_walk_dict[
                 target
             ] if target in self.random_walk_dict.keys() else [-1] * random_walk_length
 
