@@ -75,7 +75,7 @@ def run_sequence_classification_cv(
     logging_uri_mlflow: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     label_column_name: str = "class",
     text_data_column_name: str = "evidence",
-    epochs: Optional[int] = 3,
+    epochs: Optional[int] = 10,
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
     # Get data splits
