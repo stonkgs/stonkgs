@@ -280,7 +280,7 @@ def run_sequence_classification_cv(
     output_dir: Optional[str] = STONKGS_OUTPUT_DIR,
     logging_uri_mlflow: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     label_column_name: str = "labels",
-    epochs: Optional[int] = 3,
+    epochs: Optional[int] = 10,
 ) -> Dict:
     """Run cross-validation for the sequence classification task(s) using STonKGs."""
     # Get data splits
@@ -357,6 +357,9 @@ def run_sequence_classification_cv(
     # standard logger
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
+
+    # End the previous run
+    mlflow.end_run()
 
     # Log the mean and std f1 score from the cross validation procedure to mlflow
     with mlflow.start_run():
