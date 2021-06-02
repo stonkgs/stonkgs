@@ -121,7 +121,7 @@ def run_sequence_classification_cv(
             # label_names
             output_dir=output_dir,
             num_train_epochs=epochs,  # total number of training epochs
-            logging_steps=10,
+            logging_steps=50,
             report_to=["mlflow"],  # log via mlflow
             do_train=True,
             do_predict=True,
