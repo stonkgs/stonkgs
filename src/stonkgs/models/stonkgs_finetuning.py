@@ -25,9 +25,10 @@ from stonkgs.constants import (
     EMBEDDINGS_PATH,
     MLFLOW_FINETUNING_TRACKING_URI,
     NLP_MODEL_TYPE,
-    ORGAN_DIR,
+    # ORGAN_DIR,
     PRETRAINED_STONKGS_DUMMY_PATH,
     RANDOM_WALKS_PATH,
+    RELATION_TYPE_DIR,
     STONKGS_OUTPUT_DIR,
     VOCAB_FILE,
 )
@@ -59,6 +60,7 @@ def get_train_test_splits(
 
 def preprocess_fine_tuning_data(
     train_data_path: str,
+    class_column_name: str = "class",
     embedding_name_to_vector_path: str = EMBEDDINGS_PATH,
     embedding_name_to_random_walk_path: str = RANDOM_WALKS_PATH,
     nlp_model_type: str = NLP_MODEL_TYPE,
@@ -75,7 +77,7 @@ def preprocess_fine_tuning_data(
     random_walk_idx_dict = {k: [kg_name_to_idx[node] for node in v] for k, v in random_walk_dict.items()}
 
     # Load the raw fine-tuning dataset with source, target and evidence
-    unprocessed_df = pd.read_csv(train_data_path, sep='\t', usecols=["source", "target", "evidence", "class"])
+    unprocessed_df = pd.read_csv(train_data_path, sep='\t', usecols=["source", "target", "evidence", class_column_name])
 
     # Check how many nodes in the fine-tuning dataset are not covered by the learned KG embeddings
     number_of_pre_training_nodes = len(set(unprocessed_df["source"]).union(set(unprocessed_df["target"])))
@@ -139,7 +141,7 @@ def preprocess_fine_tuning_data(
             'input_ids': input_ids,
             'attention_mask': attention_mask,
             'token_type_ids': token_type_ids,  # Remove the MLM, ELM and NSP labels since it's not needed anymore
-            'labels': row['class'],  # Add the annotation/relation label for fine-tuning instead
+            'labels': row[class_column_name],  # Add the annotation/relation label for fine-tuning instead
         })
 
     # Put the preprocessed data into a dataframe
@@ -280,11 +282,15 @@ def run_sequence_classification_cv(
     output_dir: Optional[str] = STONKGS_OUTPUT_DIR,
     logging_uri_mlflow: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     label_column_name: str = "labels",
+    class_column_name: str = "class",
     epochs: Optional[int] = 10,
 ) -> Dict:
     """Run cross-validation for the sequence classification task(s) using STonKGs."""
     # Get data splits
-    fine_tuning_df = preprocess_fine_tuning_data(train_data_path=train_data_path)
+    fine_tuning_df = preprocess_fine_tuning_data(
+        train_data_path=train_data_path,
+        class_column_name=class_column_name,
+    )
     train_test_splits = get_train_test_splits(fine_tuning_df)
 
     # Get text evidences and labels
@@ -373,4 +379,7 @@ if __name__ == "__main__":
     # Set the huggingface environment variable for tokenizer parallelism to false
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
     # Run the CV fine-tuning task
-    run_sequence_classification_cv(train_data_path=os.path.join(ORGAN_DIR, 'organ_filtered.tsv'))
+    run_sequence_classification_cv(
+        train_data_path=os.path.join(RELATION_TYPE_DIR, 'relation_type.tsv'),
+        class_column_name='interaction',
+    )
