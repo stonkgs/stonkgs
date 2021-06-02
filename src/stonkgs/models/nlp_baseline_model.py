@@ -132,7 +132,6 @@ def run_nlp_baseline_classification_cv(
             num_train_epochs=epochs,  # total number of training epochs
             logging_steps=log_steps,
             learning_rate=lr,
-            lr_scheduler_type='constant',
             report_to=["mlflow"],  # log via mlflow
             do_train=True,
             do_predict=True,

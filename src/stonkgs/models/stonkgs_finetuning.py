@@ -343,7 +343,6 @@ def run_sequence_classification_cv(
             # shared database
             learning_rate=lr,
             report_to=["mlflow"],  # log via mlflow
-            lr_scheduler_type='constant',
             do_train=True,
             do_predict=True,
         )
