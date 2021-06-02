@@ -173,8 +173,6 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         number_of_triples = len(self.sources)
         # Get the embedding dimension by accessing a random element
         embedding_dim = len(next(iter(self.embedding_dict.values())))
-        # Get the random walk length
-        random_walk_length = len(next(iter(self.random_walk_dict.values())))
 
         # Initialize the embedding array of dimension n x random_walk_length x embedding_dim
         embeddings = np.empty((number_of_triples, self.max_length, embedding_dim))
@@ -379,6 +377,7 @@ def run_all_fine_tuning_tasks(
     logging_dir: str = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 16,
 ):
+    """Run all fine-tuning tasks at once."""
     # Run the 6 annotation type tasks
     # 1. Cell line
     run_kg_baseline_classification_cv(

@@ -21,8 +21,8 @@ from stonkgs.constants import (
     DISEASE_DIR,
     LOCATION_DIR,
     MLFLOW_FINETUNING_TRACKING_URI,
-    NLP_MODEL_TYPE,
     NLP_BL_OUTPUT_DIR,
+    NLP_MODEL_TYPE,
     ORGAN_DIR,
     RELATION_TYPE_DIR,
     SPECIES_DIR,
@@ -198,6 +198,7 @@ def run_all_fine_tuning_tasks(
     batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
 ):
+    """Run all fine-tuning tasks at once."""
     # Run the 6 annotation type tasks
     # 1. Cell line
     run_nlp_baseline_classification_cv(

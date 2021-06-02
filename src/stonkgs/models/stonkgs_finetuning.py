@@ -407,6 +407,7 @@ def run_all_fine_tuning_tasks(
     batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
 ):
+    """Run all fine-tuning tasks at once."""
     # Run the 6 annotation type tasks
     # 1. Cell line
     run_sequence_classification_cv(
