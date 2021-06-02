@@ -10,6 +10,7 @@ import logging
 import os
 from typing import Dict, List
 
+import click
 import mlflow
 import numpy as np
 import pandas as pd
@@ -19,15 +20,22 @@ from sklearn.metrics import f1_score
 from sklearn.model_selection import StratifiedKFold
 
 from stonkgs.constants import (
-    DUMMY_EXAMPLE_TRIPLES,
+    CELL_LINE_DIR,
+    CELL_TYPE_DIR,
+    DISEASE_DIR,
     EMBEDDINGS_PATH,
+    LOCATION_DIR,
     MLFLOW_FINETUNING_TRACKING_URI,
     ORGAN_DIR,
     RANDOM_WALKS_PATH,
+    RELATION_TYPE_DIR,
+    SPECIES_DIR,
 )
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+# Disable alembic info
+logging.getLogger("alembic").setLevel(logging.WARNING)
 
 
 class KGEClassificationModel(pl.LightningModule):
@@ -222,15 +230,17 @@ def get_train_test_splits(
 
 
 def run_kg_baseline_classification_cv(
-    triples_path=DUMMY_EXAMPLE_TRIPLES,
-    embedding_path=EMBEDDINGS_PATH,
-    random_walks_path=RANDOM_WALKS_PATH,
-    logging_uri_mlflow=MLFLOW_FINETUNING_TRACKING_URI,
-    n_splits=5,
-    epochs=100,
-    train_batch_size=16,
-    test_batch_size=64,
-    lr=1e-4,
+    triples_path: str,
+    embedding_path: str = EMBEDDINGS_PATH,
+    random_walks_path: str = RANDOM_WALKS_PATH,
+    logging_uri_mlflow: str = MLFLOW_FINETUNING_TRACKING_URI,
+    n_splits: int = 5,
+    epochs: int = 100,
+    train_batch_size: int = 16,
+    test_batch_size: int = 64,
+    lr: float = 1e-3,
+    label_column_name: str = 'class',
+    log_steps: int = 500,
 ) -> Dict[str, float]:
     """Run KG baseline classification."""
     # Step 1. load the tsv file with the annotation types you want to test and make the splits
@@ -240,7 +250,7 @@ def run_kg_baseline_classification_cv(
         usecols=[
             'source',
             'target',
-            'class',
+            label_column_name,
         ],
     )
 
@@ -258,15 +268,15 @@ def run_kg_baseline_classification_cv(
                 f'nodes which are not present in the pre-training data')
 
     # Numerically encode labels
-    unique_tags = set(label for label in triples_df["class"])
+    unique_tags = set(label for label in triples_df[label_column_name])
     tag2id = {label: number for number, label in enumerate(unique_tags)}
     id2tag = {value: key for key, value in tag2id.items()}
 
     # Get labels
-    labels = pd.Series([int(tag2id[label]) for label in triples_df["class"]])
+    labels = pd.Series([int(tag2id[label]) for label in triples_df[label_column_name]])
 
     # Get the train/test split indices
-    train_test_splits = get_train_test_splits(triples_df, n_splits=n_splits)
+    train_test_splits = get_train_test_splits(triples_df, n_splits=n_splits, label_column_name=label_column_name)
 
     # Initialize f1-scores
     f1_scores = []
@@ -294,7 +304,8 @@ def run_kg_baseline_classification_cv(
         # based on the class counts (Inverse Number of Samples, INS)
         weights = [
             1 / len([i
-                     for i in triples_df.iloc[indices["train_idx"], :]["class"]  # note that we only employ train idx
+                     for i in triples_df.iloc[indices["train_idx"], :][label_column_name]
+                     # note that we only employ train idx
                      if i == id2tag[id_num]
                      ])
             for id_num in range(len(unique_tags))
@@ -313,13 +324,16 @@ def run_kg_baseline_classification_cv(
         )
 
         model = KGEClassificationModel(
-            num_classes=len(triples_df["class"].unique()),
+            num_classes=len(triples_df[label_column_name].unique()),
             class_weights=weights,
             lr=lr,
         )
 
         # Initialize pytorch lighting Trainer for the KG baseline model
-        trainer = pl.Trainer(max_epochs=epochs)
+        trainer = pl.Trainer(
+            max_epochs=epochs,
+            log_every_n_steps=log_steps,
+        )
 
         # Train and predict in a separate run for each split
         with mlflow.start_run():
@@ -338,7 +352,7 @@ def run_kg_baseline_classification_cv(
 
         # Also log how many triples were left out
         mlflow.log_param('original no. of triples', original_length)
-        mlflow.log_param('no. of left out triples', original_length-new_length)
+        mlflow.log_param('no. of left out triples', original_length - new_length)
 
     # Log mean and std f1-scores from the cross validation procedure (average and std across all splits) to the
     # standard logger
@@ -349,5 +363,102 @@ def run_kg_baseline_classification_cv(
     return {"f1_score_mean": np.mean(f1_scores), "f1_score_std": float(np.std(f1_scores))}
 
 
+@click.command()
+@click.option('-e', '--epochs', default=3, help='Number of epochs', type=int)
+@click.option('--lr', default=1e-3, help='Learning rate', type=float)
+@click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
+@click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
+def run_all_fine_tuning_tasks(
+    epochs: int = 3,
+    log_steps: int = 500,
+    lr: float = 1e-3,
+    logging_dir: str = MLFLOW_FINETUNING_TRACKING_URI,
+):
+    # Run the 6 annotation type tasks
+    # 1. Cell line
+    run_kg_baseline_classification_cv(
+        triples_path=os.path.join(CELL_LINE_DIR, 'cell_line_filtered.tsv'),
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        lr=lr,
+        log_steps=log_steps,
+    )
+    logger.info('Finished the cell line task')
+
+    # 2. Cell type
+    run_kg_baseline_classification_cv(
+        triples_path=os.path.join(CELL_TYPE_DIR, 'cell_type_filtered.tsv'),
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        lr=lr,
+        log_steps=log_steps,
+    )
+    logger.info('Finished the cell type task')
+
+    # 3. Disease
+    run_kg_baseline_classification_cv(
+        triples_path=os.path.join(DISEASE_DIR, 'disease_filtered.tsv'),
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        lr=lr,
+        log_steps=log_steps,
+    )
+    logger.info('Finished the disease task')
+
+    # 4. Location
+    run_kg_baseline_classification_cv(
+        triples_path=os.path.join(LOCATION_DIR, 'location_filtered.tsv'),
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        lr=lr,
+        log_steps=log_steps,
+    )
+    logger.info('Finished the location task')
+
+    # 5. Organ
+    run_kg_baseline_classification_cv(
+        triples_path=os.path.join(ORGAN_DIR, 'organ_filtered.tsv'),
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        lr=lr,
+        log_steps=log_steps,
+    )
+    logger.info('Finished the organ task')
+
+    # 6. Species
+    run_kg_baseline_classification_cv(
+        triples_path=os.path.join(SPECIES_DIR, 'species_filtered.tsv'),
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        lr=lr,
+        log_steps=log_steps,
+    )
+    logger.info('Finished the species task')
+
+    # Run the two relation type classification tasks
+    # 7. Interaction type
+    run_kg_baseline_classification_cv(
+        triples_path=os.path.join(RELATION_TYPE_DIR, 'relation_type.tsv'),
+        label_column_name='interaction',
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        lr=lr,
+        log_steps=log_steps,
+    )
+    logger.info('Finished the interaction type task')
+
+    # 8. Polarity
+    run_kg_baseline_classification_cv(
+        triples_path=os.path.join(RELATION_TYPE_DIR, 'relation_type.tsv'),
+        label_column_name='polarity',
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        lr=lr,
+        log_steps=log_steps,
+    )
+    logger.info('Finished the polarity task')
+
+
 if __name__ == "__main__":
-    run_kg_baseline_classification_cv(triples_path=os.path.join(ORGAN_DIR, 'organ_filtered.tsv'))
+    # Run all fine-tuning classification tasks at once
+    run_all_fine_tuning_tasks()

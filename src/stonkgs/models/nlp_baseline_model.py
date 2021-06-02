@@ -6,6 +6,7 @@ import logging
 import os
 from typing import Dict, List, Optional
 
+import click
 import mlflow
 import numpy as np
 import pandas as pd
@@ -15,11 +16,17 @@ from sklearn.model_selection import StratifiedKFold
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
 
 from stonkgs.constants import (
-    DUMMY_EXAMPLE_TRIPLES,
+    CELL_LINE_DIR,
+    CELL_TYPE_DIR,
+    DISEASE_DIR,
+    LOCATION_DIR,
     MLFLOW_FINETUNING_TRACKING_URI,
-    NLP_BL_OUTPUT_DIR,
     NLP_MODEL_TYPE,
+    NLP_BL_OUTPUT_DIR,
     ORGAN_DIR,
+    RELATION_TYPE_DIR,
+    SPECIES_DIR,
+    STONKGS_OUTPUT_DIR,
 )
 
 # Initialize logger
@@ -67,8 +74,8 @@ def get_train_test_splits(
     return [{"train_idx": train_idx, "test_idx": test_idx} for train_idx, test_idx in skf.split(data_no_labels, labels)]
 
 
-def run_sequence_classification_cv(
-    data_path: str = DUMMY_EXAMPLE_TRIPLES,
+def run_nlp_baseline_classification_cv(
+    train_data_path: str,
     sep: Optional[str] = "\t",
     model_type: str = NLP_MODEL_TYPE,
     output_dir: Optional[str] = NLP_BL_OUTPUT_DIR,
@@ -76,10 +83,12 @@ def run_sequence_classification_cv(
     label_column_name: str = "class",
     text_data_column_name: str = "evidence",
     epochs: Optional[int] = 10,
+    log_steps: int = 500,
+    lr: float = 5e-5,
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
     # Get data splits
-    indra_data = pd.read_csv(data_path, sep=sep)
+    indra_data = pd.read_csv(train_data_path, sep=sep)
     train_test_splits = get_train_test_splits(indra_data)
 
     # Get text evidences and labels
@@ -121,7 +130,8 @@ def run_sequence_classification_cv(
             # label_names
             output_dir=output_dir,
             num_train_epochs=epochs,  # total number of training epochs
-            logging_steps=50,
+            logging_steps=log_steps,
+            learning_rate=lr,
             report_to=["mlflow"],  # log via mlflow
             do_train=True,
             do_predict=True,
@@ -167,8 +177,114 @@ def run_sequence_classification_cv(
     return {"f1_score_mean": np.mean(f1_scores), "f1_score_std": np.std(f1_scores)}
 
 
+@click.command()
+@click.option('-e', '--epochs', default=3, help='Number of epochs', type=int)
+@click.option('--lr', default=5e-5, help='Learning rate', type=float)
+@click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
+@click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
+@click.option('--output_dir', default=STONKGS_OUTPUT_DIR, help='Output directory', type=str)
+def run_all_fine_tuning_tasks(
+    epochs: int = 3,
+    log_steps: int = 500,
+    lr: float = 5e-5,
+    output_dir: str = STONKGS_OUTPUT_DIR,
+    logging_dir: str = MLFLOW_FINETUNING_TRACKING_URI,
+):
+    # Run the 6 annotation type tasks
+    # 1. Cell line
+    run_nlp_baseline_classification_cv(
+        train_data_path=os.path.join(CELL_LINE_DIR, 'cell_line_filtered.tsv'),
+        output_dir=output_dir,
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        log_steps=log_steps,
+        lr=lr,
+    )
+    logger.info('Finished the cell line task')
+
+    # 2. Cell type
+    run_nlp_baseline_classification_cv(
+        train_data_path=os.path.join(CELL_TYPE_DIR, 'cell_type_filtered.tsv'),
+        output_dir=output_dir,
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        log_steps=log_steps,
+        lr=lr,
+    )
+    logger.info('Finished the cell type task')
+
+    # 3. Disease
+    run_nlp_baseline_classification_cv(
+        train_data_path=os.path.join(DISEASE_DIR, 'disease_filtered.tsv'),
+        output_dir=output_dir,
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        log_steps=log_steps,
+        lr=lr,
+    )
+    logger.info('Finished the disease task')
+
+    # 4. Location
+    run_nlp_baseline_classification_cv(
+        train_data_path=os.path.join(LOCATION_DIR, 'location_filtered.tsv'),
+        output_dir=output_dir,
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        log_steps=log_steps,
+        lr=lr,
+    )
+    logger.info('Finished the location task')
+
+    # 5. Organ
+    run_nlp_baseline_classification_cv(
+        train_data_path=os.path.join(ORGAN_DIR, 'organ_filtered.tsv'),
+        output_dir=output_dir,
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        log_steps=log_steps,
+        lr=lr,
+    )
+    logger.info('Finished the organ task')
+
+    # 6. Species
+    run_nlp_baseline_classification_cv(
+        train_data_path=os.path.join(SPECIES_DIR, 'species_filtered.tsv'),
+        output_dir=output_dir,
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        log_steps=log_steps,
+        lr=lr,
+    )
+    logger.info('Finished the species task')
+
+    # Run the two relation type classification tasks
+    # 7. Interaction type
+    run_nlp_baseline_classification_cv(
+        train_data_path=os.path.join(RELATION_TYPE_DIR, 'relation_type.tsv'),
+        label_column_name='interaction',
+        output_dir=output_dir,
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        log_steps=log_steps,
+        lr=lr,
+    )
+    logger.info('Finished the interaction type task')
+
+    # 8. Polarity
+    run_nlp_baseline_classification_cv(
+        train_data_path=os.path.join(RELATION_TYPE_DIR, 'relation_type.tsv'),
+        label_column_name='polarity',
+        output_dir=output_dir,
+        logging_uri_mlflow=logging_dir,
+        epochs=epochs,
+        log_steps=log_steps,
+        lr=lr,
+    )
+    logger.info('Finished the polarity task')
+
+
 if __name__ == "__main__":
     # Set the huggingface environment variable for tokenizer parallelism to false
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
-
-    run_sequence_classification_cv(data_path=os.path.join(ORGAN_DIR, 'organ_filtered.tsv'))
+    # Run all classification tasks
+    run_all_fine_tuning_tasks()
