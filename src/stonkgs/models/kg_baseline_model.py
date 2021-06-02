@@ -46,7 +46,7 @@ class KGEClassificationModel(pl.LightningModule):
         num_classes,
         class_weights,
         d_in: int = 768,
-        lr: float = 1e-4,
+        lr: float = 1e-3,
     ):
         """Initialize the components of the KGE based classification model.
 
@@ -57,14 +57,16 @@ class KGEClassificationModel(pl.LightningModule):
 
         The model consists of
         1) "Max-Pooling" (embedding-dimension-wise max)
-        2) Linear layer (d_in x num_classes)
-        3) Softmax
+        2) Dropout
+        3) Linear layer (d_in x num_classes)
+        4) Softmax
         (Not part of the model, but of the class: class_weights for the cross_entropy function)
         """
         super(KGEClassificationModel, self).__init__()
 
         # Model architecture
         self.pooling = torch.max
+        self.dropout = torch.nn.Dropout(0.1)
         self.linear = torch.nn.Linear(d_in, num_classes)
         self.softmax = torch.nn.Softmax(dim=1)
 
@@ -84,7 +86,8 @@ class KGEClassificationModel(pl.LightningModule):
         :return: class probabilities for the given triples
         """
         h_pooled = self.pooling(x, dim=1).values
-        linear_output = self.linear(h_pooled)
+        dropout_output = self.dropout(h_pooled)
+        linear_output = self.linear(dropout_output)
         y_pred = self.softmax(linear_output)
         # Note that the forward pass returns class probabilities.
         return y_pred
