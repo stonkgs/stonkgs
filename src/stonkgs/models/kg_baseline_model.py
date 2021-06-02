@@ -170,14 +170,9 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
 
         # 1. Iterate through all triples: Get random walks for sources and targets using random_walk_dict
         for idx, (source, target) in enumerate(zip(self.sources, self.targets)):
-            # TODO: Change this later on?
-            # Use a sequence of zero vectors if the node is not contained in the pretrained embedding dict
-            random_walk_source = self.random_walk_dict[
-                source
-            ] if source in self.embedding_dict.keys() else np.ones(shape=random_walk_length) * -1
-            random_walk_target = self.random_walk_dict[
-                target
-            ] if target in self.embedding_dict.keys() else np.ones(shape=random_walk_length) * -1
+            # Get the random walk sequences
+            random_walk_source = self.random_walk_dict[source]
+            random_walk_target = self.random_walk_dict[target]
 
             # 2. Concatenate and the random walks
             # The total random walk has the length max_length. Therefore its split half into the random walk of source
@@ -248,6 +243,20 @@ def run_kg_baseline_classification_cv(
             'class',
         ],
     )
+
+    # Prepare embeddings and random walks
+    embeddings_dict = _prepare_df(embedding_path)
+    random_walks_dict = _prepare_df(random_walks_path)
+
+    # Filter out any triples that contain a node that is not in the embeddings_dict
+    original_length = len(triples_df)
+    triples_df = triples_df[
+        triples_df['source'].isin(embeddings_dict.keys()) & triples_df['target'].isin(embeddings_dict.keys())
+    ]
+    new_length = len(triples_df)
+    logger.info(f'{original_length - new_length} out of {original_length} triples are left out because they contain '
+                f'nodes which are not present in the pre-training data')
+
     # Numerically encode labels
     unique_tags = set(label for label in triples_df["class"])
     tag2id = {label: number for number, label in enumerate(unique_tags)}
@@ -258,10 +267,6 @@ def run_kg_baseline_classification_cv(
 
     # Get the train/test split indices
     train_test_splits = get_train_test_splits(triples_df, n_splits=n_splits)
-
-    # Prepare embeddings and random walks
-    embeddings_dict = _prepare_df(embedding_path)
-    random_walks_dict = _prepare_df(random_walks_path)
 
     # Initialize f1-scores
     f1_scores = []
@@ -330,6 +335,10 @@ def run_kg_baseline_classification_cv(
     with mlflow.start_run():
         mlflow.log_metric('f1_score_mean', np.mean(f1_scores))
         mlflow.log_metric('f1_score_std', np.std(f1_scores))
+
+        # Also log how many triples were left out
+        mlflow.log_param('original no. of triples', original_length)
+        mlflow.log_param('no. of left out triples', original_length-new_length)
 
     # Log mean and std f1-scores from the cross validation procedure (average and std across all splits) to the
     # standard logger
