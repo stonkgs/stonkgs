@@ -292,7 +292,7 @@ def run_sequence_classification_cv(
     epochs: Optional[int] = 10,
     log_steps: int = 500,
     lr: float = 5e-5,
-    batch_size: int = 16,
+    batch_size: int = 8,
     gradient_accumulation: int = 1,
 ) -> Dict:
     """Run cross-validation for the sequence classification task(s) using STonKGs."""
@@ -395,7 +395,7 @@ def run_sequence_classification_cv(
 @click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
 @click.option('--model_path', default=PRETRAINED_STONKGS_DUMMY_PATH, help='Path of the pretrained model', type=str)
 @click.option('--output_dir', default=STONKGS_OUTPUT_DIR, help='Output directory', type=str)
-@click.option('--batch_size', default=16, help='Batch size used in fine-tuning', type=int)
+@click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 3,
@@ -404,7 +404,7 @@ def run_all_fine_tuning_tasks(
     model_path: str = PRETRAINED_STONKGS_DUMMY_PATH,
     output_dir: str = STONKGS_OUTPUT_DIR,
     logging_dir: str = MLFLOW_FINETUNING_TRACKING_URI,
-    batch_size: int = 16,
+    batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
 ):
     # Run the 6 annotation type tasks
