@@ -371,11 +371,13 @@ def run_kg_baseline_classification_cv(
 @click.option('--lr', default=1e-3, help='Learning rate', type=float)
 @click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
 @click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
+@click.option('--batch_size', default=16, help='Batch size', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 3,
     log_steps: int = 500,
     lr: float = 1e-3,
     logging_dir: str = MLFLOW_FINETUNING_TRACKING_URI,
+    batch_size: int = 16,
 ):
     # Run the 6 annotation type tasks
     # 1. Cell line
@@ -385,6 +387,7 @@ def run_all_fine_tuning_tasks(
         epochs=epochs,
         lr=lr,
         log_steps=log_steps,
+        train_batch_size=batch_size,
     )
     logger.info('Finished the cell line task')
 
@@ -395,6 +398,7 @@ def run_all_fine_tuning_tasks(
         epochs=epochs,
         lr=lr,
         log_steps=log_steps,
+        train_batch_size=batch_size,
     )
     logger.info('Finished the cell type task')
 
@@ -405,6 +409,7 @@ def run_all_fine_tuning_tasks(
         epochs=epochs,
         lr=lr,
         log_steps=log_steps,
+        train_batch_size=batch_size,
     )
     logger.info('Finished the disease task')
 
@@ -425,6 +430,7 @@ def run_all_fine_tuning_tasks(
         epochs=epochs,
         lr=lr,
         log_steps=log_steps,
+        train_batch_size=batch_size,
     )
     logger.info('Finished the organ task')
 
@@ -435,6 +441,7 @@ def run_all_fine_tuning_tasks(
         epochs=epochs,
         lr=lr,
         log_steps=log_steps,
+        train_batch_size=batch_size,
     )
     logger.info('Finished the species task')
 
@@ -447,6 +454,7 @@ def run_all_fine_tuning_tasks(
         epochs=epochs,
         lr=lr,
         log_steps=log_steps,
+        train_batch_size=batch_size,
     )
     logger.info('Finished the interaction type task')
 
@@ -458,6 +466,7 @@ def run_all_fine_tuning_tasks(
         epochs=epochs,
         lr=lr,
         log_steps=log_steps,
+        train_batch_size=batch_size,
     )
     logger.info('Finished the polarity task')
 
