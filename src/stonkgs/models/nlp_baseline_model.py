@@ -194,7 +194,7 @@ def run_all_fine_tuning_tasks(
     log_steps: int = 500,
     lr: float = 5e-5,
     output_dir: str = STONKGS_OUTPUT_DIR,
-    logging_dir: str = MLFLOW_FINETUNING_TRACKING_URI,
+    logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
 ):

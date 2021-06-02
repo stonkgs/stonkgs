@@ -8,7 +8,7 @@ python -m src.stonkgs.models.kg_baseline_model
 
 import logging
 import os
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import click
 import mlflow
@@ -234,7 +234,7 @@ def run_kg_baseline_classification_cv(
     triples_path: str,
     embedding_path: str = EMBEDDINGS_PATH,
     random_walks_path: str = RANDOM_WALKS_PATH,
-    logging_uri_mlflow: str = MLFLOW_FINETUNING_TRACKING_URI,
+    logging_uri_mlflow: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     n_splits: int = 5,
     epochs: int = 100,
     train_batch_size: int = 16,
@@ -374,7 +374,7 @@ def run_all_fine_tuning_tasks(
     epochs: int = 3,
     log_steps: int = 500,
     lr: float = 1e-3,
-    logging_dir: str = MLFLOW_FINETUNING_TRACKING_URI,
+    logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 16,
 ):
     """Run all fine-tuning tasks at once."""
