@@ -227,7 +227,7 @@ def run_kg_baseline_classification_cv(
     random_walks_path=RANDOM_WALKS_PATH,
     logging_uri_mlflow=MLFLOW_FINETUNING_TRACKING_URI,
     n_splits=5,
-    epochs=20,
+    epochs=100,
     train_batch_size=16,
     test_batch_size=64,
     lr=1e-4,
