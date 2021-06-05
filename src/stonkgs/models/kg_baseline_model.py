@@ -237,7 +237,7 @@ def run_kg_baseline_classification_cv(
     logging_uri_mlflow: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     n_splits: int = 5,
     epochs: int = 100,
-    train_batch_size: int = 16,
+    train_batch_size: int = 8,
     test_batch_size: int = 64,
     lr: float = 1e-4,
     label_column_name: str = 'class',
@@ -375,7 +375,7 @@ def run_all_fine_tuning_tasks(
     log_steps: int = 500,
     lr: float = 1e-4,
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
-    batch_size: int = 16,
+    batch_size: int = 8,
 ):
     """Run all fine-tuning tasks at once."""
     # Run the 6 annotation type tasks
