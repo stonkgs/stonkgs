@@ -199,113 +199,44 @@ def run_all_fine_tuning_tasks(
     gradient_accumulation_steps: int = 1,
 ):
     """Run all fine-tuning tasks at once."""
-    # Run the 6 annotation type tasks
-    # 1. Cell line
-    run_nlp_baseline_classification_cv(
-        train_data_path=os.path.join(CELL_LINE_DIR, 'cell_line_filtered.tsv'),
-        output_dir=output_dir,
-        logging_uri_mlflow=logging_dir,
-        epochs=epochs,
-        log_steps=log_steps,
-        lr=lr,
-        batch_size=batch_size,
-        gradient_accumulation=gradient_accumulation_steps,
-    )
-    logger.info('Finished the cell line task')
+    # Specify all directories and file names
+    directories = [
+        CELL_LINE_DIR,
+        CELL_TYPE_DIR,
+        DISEASE_DIR,
+        LOCATION_DIR,
+        ORGAN_DIR,
+        SPECIES_DIR,
+        RELATION_TYPE_DIR,
+        RELATION_TYPE_DIR,
+    ]
+    file_names = [
+        'cell_line_filtered.tsv',
+        'cell_type_filtered.tsv',
+        'disease_filtered.tsv',
+        'location_filtered.tsv',
+        'organ_filtered.tsv',
+        'species_filtered.tsv',
+        'relation_type.tsv',
+        'relation_type.tsv',
+    ]
+    # Specify the column names of the target variable
+    column_names = ['class'] * 6 + ['interaction'] + ['polarity']
 
-    # 2. Cell type
-    run_nlp_baseline_classification_cv(
-        train_data_path=os.path.join(CELL_TYPE_DIR, 'cell_type_filtered.tsv'),
-        output_dir=output_dir,
-        logging_uri_mlflow=logging_dir,
-        epochs=epochs,
-        log_steps=log_steps,
-        lr=lr,
-        batch_size=batch_size,
-        gradient_accumulation=gradient_accumulation_steps,
-    )
-    logger.info('Finished the cell type task')
-
-    # 3. Disease
-    run_nlp_baseline_classification_cv(
-        train_data_path=os.path.join(DISEASE_DIR, 'disease_filtered.tsv'),
-        output_dir=output_dir,
-        logging_uri_mlflow=logging_dir,
-        epochs=epochs,
-        log_steps=log_steps,
-        lr=lr,
-        batch_size=batch_size,
-        gradient_accumulation=gradient_accumulation_steps,
-    )
-    logger.info('Finished the disease task')
-
-    # 4. Location
-    run_nlp_baseline_classification_cv(
-        train_data_path=os.path.join(LOCATION_DIR, 'location_filtered.tsv'),
-        output_dir=output_dir,
-        logging_uri_mlflow=logging_dir,
-        epochs=epochs,
-        log_steps=log_steps,
-        lr=lr,
-        batch_size=batch_size,
-        gradient_accumulation=gradient_accumulation_steps,
-    )
-    logger.info('Finished the location task')
-
-    # 5. Organ
-    run_nlp_baseline_classification_cv(
-        train_data_path=os.path.join(ORGAN_DIR, 'organ_filtered.tsv'),
-        output_dir=output_dir,
-        logging_uri_mlflow=logging_dir,
-        epochs=epochs,
-        log_steps=log_steps,
-        lr=lr,
-        batch_size=batch_size,
-        gradient_accumulation=gradient_accumulation_steps,
-    )
-    logger.info('Finished the organ task')
-
-    # 6. Species
-    run_nlp_baseline_classification_cv(
-        train_data_path=os.path.join(SPECIES_DIR, 'species_filtered.tsv'),
-        output_dir=output_dir,
-        logging_uri_mlflow=logging_dir,
-        epochs=epochs,
-        log_steps=log_steps,
-        lr=lr,
-        batch_size=batch_size,
-        gradient_accumulation=gradient_accumulation_steps,
-    )
-    logger.info('Finished the species task')
-
-    # Run the two relation type classification tasks
-    # 7. Interaction type
-    run_nlp_baseline_classification_cv(
-        train_data_path=os.path.join(RELATION_TYPE_DIR, 'relation_type.tsv'),
-        label_column_name='interaction',
-        output_dir=output_dir,
-        logging_uri_mlflow=logging_dir,
-        epochs=epochs,
-        log_steps=log_steps,
-        lr=lr,
-        batch_size=batch_size,
-        gradient_accumulation=gradient_accumulation_steps,
-    )
-    logger.info('Finished the interaction type task')
-
-    # 8. Polarity
-    run_nlp_baseline_classification_cv(
-        train_data_path=os.path.join(RELATION_TYPE_DIR, 'relation_type.tsv'),
-        label_column_name='polarity',
-        output_dir=output_dir,
-        logging_uri_mlflow=logging_dir,
-        epochs=epochs,
-        log_steps=log_steps,
-        lr=lr,
-        batch_size=batch_size,
-        gradient_accumulation=gradient_accumulation_steps,
-    )
-    logger.info('Finished the polarity task')
+    for directory, file, column_name in zip(directories, file_names, column_names):
+        # Run each of the eight classification tasks
+        run_nlp_baseline_classification_cv(
+            train_data_path=os.path.join(directory, file),
+            output_dir=output_dir,
+            logging_uri_mlflow=logging_dir,
+            epochs=epochs,
+            log_steps=log_steps,
+            lr=lr,
+            batch_size=batch_size,
+            gradient_accumulation=gradient_accumulation_steps,
+            label_column_name=column_name,
+        )
+        logger.info(f'Finished the {file_names} task (with column name {column_name})')
 
 
 if __name__ == "__main__":
