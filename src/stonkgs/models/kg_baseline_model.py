@@ -17,7 +17,7 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from sklearn.metrics import f1_score
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
@@ -222,9 +222,9 @@ def get_train_test_splits(
     data_no_labels = data.drop(label_column_name, axis=1)
     labels = data[label_column_name]
 
-    # For now: implement stratified train/test splits with no validation split (since there's no HPO)
+    # Implement non-stratified train/test splits with no validation split
     # It is shuffled deterministically (determined by random_seed)
-    skf = StratifiedKFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
+    skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
 
     # Return a list of dictionaries for train and test indices
     return [{"train_idx": train_idx, "test_idx": test_idx} for train_idx, test_idx in skf.split(data_no_labels, labels)]

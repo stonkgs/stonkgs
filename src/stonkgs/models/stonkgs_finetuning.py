@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import f1_score
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import KFold
 from tqdm import tqdm
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.bert import BertModel, BertTokenizer, BertTokenizerFast
@@ -58,8 +58,8 @@ def get_train_test_splits(
     data = train_data.drop(type_column_name, axis=1)
     labels = train_data[type_column_name]
 
-    # Implement stratified train/test splits
-    skf = StratifiedKFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
+    # Implement non-stratified train/test splits
+    skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
 
     return [{"train_idx": train_idx, "test_idx": test_idx} for train_idx, test_idx in skf.split(data, labels)]
 
