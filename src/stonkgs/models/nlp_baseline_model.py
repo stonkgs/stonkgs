@@ -182,7 +182,7 @@ def run_nlp_baseline_classification_cv(
 
 
 @click.command()
-@click.option('-e', '--epochs', default=3, help='Number of epochs', type=int)
+@click.option('-e', '--epochs', default=5, help='Number of epochs', type=int)
 @click.option('--lr', default=5e-5, help='Learning rate', type=float)
 @click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
 @click.option('--log_steps', default=500, help='Number of steps between each log', type=int)

@@ -46,7 +46,7 @@ class KGEClassificationModel(pl.LightningModule):
         num_classes,
         class_weights,
         d_in: int = 768,
-        lr: float = 1e-4,
+        lr: float = 1e-3,
     ):
         """Initialize the components of the KGE based classification model.
 
@@ -239,7 +239,7 @@ def run_kg_baseline_classification_cv(
     epochs: int = 100,
     train_batch_size: int = 8,
     test_batch_size: int = 64,
-    lr: float = 1e-4,
+    lr: float = 1e-3,
     label_column_name: str = 'class',
     log_steps: int = 500,
 ) -> Dict[str, float]:
@@ -365,15 +365,15 @@ def run_kg_baseline_classification_cv(
 
 
 @click.command()
-@click.option('-e', '--epochs', default=3, help='Number of epochs', type=int)
-@click.option('--lr', default=1e-4, help='Learning rate', type=float)
+@click.option('-e', '--epochs', default=5, help='Number of epochs', type=int)
+@click.option('--lr', default=1e-3, help='Learning rate', type=float)
 @click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
 @click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
 @click.option('--batch_size', default=8, help='Batch size', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
     log_steps: int = 500,
-    lr: float = 1e-4,
+    lr: float = 1e-3,
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 8,
 ):
