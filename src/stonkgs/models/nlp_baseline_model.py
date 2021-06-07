@@ -91,7 +91,7 @@ def run_nlp_baseline_classification_cv(
     """Run cross-validation for the sequence classification task."""
     # Get data splits
     indra_data = pd.read_csv(train_data_path, sep=sep)
-    train_test_splits = get_train_test_splits(indra_data)
+    train_test_splits = get_train_test_splits(indra_data, label_column_name=label_column_name)
 
     # Get text evidences and labels
     evidences_text, labels_str = indra_data[text_data_column_name], indra_data[label_column_name]
