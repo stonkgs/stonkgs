@@ -110,24 +110,24 @@ class KGEClassificationModel(pl.LightningModule):
         return loss
 
     def test_step(self, batch, batch_nb):
-        """Perform one test step on a given batch and return the macro-averaged f1 score over all batches."""
+        """Perform one test step on a given batch and return the weighted-averaged f1 score over all batches."""
         test_inputs, test_labels = batch
         test_class_probs = self.forward(test_inputs)
         # Class probabilities to class labels
         test_predictions = torch.argmax(test_class_probs, dim=1)
         logger.info(f'Predicted labels: {test_predictions}')
 
-        # Get the macro-averaged f1-score
-        test_f1 = f1_score(test_labels, test_predictions, average="macro")
+        # Get the weighted-averaged f1-score
+        test_f1 = f1_score(test_labels, test_predictions, average="weighted")
         return {'test_f1': torch.tensor(test_f1)}
 
     def test_epoch_end(self, outputs):
-        """Return average and std macro-averaged f1-score over all batches."""
+        """Return average and std weighted-averaged f1-score over all batches."""
         mean_test_f1 = torch.stack([x['test_f1'] for x in outputs]).mean()
         std_test_f1 = torch.stack([x['test_f1'] for x in outputs]).std()
 
         # Log the final f1 score
-        self.log('f1_score_macro', mean_test_f1.item())
+        self.log('f1_score_weighted', mean_test_f1.item())
 
         return {'mean_test_f1': mean_test_f1, 'std_test_f1': std_test_f1}
 
@@ -343,7 +343,7 @@ def run_kg_baseline_classification_cv(
             # Predict on test split
             test_results = trainer.test(model, test_dataloaders=testloader)
 
-        # Append f1 score per split based on the macro average
+        # Append f1 score per split based on the weighted average
         f1_scores.append(test_results[0]["mean_test_f1"])
 
     # Log the mean and std f1 score from the cross validation procedure to mlflow

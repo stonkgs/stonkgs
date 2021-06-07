@@ -155,12 +155,12 @@ def run_nlp_baseline_classification_cv(
         predicted_labels = np.argmax(predictions, axis=1)
         logger.info(f'Predicted labels: {predicted_labels}')
 
-        # Use macro average for now
-        f1_sc = f1_score(test_labels, predicted_labels, average="macro")
+        # Use weighted average
+        f1_sc = f1_score(test_labels, predicted_labels, average="weighted")
         f1_scores.append(f1_sc)
 
         # Log the final f1 score of the split
-        mlflow.log_metric('f1_score_macro', f1_sc)
+        mlflow.log_metric('f1_score_weighted', f1_sc)
 
     # Log mean and std f1-scores from the cross validation procedure (average and std across all splits) to the
     # standard logger
