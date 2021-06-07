@@ -115,21 +115,21 @@ class KGEClassificationModel(pl.LightningModule):
         test_class_probs = self.forward(test_inputs)
         # Class probabilities to class labels
         test_predictions = torch.argmax(test_class_probs, dim=1)
-        logger.info(f'Predicted labels: {test_predictions}')
+        # logger.info(f'Predicted labels: {test_predictions}')
 
-        # Get the weighted-averaged f1-score
-        test_f1 = f1_score(test_labels, test_predictions, average="weighted")
-        return {'test_f1': torch.tensor(test_f1)}
+        return {'labels': test_labels, 'predictions': test_predictions}
 
     def test_epoch_end(self, outputs):
         """Return average and std weighted-averaged f1-score over all batches."""
-        mean_test_f1 = torch.stack([x['test_f1'] for x in outputs]).mean()
-        std_test_f1 = torch.stack([x['test_f1'] for x in outputs]).std()
+        # Get the weighted-averaged f1-score
+        all_labels = torch.stack([x['labels'] for x in outputs])
+        all_predictions = torch.stack([x['predictions'] for x in outputs])
+        test_f1 = f1_score(all_labels, all_predictions, average="weighted")
 
         # Log the final f1 score
-        self.log('f1_score_weighted', mean_test_f1.item())
+        self.log('f1_score_weighted', test_f1)
 
-        return {'mean_test_f1': mean_test_f1, 'std_test_f1': std_test_f1}
+        return {'test_f1': test_f1}
 
 
 class INDRAEntityDataset(torch.utils.data.Dataset):
@@ -344,7 +344,7 @@ def run_kg_baseline_classification_cv(
             test_results = trainer.test(model, test_dataloaders=testloader)
 
         # Append f1 score per split based on the weighted average
-        f1_scores.append(test_results[0]["mean_test_f1"])
+        f1_scores.append(test_results[0]["test_f1"])
 
     # Log the mean and std f1 score from the cross validation procedure to mlflow
     with mlflow.start_run():
