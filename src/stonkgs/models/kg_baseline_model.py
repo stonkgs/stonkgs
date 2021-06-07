@@ -8,6 +8,7 @@ python -m src.stonkgs.models.kg_baseline_model
 
 import logging
 import os
+from collections import Counter
 from typing import Dict, List, Optional
 
 import click
@@ -343,6 +344,11 @@ def run_kg_baseline_classification_cv(
             trainer.fit(model, train_dataloader=trainloader)
             # Predict on test split
             test_results = trainer.test(model, test_dataloaders=testloader)
+
+            # Log some details about the datasets used in training and testing
+            mlflow.log_param('label dict', str(tag2id))
+            mlflow.log_param('training class dist', str(Counter(trainloader.dataset.labels)))
+            mlflow.log_param('test class dist', str(Counter(testloader.dataset.labels)))
 
         # Append f1 score per split based on the weighted average
         f1_scores.append(test_results[0]["test_f1"])

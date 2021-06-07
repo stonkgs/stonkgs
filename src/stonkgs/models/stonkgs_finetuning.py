@@ -8,6 +8,7 @@ python -m src.stonkgs.models.stonkgs_finetuning
 
 import logging
 import os
+from collections import Counter
 from typing import Dict, List, Optional
 
 import click
@@ -359,6 +360,11 @@ def run_sequence_classification_cv(
         )
         # Train
         trainer.train()
+
+        # Log some details about the datasets used in training and testing
+        mlflow.log_param('label dict', str(tag2id))
+        mlflow.log_param('training class dist', str(Counter(train_labels)))
+        mlflow.log_param('test class dist', str(Counter(test_labels)))
 
         # Make predictions for the test dataset
         predictions = trainer.predict(test_dataset=test_dataset).predictions
