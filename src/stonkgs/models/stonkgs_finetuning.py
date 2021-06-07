@@ -398,7 +398,7 @@ def run_sequence_classification_cv(
 @click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
 def run_all_fine_tuning_tasks(
-    epochs: int = 3,
+    epochs: int = 5,
     log_steps: int = 500,
     lr: float = 5e-5,
     model_path: str = PRETRAINED_STONKGS_DUMMY_PATH,

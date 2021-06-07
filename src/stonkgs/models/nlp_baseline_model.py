@@ -190,7 +190,7 @@ def run_nlp_baseline_classification_cv(
 @click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
 def run_all_fine_tuning_tasks(
-    epochs: int = 3,
+    epochs: int = 5,
     log_steps: int = 500,
     lr: float = 5e-5,
     output_dir: str = STONKGS_OUTPUT_DIR,

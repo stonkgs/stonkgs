@@ -371,7 +371,7 @@ def run_kg_baseline_classification_cv(
 @click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
 @click.option('--batch_size', default=8, help='Batch size', type=int)
 def run_all_fine_tuning_tasks(
-    epochs: int = 3,
+    epochs: int = 5,
     log_steps: int = 500,
     lr: float = 1e-4,
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
