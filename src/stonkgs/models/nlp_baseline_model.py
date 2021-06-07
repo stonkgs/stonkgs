@@ -167,6 +167,9 @@ def run_nlp_baseline_classification_cv(
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
 
+    # Save the last model
+    trainer.save_model(output_dir=NLP_BL_OUTPUT_DIR)
+
     # End the previous run
     mlflow.end_run()
 

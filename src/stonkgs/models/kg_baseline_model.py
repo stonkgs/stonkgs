@@ -24,6 +24,7 @@ from stonkgs.constants import (
     CELL_TYPE_DIR,
     DISEASE_DIR,
     EMBEDDINGS_PATH,
+    KG_BL_OUTPUT_DIR,
     LOCATION_DIR,
     MLFLOW_FINETUNING_TRACKING_URI,
     ORGAN_DIR,
@@ -345,6 +346,9 @@ def run_kg_baseline_classification_cv(
 
         # Append f1 score per split based on the weighted average
         f1_scores.append(test_results[0]["test_f1"])
+
+    # Save the last model
+    trainer.save_checkpoint(os.path.join(KG_BL_OUTPUT_DIR, 'kg_baseline.ckpt'))
 
     # Log the mean and std f1 score from the cross validation procedure to mlflow
     with mlflow.start_run():
