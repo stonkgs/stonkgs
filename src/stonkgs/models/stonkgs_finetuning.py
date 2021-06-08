@@ -363,7 +363,9 @@ def run_sequence_classification_cv(
 
         # Log some details about the datasets used in training and testing
         mlflow.log_param('label dict', str(tag2id))
+        mlflow.log_param('training dataset size', str(len(train_labels)))
         mlflow.log_param('training class dist', str(Counter(train_labels)))
+        mlflow.log_param('test dataset size', str(len(test_labels)))
         mlflow.log_param('test class dist', str(Counter(test_labels)))
 
         # Make predictions for the test dataset
