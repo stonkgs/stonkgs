@@ -20,6 +20,7 @@ from stonkgs.constants import (
     CELL_LINE_DIR,
     CELL_TYPE_DIR,
     DISEASE_DIR,
+    EMBEDDINGS_PATH,
     LOCATION_DIR,
     MLFLOW_FINETUNING_TRACKING_URI,
     NLP_BL_OUTPUT_DIR,
@@ -29,6 +30,7 @@ from stonkgs.constants import (
     SPECIES_DIR,
     STONKGS_OUTPUT_DIR,
 )
+from stonkgs.data.indra_for_pretraining import _prepare_df
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -89,10 +91,22 @@ def run_nlp_baseline_classification_cv(
     batch_size: int = 16,
     gradient_accumulation: int = 1,
     task_name: str = '',
+    embedding_path: str = EMBEDDINGS_PATH,
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
     # Get data splits
     indra_data = pd.read_csv(train_data_path, sep=sep)
+    # TODO: leave it out later on?
+    # Filter out any triples that contain a node that is not in the embeddings_dict
+    embeddings_dict = _prepare_df(embedding_path)
+    original_length = len(indra_data)
+    indra_data = indra_data[
+        indra_data['source'].isin(embeddings_dict.keys()) & indra_data['target'].isin(embeddings_dict.keys())
+    ]
+    new_length = len(indra_data)
+    logger.info(f'{original_length - new_length} out of {original_length} triples are left out because they contain '
+                f'nodes which are not present in the pre-training data')
+
     train_test_splits = get_train_test_splits(indra_data, label_column_name=label_column_name)
 
     # Get text evidences and labels

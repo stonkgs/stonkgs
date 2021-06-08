@@ -86,6 +86,16 @@ def preprocess_fine_tuning_data(
     # Load the raw fine-tuning dataset with source, target and evidence
     unprocessed_df = pd.read_csv(train_data_path, sep='\t', usecols=["source", "target", "evidence", class_column_name])
 
+    # TODO: leave it out later on?
+    # Filter out any triples that contain a node that is not in the embeddings_dict
+    original_length = len(unprocessed_df)
+    unprocessed_df = unprocessed_df[
+        unprocessed_df['source'].isin(kg_embed_dict.keys()) & unprocessed_df['target'].isin(kg_embed_dict.keys())
+    ]
+    new_length = len(unprocessed_df)
+    logger.info(f'{original_length - new_length} out of {original_length} triples are left out because they contain '
+                f'nodes which are not present in the pre-training data')
+
     # Check how many nodes in the fine-tuning dataset are not covered by the learned KG embeddings
     number_of_pre_training_nodes = len(set(unprocessed_df["source"]).union(set(unprocessed_df["target"])))
     if number_of_pre_training_nodes > len(kg_embed_dict):
@@ -303,6 +313,7 @@ def run_sequence_classification_cv(
         train_data_path=train_data_path,
         class_column_name=class_column_name,
     )
+
     train_test_splits = get_train_test_splits(fine_tuning_df)
 
     # Get text evidences and labels
