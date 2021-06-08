@@ -99,6 +99,7 @@ def run_nlp_baseline_classification_cv(
     # Numerically encode labels
     unique_tags = set(label for label in labels_str)
     tag2id = {label: number for number, label in enumerate(unique_tags)}
+    id2tag = {value: key for key, value in tag2id.items()}
     labels = pd.Series([int(tag2id[label]) for label in labels_str])
 
     # Initialize the f1-score
@@ -114,7 +115,10 @@ def run_nlp_baseline_classification_cv(
     # Start a parent run so that all CV splits are tracked as nested runs
     # mlflow.start_run(run_name='Parent Run')
 
-    for indices in train_test_splits:
+    # Initialize a dataframe for all the predicted labels
+    result_df = pd.DataFrame()
+
+    for idx, indices in enumerate(train_test_splits):
         # Initialize tokenizer and model
         tokenizer = AutoTokenizer.from_pretrained(model_type)
         model = AutoModelForSequenceClassification.from_pretrained(model_type, num_labels=len(unique_tags))
@@ -163,6 +167,19 @@ def run_nlp_baseline_classification_cv(
         predicted_labels = np.argmax(predictions, axis=1)
         logger.info(f'Predicted labels: {predicted_labels}')
 
+        # Save the predicted + true labels
+        partial_result_df = pd.DataFrame(
+            {'split': idx,
+             'index': indices["test_idx"].tolist(),
+             'predicted_label': predicted_labels.tolist(),
+             'true_label': test_labels,
+             }
+        )
+        result_df = result_df.append(
+            partial_result_df,
+            ignore_index=True,
+        )
+
         # Use weighted average
         f1_sc = f1_score(test_labels, predicted_labels, average="weighted")
         f1_scores.append(f1_sc)
@@ -174,6 +191,11 @@ def run_nlp_baseline_classification_cv(
     # standard logger
     logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
     logger.info(f'Std f1-score: {np.std(f1_scores)}')
+
+    # Map the labels in the result df back to their original names
+    result_df = result_df.replace({'predicted_label': id2tag, 'true_label': id2tag})
+    # Save the result_df
+    result_df.to_csv(os.path.join(NLP_BL_OUTPUT_DIR, 'predicted_labels_nlp_df.tsv'), index=False, sep="\t")
 
     # Save the last model
     trainer.save_model(output_dir=NLP_BL_OUTPUT_DIR)

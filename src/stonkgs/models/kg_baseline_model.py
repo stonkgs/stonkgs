@@ -131,7 +131,7 @@ class KGEClassificationModel(pl.LightningModule):
         # Log the final f1 score
         self.log('f1_score_weighted', test_f1)
 
-        return {'test_f1': test_f1}
+        return {'all_predictions': all_predictions, 'test_f1': test_f1}
 
 
 class INDRAEntityDataset(torch.utils.data.Dataset):
@@ -298,8 +298,11 @@ def run_kg_baseline_classification_cv(
 
     mlflow.pytorch.autolog()
 
+    # Initialize a dataframe for all the predicted labels
+    result_df = pd.DataFrame()
+
     # Train and test the model in a cv setting
-    for indices in train_test_splits:
+    for idx, indices in enumerate(train_test_splits):
         # Sample elements randomly from a given list of ids, no replacement
         train_subsampler = torch.utils.data.SubsetRandomSampler(indices["train_idx"])
         test_subsampler = torch.utils.data.SubsetRandomSampler(indices["test_idx"])
@@ -345,6 +348,19 @@ def run_kg_baseline_classification_cv(
             # Predict on test split
             test_results = trainer.test(model, test_dataloaders=testloader)
 
+            # Save the predicted + true labels
+            partial_result_df = pd.DataFrame(
+                {'split': idx,
+                 'index': indices["test_idx"].tolist(),
+                 'predicted_label': test_results['all_predictions'].tolist(),
+                 'true_label': testloader.dataset.labels.tolist(),
+                 }
+            )
+            result_df = result_df.append(
+                partial_result_df,
+                ignore_index=True,
+            )
+
             # Log some details about the datasets used in training and testing
             mlflow.log_param('label dict', str(tag2id))
             mlflow.log_param('training dataset size', str(len(trainloader.dataset)))
@@ -354,6 +370,11 @@ def run_kg_baseline_classification_cv(
 
         # Append f1 score per split based on the weighted average
         f1_scores.append(test_results[0]["test_f1"])
+
+    # Map the labels in the result df back to their original names
+    result_df = result_df.replace({'predicted_label': id2tag, 'true_label': id2tag})
+    # Save the result_df
+    result_df.to_csv(os.path.join(KG_BL_OUTPUT_DIR, 'predicted_labels_kg_df.tsv'), index=False, sep="\t")
 
     # Save the last model
     trainer.save_checkpoint(os.path.join(KG_BL_OUTPUT_DIR, 'kg_baseline.ckpt'))
