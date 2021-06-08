@@ -360,7 +360,7 @@ def run_kg_baseline_classification_cv(
                 {'split': idx,
                  'index': indices["test_idx"].tolist(),
                  'predicted_label': model.predicted_labels.tolist(),
-                 'true_label': testloader.dataset.labels.tolist(),
+                 'true_label': labels[indices["test_idx"]].tolist(),
                  }
             )
             result_df = result_df.append(
