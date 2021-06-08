@@ -447,7 +447,7 @@ def run_all_fine_tuning_tasks(
             log_steps=log_steps,
             train_batch_size=batch_size,
         )
-        logger.info(f'Finished the {file_names} task (with column name {column_name})')
+        logger.info(f'Finished the {file} task (with column name {column_name})')
 
 
 if __name__ == "__main__":
