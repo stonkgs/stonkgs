@@ -384,6 +384,9 @@ def run_kg_baseline_classification_cv(
         mlflow.log_metric('f1_score_mean', np.mean(f1_scores))
         mlflow.log_metric('f1_score_std', np.std(f1_scores))
 
+        # Log the task name as well
+        mlflow.log_param('task name', str(os.path.split(triples_path)[-1]) + " (" + label_column_name + ")")
+
         # Also log how many triples were left out
         mlflow.log_param('original no. of triples', original_length)
         mlflow.log_param('no. of left out triples', original_length - new_length)

@@ -205,6 +205,8 @@ def run_nlp_baseline_classification_cv(
 
     # Log the mean and std f1 score from the cross validation procedure to mlflow
     with mlflow.start_run():
+        # Log the task name as well
+        mlflow.log_param('task name', str(os.path.split(train_data_path)[-1]) + " (" + label_column_name + ")")
         mlflow.log_metric('f1_score_mean', np.mean(f1_scores))
         mlflow.log_metric('f1_score_std', np.std(f1_scores))
 
