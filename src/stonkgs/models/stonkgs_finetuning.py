@@ -91,7 +91,7 @@ def preprocess_fine_tuning_data(
     original_length = len(unprocessed_df)
     unprocessed_df = unprocessed_df[
         unprocessed_df['source'].isin(kg_embed_dict.keys()) & unprocessed_df['target'].isin(kg_embed_dict.keys())
-    ]
+    ].reset_index(drop=True)
     new_length = len(unprocessed_df)
     logger.info(f'{original_length - new_length} out of {original_length} triples are left out because they contain '
                 f'nodes which are not present in the pre-training data')

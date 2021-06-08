@@ -102,7 +102,7 @@ def run_nlp_baseline_classification_cv(
     original_length = len(indra_data)
     indra_data = indra_data[
         indra_data['source'].isin(embeddings_dict.keys()) & indra_data['target'].isin(embeddings_dict.keys())
-    ]
+    ].reset_index(drop=True)
     new_length = len(indra_data)
     logger.info(f'{original_length - new_length} out of {original_length} triples are left out because they contain '
                 f'nodes which are not present in the pre-training data')

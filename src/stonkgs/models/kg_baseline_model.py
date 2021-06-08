@@ -272,7 +272,7 @@ def run_kg_baseline_classification_cv(
     original_length = len(triples_df)
     triples_df = triples_df[
         triples_df['source'].isin(embeddings_dict.keys()) & triples_df['target'].isin(embeddings_dict.keys())
-    ]
+    ].reset_index(drop=True)
     new_length = len(triples_df)
     logger.info(f'{original_length - new_length} out of {original_length} triples are left out because they contain '
                 f'nodes which are not present in the pre-training data')
