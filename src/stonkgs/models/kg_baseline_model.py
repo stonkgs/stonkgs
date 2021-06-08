@@ -78,6 +78,9 @@ class KGEClassificationModel(pl.LightningModule):
         # Learning rate
         self.lr = lr
 
+        # Add an attribute to save the predictions later on
+        self.predicted_labels = []
+
         # Log the additional parameters
         self.log_dict({"num_classes": num_classes, "class_weights": class_weights, "lr": lr})
 
@@ -124,14 +127,17 @@ class KGEClassificationModel(pl.LightningModule):
     def test_epoch_end(self, outputs):
         """Return average and std weighted-averaged f1-score over all batches."""
         # Get the weighted-averaged f1-score
-        all_labels = torch.stack([x['labels'] for x in outputs])
-        all_predictions = torch.stack([x['predictions'] for x in outputs])
+        all_labels = torch.cat([x['labels'] for x in outputs])
+        all_predictions = torch.cat([x['predictions'] for x in outputs])
         test_f1 = f1_score(all_labels, all_predictions, average="weighted")
 
         # Log the final f1 score
         self.log('f1_score_weighted', test_f1)
 
-        return {'all_predictions': all_predictions, 'test_f1': test_f1}
+        # Use this (weird) fix to save the predicted labels
+        self.predicted_labels = all_predictions
+
+        return {'test_f1': test_f1}
 
 
 class INDRAEntityDataset(torch.utils.data.Dataset):
@@ -352,7 +358,7 @@ def run_kg_baseline_classification_cv(
             partial_result_df = pd.DataFrame(
                 {'split': idx,
                  'index': indices["test_idx"].tolist(),
-                 'predicted_label': test_results['all_predictions'].tolist(),
+                 'predicted_label': model.predicted_labels.tolist(),
                  'true_label': testloader.dataset.labels.tolist(),
                  }
             )
