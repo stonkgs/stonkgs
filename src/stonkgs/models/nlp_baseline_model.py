@@ -88,6 +88,7 @@ def run_nlp_baseline_classification_cv(
     lr: float = 5e-5,
     batch_size: int = 16,
     gradient_accumulation: int = 1,
+    task_name: str = '',
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
     # Get data splits
@@ -195,7 +196,11 @@ def run_nlp_baseline_classification_cv(
     # Map the labels in the result df back to their original names
     result_df = result_df.replace({'predicted_label': id2tag, 'true_label': id2tag})
     # Save the result_df
-    result_df.to_csv(os.path.join(NLP_BL_OUTPUT_DIR, 'predicted_labels_nlp_df.tsv'), index=False, sep="\t")
+    result_df.to_csv(
+        os.path.join(NLP_BL_OUTPUT_DIR, 'predicted_labels_nlp_' + task_name + 'df.tsv'),
+        index=False,
+        sep="\t",
+    )
 
     # Save the last model
     trainer.save_model(output_dir=NLP_BL_OUTPUT_DIR)
@@ -206,7 +211,7 @@ def run_nlp_baseline_classification_cv(
     # Log the mean and std f1 score from the cross validation procedure to mlflow
     with mlflow.start_run():
         # Log the task name as well
-        mlflow.log_param('task name', str(os.path.split(train_data_path)[-1]) + " (" + label_column_name + ")")
+        mlflow.log_param('task name', task_name)
         mlflow.log_metric('f1_score_mean', np.mean(f1_scores))
         mlflow.log_metric('f1_score_std', np.std(f1_scores))
 
@@ -255,10 +260,20 @@ def run_all_fine_tuning_tasks(
         'relation_type.tsv',
         'relation_type.tsv',
     ]
+    task_names = [
+        'cell_line',
+        'cell_type',
+        'disease',
+        'location',
+        'organ',
+        'species',
+        'interaction',
+        'polarity'
+    ]
     # Specify the column names of the target variable
     column_names = ['class'] * 6 + ['interaction'] + ['polarity']
 
-    for directory, file, column_name in zip(directories, file_names, column_names):
+    for directory, file, column_name, task_name in zip(directories, file_names, column_names, task_names):
         # Run each of the eight classification tasks
         run_nlp_baseline_classification_cv(
             train_data_path=os.path.join(directory, file),
@@ -270,8 +285,9 @@ def run_all_fine_tuning_tasks(
             batch_size=batch_size,
             gradient_accumulation=gradient_accumulation_steps,
             label_column_name=column_name,
+            task_name=task_name,
         )
-        logger.info(f'Finished the {file} task (with column name {column_name})')
+        logger.info(f'Finished the {task_name} task')
 
 
 if __name__ == "__main__":

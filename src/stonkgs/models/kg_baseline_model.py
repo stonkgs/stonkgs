@@ -250,6 +250,7 @@ def run_kg_baseline_classification_cv(
     lr: float = 1e-3,
     label_column_name: str = 'class',
     log_steps: int = 500,
+    task_name: str = '',
 ) -> Dict[str, float]:
     """Run KG baseline classification."""
     # Step 1. load the tsv file with the annotation types you want to test and make the splits
@@ -380,7 +381,11 @@ def run_kg_baseline_classification_cv(
     # Map the labels in the result df back to their original names
     result_df = result_df.replace({'predicted_label': id2tag, 'true_label': id2tag})
     # Save the result_df
-    result_df.to_csv(os.path.join(KG_BL_OUTPUT_DIR, 'predicted_labels_kg_df.tsv'), index=False, sep="\t")
+    result_df.to_csv(
+        os.path.join(KG_BL_OUTPUT_DIR, 'predicted_labels_kg_' + task_name + 'df.tsv'),
+        index=False,
+        sep="\t",
+    )
 
     # Save the last model
     trainer.save_checkpoint(os.path.join(KG_BL_OUTPUT_DIR, 'kg_baseline.ckpt'))
@@ -391,7 +396,7 @@ def run_kg_baseline_classification_cv(
         mlflow.log_metric('f1_score_std', np.std(f1_scores))
 
         # Log the task name as well
-        mlflow.log_param('task name', str(os.path.split(triples_path)[-1]) + " (" + label_column_name + ")")
+        mlflow.log_param('task name', task_name)
 
         # Also log how many triples were left out
         mlflow.log_param('original no. of triples', original_length)
@@ -442,10 +447,20 @@ def run_all_fine_tuning_tasks(
         'relation_type.tsv',
         'relation_type.tsv',
     ]
+    task_names = [
+        'cell_line',
+        'cell_type',
+        'disease',
+        'location',
+        'organ',
+        'species',
+        'interaction',
+        'polarity'
+    ]
     # Specify the column names of the target variable
     column_names = ['class'] * 6 + ['interaction'] + ['polarity']
 
-    for directory, file, column_name in zip(directories, file_names, column_names):
+    for directory, file, column_name, task_name in zip(directories, file_names, column_names, task_names):
         # Run each of the eight classification tasks
         run_kg_baseline_classification_cv(
             triples_path=os.path.join(directory, file),
@@ -455,8 +470,9 @@ def run_all_fine_tuning_tasks(
             lr=lr,
             log_steps=log_steps,
             train_batch_size=batch_size,
+            task_name=task_name,
         )
-        logger.info(f'Finished the {file} task (with column name {column_name})')
+        logger.info(f'Finished the {task_name} task')
 
 
 if __name__ == "__main__":
