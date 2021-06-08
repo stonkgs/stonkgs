@@ -468,7 +468,7 @@ def run_all_fine_tuning_tasks(
     for directory, file, column_name in zip(directories, file_names, column_names):
         # Run the 8 fine-tuning tasks
         run_sequence_classification_cv(
-            train_data_path=os.path.join(CELL_LINE_DIR, 'cell_line_filtered.tsv'),
+            train_data_path=os.path.join(directory, file),
             model_path=model_path,
             output_dir=output_dir,
             logging_uri_mlflow=logging_dir,
