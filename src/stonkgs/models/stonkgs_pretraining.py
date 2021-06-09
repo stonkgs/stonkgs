@@ -6,7 +6,7 @@ import logging
 import os
 from typing import Optional
 
-import click
+import click  # type: ignore
 import mlflow
 # import torch.autograd.profiler as profiler
 from accelerate import Accelerator

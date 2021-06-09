@@ -11,7 +11,7 @@ import os
 from collections import Counter
 from typing import Dict, List, Optional
 
-import click
+import click  # type: ignore
 import mlflow
 import numpy as np
 import pandas as pd
@@ -78,8 +78,8 @@ class KGEClassificationModel(pl.LightningModule):
         # Learning rate
         self.lr = lr
 
-        # Add an attribute to save the predictions later on
-        self.predicted_labels = []
+        # Add an attribute to save the predictions later on (will be overridden anyways)
+        self.predicted_labels = torch.empty(size=(1,))
 
         # Log the additional parameters
         self.log_dict({"num_classes": num_classes, "class_weights": class_weights, "lr": lr})
@@ -361,7 +361,7 @@ def run_kg_baseline_classification_cv(
                  'index': indices["test_idx"].tolist(),
                  'predicted_label': model.predicted_labels.tolist(),
                  'true_label': labels[indices["test_idx"]].tolist(),
-                 }
+                 },
             )
             result_df = result_df.append(
                 partial_result_df,
@@ -455,7 +455,7 @@ def run_all_fine_tuning_tasks(
         'organ',
         'species',
         'interaction',
-        'polarity'
+        'polarity',
     ]
     # Specify the column names of the target variable
     column_names = ['class'] * 6 + ['interaction'] + ['polarity']

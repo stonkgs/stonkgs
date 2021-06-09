@@ -11,7 +11,7 @@ import os
 from collections import Counter
 from typing import Dict, List, Optional
 
-import click
+import click  # type: ignore
 import mlflow
 import numpy as np
 import pandas as pd
@@ -395,7 +395,7 @@ def run_sequence_classification_cv(
              'index': indices["test_idx"].tolist(),
              'predicted_label': predicted_labels.tolist(),
              'true_label': test_labels,
-             }
+             },
         )
         result_df = result_df.append(
             partial_result_df,
@@ -488,7 +488,7 @@ def run_all_fine_tuning_tasks(
         'organ',
         'species',
         'interaction',
-        'polarity'
+        'polarity',
     ]
     # Specify the column names of the target variable
     column_names = ['class'] * 6 + ['interaction'] + ['polarity']
