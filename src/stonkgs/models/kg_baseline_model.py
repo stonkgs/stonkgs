@@ -240,7 +240,7 @@ def get_train_test_splits(
             train_size=max_dataset_size,
             random_state=random_seed,
         )
-        for train_index, test_index in splitter.split(data_no_labels, labels):
+        for train_index, _ in splitter.split(data_no_labels, labels):
             data_no_labels, labels = data_no_labels[train_index], labels[train_index]
 
     # Generate the actual train/test splits here:
