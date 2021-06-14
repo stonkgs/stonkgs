@@ -71,7 +71,8 @@ def get_train_test_splits(
             random_state=random_seed,
         )
         for train_index, _ in splitter.split(data, labels):
-            data, labels = data[train_index], labels[train_index]
+            data = data.iloc[train_index, :].reset_index(drop=True)
+            labels = labels.iloc[train_index].reset_index(drop=True)
 
     # Generate the actual train/test splits here:
     # Implement non-stratified train/test splits
