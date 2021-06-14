@@ -19,6 +19,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trai
 from stonkgs.constants import (
     CELL_LINE_DIR,
     CELL_TYPE_DIR,
+    DEEPSPEED_CONFIG_PATH,
     DISEASE_DIR,
     EMBEDDINGS_PATH,
     LOCATION_DIR,
@@ -92,6 +93,7 @@ def run_nlp_baseline_classification_cv(
     gradient_accumulation: int = 1,
     task_name: str = '',
     embedding_path: str = EMBEDDINGS_PATH,
+    deepspeed: bool = True,
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
     # Get data splits
@@ -154,6 +156,8 @@ def run_nlp_baseline_classification_cv(
             num_train_epochs=epochs,  # total number of training epochs
             logging_steps=log_steps,
             learning_rate=lr,
+            # Use deepspeed with a specified config file for speedup
+            deepspeed=DEEPSPEED_CONFIG_PATH if deepspeed else None,
             report_to=["mlflow"],  # log via mlflow
             do_train=True,
             do_predict=True,
@@ -243,6 +247,7 @@ def run_nlp_baseline_classification_cv(
 @click.option('--output_dir', default=STONKGS_OUTPUT_DIR, help='Output directory', type=str)
 @click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
+@click.option('--deepspeed', default=True, help='Whether to use deepspeed or not', type=bool)
 @click.option('--local_rank', default=-1, help='THIS PARAMETER IS IGNORED', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
@@ -252,6 +257,7 @@ def run_all_fine_tuning_tasks(
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
+    deepspeed: bool = True,
     local_rank: int = -1,
 ):
     """Run all fine-tuning tasks at once."""
@@ -302,6 +308,7 @@ def run_all_fine_tuning_tasks(
             gradient_accumulation=gradient_accumulation_steps,
             label_column_name=column_name,
             task_name=task_name,
+            deepspeed=deepspeed,
         )
         logger.info(f'Finished the {task_name} task')
 
