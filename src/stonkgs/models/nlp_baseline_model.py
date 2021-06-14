@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import f1_score
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
 
 from stonkgs.constants import (
@@ -62,6 +62,7 @@ class INDRAEvidenceDataset(torch.utils.data.Dataset):
 
 def get_train_test_splits(
     data: pd.DataFrame,
+    max_dataset_size: int = 10000,
     label_column_name: str = "class",
     random_seed: int = 42,
     n_splits: int = 5,
@@ -71,6 +72,19 @@ def get_train_test_splits(
     data_no_labels = data.drop(label_column_name, axis=1)
     labels = data[label_column_name]
 
+    # Cut the dataset down to max_dataset_size (deterministically!) using StratifiedShuffleSplit if needed:
+    # (this is not an actual train/test split, this is just for getting a dataset of size max_dataset_size in a
+    # stratified and deterministic manner)
+    if len(data) > max_dataset_size:
+        splitter = StratifiedShuffleSplit(
+            n_splits=1,
+            train_size=max_dataset_size,
+            random_state=random_seed,
+        )
+        for train_index, test_index in splitter.split(data_no_labels, labels):
+            data_no_labels, labels = data_no_labels[train_index], labels[train_index]
+
+    # Generate the actual train/test splits here:
     # Implement non-stratified train/test splits with no validation split
     # It is shuffled deterministically (determined by random_seed)
     skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
@@ -94,6 +108,7 @@ def run_nlp_baseline_classification_cv(
     task_name: str = '',
     embedding_path: str = EMBEDDINGS_PATH,
     deepspeed: bool = True,
+    max_dataset_size: int = 10000,
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
     # Get data splits
@@ -109,7 +124,11 @@ def run_nlp_baseline_classification_cv(
     logger.info(f'{original_length - new_length} out of {original_length} triples are left out because they contain '
                 f'nodes which are not present in the pre-training data')
 
-    train_test_splits = get_train_test_splits(indra_data, label_column_name=label_column_name)
+    train_test_splits = get_train_test_splits(
+        indra_data,
+        label_column_name=label_column_name,
+        max_dataset_size=max_dataset_size,
+    )
 
     # Get text evidences and labels
     evidences_text, labels_str = indra_data[text_data_column_name], indra_data[label_column_name]
@@ -248,6 +267,7 @@ def run_nlp_baseline_classification_cv(
 @click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
 @click.option('--deepspeed', default=True, help='Whether to use deepspeed or not', type=bool)
+@click.option('--max_dataset_size', default=10000, help='Maximum dataset size of the fine-tuning datasets', type=int)
 @click.option('--local_rank', default=-1, help='THIS PARAMETER IS IGNORED', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
@@ -258,6 +278,7 @@ def run_all_fine_tuning_tasks(
     batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
     deepspeed: bool = True,
+    max_dataset_size: int = 10000,
     local_rank: int = -1,
 ):
     """Run all fine-tuning tasks at once."""
@@ -309,6 +330,7 @@ def run_all_fine_tuning_tasks(
             label_column_name=column_name,
             task_name=task_name,
             deepspeed=deepspeed,
+            max_dataset_size=max_dataset_size,
         )
         logger.info(f'Finished the {task_name} task')
 

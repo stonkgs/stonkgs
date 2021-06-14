@@ -18,7 +18,7 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from sklearn.metrics import f1_score
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedShuffleSplit
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
@@ -224,12 +224,26 @@ def get_train_test_splits(
     label_column_name: str = "class",
     random_seed: int = 42,
     n_splits: int = 5,
+    max_dataset_size: int = 10000,
 ) -> List:
     """Return deterministic train/test indices for n_splits based on the fine-tuning dataset that is passed."""
     # Leave out the label in the dataset
     data_no_labels = data.drop(label_column_name, axis=1)
     labels = data[label_column_name]
 
+    # Cut the dataset down to max_dataset_size (deterministically!) using StratifiedShuffleSplit if needed:
+    # (this is not an actual train/test split, this is just for getting a dataset of size max_dataset_size in a
+    # stratified and deterministic manner)
+    if len(data) > max_dataset_size:
+        splitter = StratifiedShuffleSplit(
+            n_splits=1,
+            train_size=max_dataset_size,
+            random_state=random_seed,
+        )
+        for train_index, test_index in splitter.split(data_no_labels, labels):
+            data_no_labels, labels = data_no_labels[train_index], labels[train_index]
+
+    # Generate the actual train/test splits here:
     # Implement non-stratified train/test splits with no validation split
     # It is shuffled deterministically (determined by random_seed)
     skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
@@ -251,6 +265,7 @@ def run_kg_baseline_classification_cv(
     label_column_name: str = 'class',
     log_steps: int = 500,
     task_name: str = '',
+    max_dataset_size: int = 10000,
 ) -> Dict[str, float]:
     """Run KG baseline classification."""
     # Step 1. load the tsv file with the annotation types you want to test and make the splits
@@ -286,7 +301,12 @@ def run_kg_baseline_classification_cv(
     labels = pd.Series([int(tag2id[label]) for label in triples_df[label_column_name]])
 
     # Get the train/test split indices
-    train_test_splits = get_train_test_splits(triples_df, n_splits=n_splits, label_column_name=label_column_name)
+    train_test_splits = get_train_test_splits(
+        triples_df,
+        n_splits=n_splits,
+        label_column_name=label_column_name,
+        max_dataset_size=max_dataset_size,
+    )
 
     # Initialize f1-scores
     f1_scores = []
@@ -417,12 +437,14 @@ def run_kg_baseline_classification_cv(
 @click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
 @click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
 @click.option('--batch_size', default=8, help='Batch size', type=int)
+@click.option('--max_dataset_size', default=10000, help='Maximum dataset size of the fine-tuning datasets', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
     log_steps: int = 500,
     lr: float = 1e-3,
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 8,
+    max_dataset_size: int = 10000,
 ):
     """Run all fine-tuning tasks at once."""
     # Run the 6 annotation type tasks
@@ -471,6 +493,7 @@ def run_all_fine_tuning_tasks(
             log_steps=log_steps,
             train_batch_size=batch_size,
             task_name=task_name,
+            max_dataset_size=max_dataset_size,
         )
         logger.info(f'Finished the {task_name} task')
 

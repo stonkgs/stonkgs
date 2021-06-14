@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import f1_score
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from tqdm import tqdm
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.bert import BertModel, BertTokenizer, BertTokenizerFast
@@ -54,12 +54,26 @@ def get_train_test_splits(
     type_column_name: str = "labels",
     random_seed: int = 42,
     n_splits: int = 5,
+    max_dataset_size: int = 10000,
 ) -> List:
     """Return train/test indices for n_splits many splits based on the fine-tuning dataset that is passed."""
     # Leave out the label in the dataset
     data = train_data.drop(type_column_name, axis=1)
     labels = train_data[type_column_name]
 
+    # Cut the dataset down to max_dataset_size (deterministically!) using StratifiedShuffleSplit if needed:
+    # (this is not an actual train/test split, this is just for getting a dataset of size max_dataset_size in a
+    # stratified and deterministic manner)
+    if len(data) > max_dataset_size:
+        splitter = StratifiedShuffleSplit(
+            n_splits=1,
+            train_size=max_dataset_size,
+            random_state=random_seed,
+        )
+        for train_index, test_index in splitter.split(data, labels):
+            data, labels = data[train_index], labels[train_index]
+
+    # Generate the actual train/test splits here:
     # Implement non-stratified train/test splits
     skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
 
@@ -308,6 +322,7 @@ def run_sequence_classification_cv(
     gradient_accumulation: int = 1,
     task_name: str = '',
     deepspeed: bool = True,
+    max_dataset_size: int = 10000,
 ) -> Dict:
     """Run cross-validation for the sequence classification task(s) using STonKGs."""
     # Get data splits
@@ -316,7 +331,10 @@ def run_sequence_classification_cv(
         class_column_name=class_column_name,
     )
 
-    train_test_splits = get_train_test_splits(fine_tuning_df)
+    train_test_splits = get_train_test_splits(
+        fine_tuning_df,
+        max_dataset_size=max_dataset_size,
+    )
 
     # Get text evidences and labels
     fine_tuning_data, labels_str = fine_tuning_df.drop(columns=label_column_name), fine_tuning_df[label_column_name]
@@ -453,6 +471,7 @@ def run_sequence_classification_cv(
 @click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
 @click.option('--deepspeed', default=True, help='Whether to use deepspeed or not', type=bool)
+@click.option('--max_dataset_size', default=10000, help='Maximum dataset size of the fine-tuning datasets', type=int)
 @click.option('--local_rank', default=-1, help='THIS PARAMETER IS IGNORED', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
@@ -464,6 +483,7 @@ def run_all_fine_tuning_tasks(
     batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
     deepspeed: bool = True,
+    max_dataset_size: int = 10000,
     local_rank: int = -1,
 ):
     """Run all fine-tuning tasks at once."""
@@ -516,6 +536,7 @@ def run_all_fine_tuning_tasks(
             class_column_name=column_name,
             task_name=task_name,
             deepspeed=deepspeed,
+            max_dataset_size=max_dataset_size,
         )
         logger.info(f'Finished the {task_name} task')
 
