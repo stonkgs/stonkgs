@@ -26,6 +26,7 @@ from transformers.trainer import Trainer, TrainingArguments
 from stonkgs.constants import (
     CELL_LINE_DIR,
     CELL_TYPE_DIR,
+    DEEPSPEED_CONFIG_PATH,
     DISEASE_DIR,
     EMBEDDINGS_PATH,
     LOCATION_DIR,
@@ -360,6 +361,9 @@ def run_sequence_classification_cv(
             num_train_epochs=epochs,  # total number of training epochs
             logging_steps=log_steps,  # reduce the number of logging steps to avoid collisions when writing to the
             # shared database
+            # TODO: use deepspeed
+            # Use deepspeed with a specified config file for speedup
+            deepspeed=DEEPSPEED_CONFIG_PATH,
             learning_rate=lr,
             report_to=["mlflow"],  # log via mlflow
             do_train=True,
@@ -448,6 +452,7 @@ def run_sequence_classification_cv(
 @click.option('--output_dir', default=STONKGS_OUTPUT_DIR, help='Output directory', type=str)
 @click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
+@click.option('--local_rank', default=-1, help='THIS PARAMETER IS IGNORED', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
     log_steps: int = 500,
@@ -457,6 +462,7 @@ def run_all_fine_tuning_tasks(
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
+    local_rank: int = -1,
 ):
     """Run all fine-tuning tasks at once."""
     # Specify all directories and file names

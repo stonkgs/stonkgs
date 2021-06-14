@@ -243,6 +243,7 @@ def run_nlp_baseline_classification_cv(
 @click.option('--output_dir', default=STONKGS_OUTPUT_DIR, help='Output directory', type=str)
 @click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
+@click.option('--local_rank', default=-1, help='THIS PARAMETER IS IGNORED', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
     log_steps: int = 500,
@@ -251,6 +252,7 @@ def run_all_fine_tuning_tasks(
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
+    local_rank: int = -1,
 ):
     """Run all fine-tuning tasks at once."""
     # Specify all directories and file names
