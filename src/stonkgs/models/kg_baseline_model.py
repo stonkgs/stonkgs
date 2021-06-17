@@ -461,14 +461,14 @@ def run_all_fine_tuning_tasks(
         RELATION_TYPE_DIR,
     ]
     file_names = [
-        'cell_line_filtered.tsv',
-        'cell_type_filtered.tsv',
-        'disease_filtered.tsv',
-        'location_filtered.tsv',
-        'organ_filtered.tsv',
-        'species_filtered.tsv',
-        'relation_type.tsv',
-        'relation_type.tsv',
+        'cell_line_no_duplicates.tsv',
+        'cell_type_no_duplicates.tsv',
+        'disease_no_duplicates.tsv',
+        'location_no_duplicates.tsv',
+        'organ_no_duplicates.tsv',
+        'species_no_duplicates.tsv',
+        'relation_type_no_duplicates.tsv',
+        'relation_type_no_duplicates.tsv',
     ]
     task_names = [
         'cell_line',
