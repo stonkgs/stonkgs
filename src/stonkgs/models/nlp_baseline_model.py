@@ -212,6 +212,7 @@ def run_nlp_baseline_classification_cv(
              'index': indices["test_idx"].tolist(),
              'predicted_label': predicted_labels.tolist(),
              'true_label': test_labels,
+             'evidence': evidences_text[indices["test_idx"]].tolist(),
              },
         )
         result_df = result_df.append(
