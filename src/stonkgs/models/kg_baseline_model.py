@@ -466,7 +466,7 @@ def run_all_fine_tuning_tasks(
         'disease_no_duplicates.tsv',
         'location_no_duplicates.tsv',
         'organ_no_duplicates.tsv',
-        'species_no_duplicates.tsv',
+        'species_keyword_filtered.tsv',  # TODO: Change back later on
         'relation_type_no_duplicates.tsv',
         'relation_type_no_duplicates.tsv',
     ]
@@ -485,17 +485,18 @@ def run_all_fine_tuning_tasks(
 
     for directory, file, column_name, task_name in zip(directories, file_names, column_names, task_names):
         # Run each of the eight classification tasks
-        run_kg_baseline_classification_cv(
-            triples_path=os.path.join(directory, file),
-            label_column_name=column_name,
-            logging_uri_mlflow=logging_dir,
-            epochs=epochs,
-            lr=lr,
-            log_steps=log_steps,
-            train_batch_size=batch_size,
-            task_name=task_name,
-            max_dataset_size=max_dataset_size,
-        )
+        if task_name == 'species':  # TODO: Change back later on
+            run_kg_baseline_classification_cv(
+                triples_path=os.path.join(directory, file),
+                label_column_name=column_name,
+                logging_uri_mlflow=logging_dir,
+                epochs=epochs,
+                lr=lr,
+                log_steps=log_steps,
+                train_batch_size=batch_size,
+                task_name=task_name,
+                max_dataset_size=max_dataset_size,
+            )
         logger.info(f'Finished the {task_name} task')
 
 

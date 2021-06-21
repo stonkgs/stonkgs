@@ -505,7 +505,7 @@ def run_all_fine_tuning_tasks(
         'disease_no_duplicates.tsv',
         'location_no_duplicates.tsv',
         'organ_no_duplicates.tsv',
-        'species_no_duplicates.tsv',
+        'species_keyword_filtered.tsv',  # TODO: Change back later on
         'relation_type_no_duplicates.tsv',
         'relation_type_no_duplicates.tsv',
     ]
@@ -524,21 +524,22 @@ def run_all_fine_tuning_tasks(
 
     for directory, file, column_name, task_name in zip(directories, file_names, column_names, task_names):
         # Run the 8 fine-tuning tasks
-        run_sequence_classification_cv(
-            train_data_path=os.path.join(directory, file),
-            model_path=model_path,
-            output_dir=output_dir,
-            logging_uri_mlflow=logging_dir,
-            epochs=epochs,
-            log_steps=log_steps,
-            lr=lr,
-            batch_size=batch_size,
-            gradient_accumulation=gradient_accumulation_steps,
-            class_column_name=column_name,
-            task_name=task_name,
-            deepspeed=deepspeed,
-            max_dataset_size=max_dataset_size,
-        )
+        if task_name == 'species':  # TODO: Change back later on
+            run_sequence_classification_cv(
+                train_data_path=os.path.join(directory, file),
+                model_path=model_path,
+                output_dir=output_dir,
+                logging_uri_mlflow=logging_dir,
+                epochs=epochs,
+                log_steps=log_steps,
+                lr=lr,
+                batch_size=batch_size,
+                gradient_accumulation=gradient_accumulation_steps,
+                class_column_name=column_name,
+                task_name=task_name,
+                deepspeed=deepspeed,
+                max_dataset_size=max_dataset_size,
+            )
         logger.info(f'Finished the {task_name} task')
 
 
