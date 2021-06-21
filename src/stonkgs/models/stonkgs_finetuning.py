@@ -418,7 +418,7 @@ def run_sequence_classification_cv(
              'index': indices["test_idx"].tolist(),
              'predicted_label': predicted_labels.tolist(),
              'true_label': test_labels,
-             'evidence': fine_tuning_data.iloc[indices["test_idx"]]['evidence'].tolist(),
+             'evidence': fine_tuning_data.iloc[indices["test_idx"]]['input_ids'].tolist(),
              },
         )
         result_df = result_df.append(
