@@ -434,17 +434,17 @@ def run_kg_baseline_classification_cv(
 
 @click.command()
 @click.option('-e', '--epochs', default=5, help='Number of epochs', type=int)
-@click.option('--lr', default=1e-3, help='Learning rate', type=float)
+@click.option('--lr', default=1e-4, help='Learning rate', type=float)
 @click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
 @click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
-@click.option('--batch_size', default=8, help='Batch size', type=int)
+@click.option('--batch_size', default=16, help='Batch size', type=int)
 @click.option('--max_dataset_size', default=10000, help='Maximum dataset size of the fine-tuning datasets', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
     log_steps: int = 500,
     lr: float = 1e-3,
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
-    batch_size: int = 8,
+    batch_size: int = 16,
     max_dataset_size: int = 10000,
 ):
     """Run all fine-tuning tasks at once."""
@@ -466,7 +466,7 @@ def run_all_fine_tuning_tasks(
         'disease_no_duplicates.tsv',
         'location_no_duplicates.tsv',
         'organ_no_duplicates.tsv',
-        'species_keyword_filtered.tsv',  # TODO: Change back later on
+        'species_no_duplicates.tsv',
         'relation_type_no_duplicates.tsv',
         'relation_type_no_duplicates.tsv',
     ]
@@ -485,18 +485,17 @@ def run_all_fine_tuning_tasks(
 
     for directory, file, column_name, task_name in zip(directories, file_names, column_names, task_names):
         # Run each of the eight classification tasks
-        if task_name == 'species':  # TODO: Change back later on
-            run_kg_baseline_classification_cv(
-                triples_path=os.path.join(directory, file),
-                label_column_name=column_name,
-                logging_uri_mlflow=logging_dir,
-                epochs=epochs,
-                lr=lr,
-                log_steps=log_steps,
-                train_batch_size=batch_size,
-                task_name=task_name,
-                max_dataset_size=max_dataset_size,
-            )
+        run_kg_baseline_classification_cv(
+            triples_path=os.path.join(directory, file),
+            label_column_name=column_name,
+            logging_uri_mlflow=logging_dir,
+            epochs=epochs,
+            lr=lr,
+            log_steps=log_steps,
+            train_batch_size=batch_size,
+            task_name=task_name,
+            max_dataset_size=max_dataset_size,
+        )
         logger.info(f'Finished the {task_name} task')
 
 
