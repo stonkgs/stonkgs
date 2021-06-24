@@ -438,14 +438,14 @@ def run_kg_baseline_classification_cv(
 @click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
 @click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
 @click.option('--batch_size', default=16, help='Batch size', type=int)
-@click.option('--max_dataset_size', default=10000, help='Maximum dataset size of the fine-tuning datasets', type=int)
+@click.option('--max_dataset_size', default=100000, help='Maximum dataset size of the fine-tuning datasets', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
     log_steps: int = 500,
     lr: float = 1e-3,
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 16,
-    max_dataset_size: int = 10000,
+    max_dataset_size: int = 100000,  # effectively removes the max dataset size restriction
 ):
     """Run all fine-tuning tasks at once."""
     # Run the 6 annotation type tasks
@@ -483,7 +483,13 @@ def run_all_fine_tuning_tasks(
     # Specify the column names of the target variable
     column_names = ['class'] * 6 + ['interaction'] + ['polarity']
 
-    for directory, file, column_name, task_name in zip(directories, file_names, column_names, task_names):
+    # TODO: delete reverse order later on
+    for directory, file, column_name, task_name in zip(
+        directories[::-1],
+        file_names[::-1],
+        column_names[::-1],
+        task_names[::-1],
+    ):
         # Run each of the eight classification tasks
         run_kg_baseline_classification_cv(
             triples_path=os.path.join(directory, file),

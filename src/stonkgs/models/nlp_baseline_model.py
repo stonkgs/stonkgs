@@ -269,7 +269,7 @@ def run_nlp_baseline_classification_cv(
 @click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
 @click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
 @click.option('--deepspeed', default=True, help='Whether to use deepspeed or not', type=bool)
-@click.option('--max_dataset_size', default=10000, help='Maximum dataset size of the fine-tuning datasets', type=int)
+@click.option('--max_dataset_size', default=100000, help='Maximum dataset size of the fine-tuning datasets', type=int)
 @click.option('--local_rank', default=-1, help='THIS PARAMETER IS IGNORED', type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
@@ -280,7 +280,7 @@ def run_all_fine_tuning_tasks(
     batch_size: int = 8,
     gradient_accumulation_steps: int = 1,
     deepspeed: bool = True,
-    max_dataset_size: int = 10000,
+    max_dataset_size: int = 100000,  # effectively removes the max dataset size restriction
     local_rank: int = -1,
 ):
     """Run all fine-tuning tasks at once."""
@@ -318,7 +318,13 @@ def run_all_fine_tuning_tasks(
     # Specify the column names of the target variable
     column_names = ['class'] * 6 + ['interaction'] + ['polarity']
 
-    for directory, file, column_name, task_name in zip(directories, file_names, column_names, task_names):
+    # TODO: delete reverse order later on
+    for directory, file, column_name, task_name in zip(
+        directories[::-1],
+        file_names[::-1],
+        column_names[::-1],
+        task_names[::-1],
+    ):
         # Run each of the eight classification tasks
         run_nlp_baseline_classification_cv(
             train_data_path=os.path.join(directory, file),
