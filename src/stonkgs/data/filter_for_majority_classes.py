@@ -52,7 +52,7 @@ def filter_for_majority_classes(
 
     # Optional: Save the filtered df
     if output_path and len(name) > 0:
-        df.to_csv(os.path.join(output_path, name + '_filtered_less_classes.tsv'), sep='\t')
+        df.to_csv(os.path.join(output_path, name + '_filtered_less_classes.tsv'), sep='\t', index=None)
 
     return df
 
