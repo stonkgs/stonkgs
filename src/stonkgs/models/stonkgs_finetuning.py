@@ -501,14 +501,14 @@ def run_all_fine_tuning_tasks(
         RELATION_TYPE_DIR,
     ]
     file_names = [
-        'cell_line_special_filtered.tsv',
-        'cell_type_special_filtered.tsv',
-        'disease_special_filtered.tsv',
-        'location_special_filtered.tsv',
-        'organ_special_filtered.tsv',
-        'species_special_filtered.tsv',
-        'relation_type_special_filtered.tsv',
-        'relation_type_special_filtered.tsv',
+        'cell_line_less_classes_no_duplicates.tsv',
+        'cell_type_less_classes_no_duplicates.tsv',
+        'disease_less_classes_no_duplicates.tsv',
+        'location_less_classes_no_duplicates.tsv',
+        'organ_less_classes_no_duplicates.tsv',
+        'species_less_classes_no_duplicates.tsv',
+        'relation_type_less_classes_no_duplicates.tsv',
+        'relation_type_less_classes_no_duplicates.tsv',
     ]
     task_names = [
         'cell_line',
