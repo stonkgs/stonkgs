@@ -10,6 +10,7 @@ from typing import Optional
 
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from transformers import BertTokenizer
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
@@ -17,6 +18,7 @@ from stonkgs.constants import (
     DISEASE_DIR,
     EMBEDDINGS_PATH,
     LOCATION_DIR,
+    NLP_MODEL_TYPE,
     ORGAN_DIR,
     SPECIES_DIR,
     RELATION_TYPE_DIR,
@@ -73,7 +75,7 @@ def reduce_dataset_size(
     # Cut the dataset down to max_dataset_size (deterministically!) using StratifiedShuffleSplit if needed:
     # (this is not an actual train/test split, this is just for getting a dataset of size max_dataset_size in a
     # stratified and deterministic manner)
-    if len(df) > max_dataset_size:
+    if max_dataset_size < len(df):
         if class_name == "class":
             df = train_test_split(
                 df,
@@ -106,18 +108,33 @@ def reduce_dataset_size(
 
 def filter_out_special_character_sequences(
     df: pd.DataFrame,
+    min_tokens: int = 50,
     evidence_col_name: str = "evidence",
     name: str = '',
 ) -> pd.DataFrame:
     counter = 0
-    filtering_pattern = re.compile("((\\\\)+u([\w]+))|(\[[^\s]+\])|(XREF)")
+    idx_to_remove = []
+    initial_length = len(df)
+    # filtering_pattern = re.compile("((\\\\)+u([\w]+))|(\[[^\s]+\])|(XREF)")
+    tokenizer = BertTokenizer.from_pretrained(NLP_MODEL_TYPE)
 
     for idx, row in df.iterrows():
-        if any([x in row[evidence_col_name] for x in ["[", "]", "XREF", "\\u"]]):
+        if len(tokenizer.tokenize(row[evidence_col_name])) < min_tokens:
+            idx_to_remove.append(idx)
+        elif any([x in row[evidence_col_name] for x in ["[", "]", "XREF", "\\u"]]):
             counter += 1
-            row[evidence_col_name] = re.sub(filtering_pattern, "", row[evidence_col_name])
+            row[evidence_col_name] = row[evidence_col_name].replace("[", "")
+            row[evidence_col_name] = row[evidence_col_name].replace("]", "")
+            row[evidence_col_name] = row[evidence_col_name].replace(r"\\u", "")
+            row[evidence_col_name] = row[evidence_col_name].replace("XREF", "")
             df.iloc[idx] = row
-    logger.info(f'For {name}, {counter} out of {len(df)} many entries contained the specified special characters')
+
+    df.drop(index=idx_to_remove, inplace=True)
+    df.reset_index(inplace=True, drop=True)
+
+    logger.info(f'For {name}, {counter} out of {initial_length} many entries contained the specified special characters'
+                f' and {len(idx_to_remove)} many entries were removed because they are too short, resulting in '
+                f'{len(df)} many entries')
 
     return df
 
