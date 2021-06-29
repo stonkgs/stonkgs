@@ -525,10 +525,10 @@ def run_all_fine_tuning_tasks(
 
     # TODO: delete reverse order later on
     for directory, file, column_name, task_name in zip(
-        directories[::-1],
-        file_names[::-1],
-        column_names[::-1],
-        task_names[::-1],
+        directories,
+        file_names,
+        column_names,
+        task_names,
     ):
         # Run the 8 fine-tuning tasks
         run_sequence_classification_cv(

@@ -485,10 +485,10 @@ def run_all_fine_tuning_tasks(
 
     # TODO: delete reverse order later on
     for directory, file, column_name, task_name in zip(
-        directories[::-1],
-        file_names[::-1],
-        column_names[::-1],
-        task_names[::-1],
+        directories,
+        file_names,
+        column_names,
+        task_names,
     ):
         # Run each of the eight classification tasks
         run_kg_baseline_classification_cv(
