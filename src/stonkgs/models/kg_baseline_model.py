@@ -224,7 +224,7 @@ def get_train_test_splits(
     label_column_name: str = "class",
     random_seed: int = 42,
     n_splits: int = 5,
-    max_dataset_size: int = 10000,
+    max_dataset_size: int = 100000,
 ) -> List:
     """Return deterministic train/test indices for n_splits based on the fine-tuning dataset that is passed."""
     # Leave out the label in the dataset
@@ -266,7 +266,7 @@ def run_kg_baseline_classification_cv(
     label_column_name: str = 'class',
     log_steps: int = 500,
     task_name: str = '',
-    max_dataset_size: int = 10000,
+    max_dataset_size: int = 100000,
 ) -> Dict[str, float]:
     """Run KG baseline classification."""
     # Step 1. load the tsv file with the annotation types you want to test and make the splits
@@ -461,14 +461,14 @@ def run_all_fine_tuning_tasks(
         RELATION_TYPE_DIR,
     ]
     file_names = [
-        'cell_line_less_classes_no_duplicates.tsv',
-        'cell_type_less_classes_no_duplicates.tsv',
-        'disease_less_classes_no_duplicates.tsv',
-        'location_less_classes_no_duplicates.tsv',
-        'organ_less_classes_no_duplicates.tsv',
-        'species_less_classes_no_duplicates.tsv',
-        'relation_type_less_classes_no_duplicates.tsv',
-        'relation_type_less_classes_no_duplicates.tsv',
+        'cell_line_more_classes_no_duplicates.tsv',
+        'cell_type_more_classes_no_duplicates.tsv',
+        'disease_more_classes_no_duplicates.tsv',
+        'location_more_classes_no_duplicates.tsv',
+        'organ_more_classes_no_duplicates.tsv',
+        'species_more_classes_no_duplicates.tsv',
+        'relation_type_more_classes_no_duplicates.tsv',
+        'relation_type_more_classes_no_duplicates.tsv',
     ]
     task_names = [
         'cell_line',

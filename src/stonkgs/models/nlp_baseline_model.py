@@ -62,7 +62,7 @@ class INDRAEvidenceDataset(torch.utils.data.Dataset):
 
 def get_train_test_splits(
     data: pd.DataFrame,
-    max_dataset_size: int = 10000,
+    max_dataset_size: int = 100000,
     label_column_name: str = "class",
     random_seed: int = 42,
     n_splits: int = 5,
@@ -109,7 +109,7 @@ def run_nlp_baseline_classification_cv(
     task_name: str = '',
     embedding_path: str = EMBEDDINGS_PATH,
     deepspeed: bool = True,
-    max_dataset_size: int = 10000,
+    max_dataset_size: int = 100000,
 ) -> Dict:
     """Run cross-validation for the sequence classification task."""
     # Get data splits
@@ -296,14 +296,14 @@ def run_all_fine_tuning_tasks(
         RELATION_TYPE_DIR,
     ]
     file_names = [
-        'cell_line_less_classes_no_duplicates.tsv',
-        'cell_type_less_classes_no_duplicates.tsv',
-        'disease_less_classes_no_duplicates.tsv',
-        'location_less_classes_no_duplicates.tsv',
-        'organ_less_classes_no_duplicates.tsv',
-        'species_less_classes_no_duplicates.tsv',
-        'relation_type_less_classes_no_duplicates.tsv',
-        'relation_type_less_classes_no_duplicates.tsv',
+        'cell_line_more_classes_no_duplicates.tsv',
+        'cell_type_more_classes_no_duplicates.tsv',
+        'disease_more_classes_no_duplicates.tsv',
+        'location_more_classes_no_duplicates.tsv',
+        'organ_more_classes_no_duplicates.tsv',
+        'species_more_classes_no_duplicates.tsv',
+        'relation_type_more_classes_no_duplicates.tsv',
+        'relation_type_more_classes_no_duplicates.tsv',
     ]
     task_names = [
         'cell_line',

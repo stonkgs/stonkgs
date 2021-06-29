@@ -52,7 +52,7 @@ def filter_for_majority_classes(
 
     # Optional: Save the filtered df
     if output_path and len(name) > 0:
-        df.to_csv(os.path.join(output_path, name + '_filtered_less_classes.tsv'), sep='\t', index=None)
+        df.to_csv(os.path.join(output_path, name + '_filtered_more_classes.tsv'), sep='\t', index=None)
 
     return df
 
@@ -67,9 +67,9 @@ if __name__ == "__main__":
     species_df = pd.read_csv(os.path.join(SPECIES_DIR, 'species.tsv'), sep='\t')
 
     # See how many entries there are for each filtered dataframe
-    filter_for_majority_classes(cell_line_df, name='cell_line', n_classes=5, output_path=CELL_LINE_DIR)
-    filter_for_majority_classes(cell_type_df, name='cell_type', n_classes=5, output_path=CELL_TYPE_DIR)
-    filter_for_majority_classes(disease_df, name='disease', n_classes=5, output_path=DISEASE_DIR)
-    filter_for_majority_classes(location_df, name='location', n_classes=3, output_path=LOCATION_DIR)
-    filter_for_majority_classes(organ_df, name='organ', n_classes=5, output_path=ORGAN_DIR)
+    filter_for_majority_classes(cell_line_df, name='cell_line', n_classes=20, output_path=CELL_LINE_DIR)
+    filter_for_majority_classes(cell_type_df, name='cell_type', n_classes=20, output_path=CELL_TYPE_DIR)
+    filter_for_majority_classes(disease_df, name='disease', n_classes=20, output_path=DISEASE_DIR)
+    filter_for_majority_classes(location_df, name='location', n_classes=5, output_path=LOCATION_DIR)
+    filter_for_majority_classes(organ_df, name='organ', n_classes=20, output_path=ORGAN_DIR)
     filter_for_majority_classes(species_df, name='species', n_classes=3, output_path=SPECIES_DIR)

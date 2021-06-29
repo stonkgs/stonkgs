@@ -3,6 +3,7 @@
 """Filter out duplicate text evidences (the ones that appear more than two times)."""
 
 import logging
+import re
 import os
 from collections import Counter
 from typing import Optional
@@ -109,10 +110,12 @@ def filter_out_special_character_sequences(
     name: str = '',
 ) -> pd.DataFrame:
     counter = 0
+    filtering_pattern = re.compile("((\\\\)+u([\w]+))|(\[[^\s]+\])|(XREF)")
+
     for idx, row in df.iterrows():
         if any([x in row[evidence_col_name] for x in ["[", "]", "XREF", "\\u"]]):
             counter += 1
-            row[evidence_col_name].replace("[", "").replace("]", "").replace(r"\\u", "").replace("XREF", "")
+            row[evidence_col_name] = re.sub(filtering_pattern, "", row[evidence_col_name])
             df.iloc[idx] = row
     logger.info(f'For {name}, {counter} out of {len(df)} many entries contained the specified special characters')
 
@@ -144,7 +147,7 @@ if __name__ == "__main__":
         if name == "relation_type":
             task_specific_df = pd.read_csv(os.path.join(directory, name + '.tsv'), sep='\t')
         else:
-            task_specific_df = pd.read_csv(os.path.join(directory, name + '_filtered_less_classes.tsv'), sep='\t')
+            task_specific_df = pd.read_csv(os.path.join(directory, name + '_filtered_more_classes.tsv'), sep='\t')
 
         # 1. Remove all entries with nodes that are not in the KG
         task_specific_df = apply_kg_filtering(task_specific_df, name=name)
@@ -153,10 +156,10 @@ if __name__ == "__main__":
         # 3. Remove duplicates
         task_specific_df = filter_out_duplicates(task_specific_df, name=name)
         # 4. Reduce dataset size if needed
-        if name == "relation_type":
-            task_specific_df = reduce_dataset_size(task_specific_df, class_name="interaction")
-        else:
-            task_specific_df = reduce_dataset_size(task_specific_df, class_name="class")
+        # if name == "relation_type":
+        #     task_specific_df = reduce_dataset_size(task_specific_df, class_name="interaction")
+        # else:
+        #     task_specific_df = reduce_dataset_size(task_specific_df, class_name="class")
 
         # Save the filtered df
-        task_specific_df.to_csv(os.path.join(directory, name + '_less_classes_no_duplicates.tsv'), sep='\t', index=None)
+        task_specific_df.to_csv(os.path.join(directory, name + '_more_classes_no_duplicates.tsv'), sep='\t', index=None)
