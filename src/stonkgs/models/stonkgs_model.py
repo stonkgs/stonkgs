@@ -210,6 +210,6 @@ class STonKGsForPreTraining(BertForPreTraining):
             loss=total_loss,
             prediction_logits=prediction_scores,
             seq_relationship_logits=seq_relationship_score,
-            hidden_states=outputs.hidden_states,
+            hidden_states=sequence_output,
             attentions=outputs.attentions,
         )
