@@ -112,6 +112,7 @@ def filter_out_special_character_sequences(
     evidence_col_name: str = "evidence",
     name: str = '',
 ) -> pd.DataFrame:
+    """Filter out special character sequences."""
     counter = 0
     idx_to_remove = []
     initial_length = len(df)
