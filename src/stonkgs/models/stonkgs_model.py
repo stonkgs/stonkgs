@@ -3,6 +3,8 @@
 """STonKGs model architecture components."""
 
 import logging
+from dataclasses import dataclass
+from typing import Optional
 
 import torch
 from torch import nn
@@ -20,6 +22,13 @@ from stonkgs.models.kg_baseline_model import _prepare_df
 # Initialize logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+@dataclass
+class BertForPreTrainingOutputWithPooling(BertForPreTrainingOutput):
+    """Overriding the BertForPreTrainingOutput class to further include the pooled output."""
+
+    pooler_output: Optional[torch.FloatTensor] = None
 
 
 class STonKGsELMPredictionHead(BertLMPredictionHead):
@@ -206,10 +215,11 @@ class STonKGsForPreTraining(BertForPreTraining):
             output = (prediction_scores, seq_relationship_score) + outputs[2:]
             return ((total_loss,) + output) if total_loss is not None else output
 
-        return BertForPreTrainingOutput(
+        return BertForPreTrainingOutputWithPooling(
             loss=total_loss,
             prediction_logits=prediction_scores,
             seq_relationship_logits=seq_relationship_score,
             hidden_states=sequence_output,
             attentions=outputs.attentions,
+            pooler_output=pooled_output,
         )
