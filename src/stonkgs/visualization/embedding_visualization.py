@@ -5,10 +5,10 @@
 # Imports
 import logging
 import os
-from typing import Dict, List
+from typing import List
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import torch
@@ -25,7 +25,7 @@ from stonkgs.constants import (
     SPECIES_DIR,
     VISUALIZATIONS_DIR,
 )
-from stonkgs.models.kg_baseline_model import _prepare_df, INDRAEntityDataset
+from stonkgs.models.kg_baseline_model import INDRAEntityDataset, _prepare_df
 from stonkgs.models.stonkgs_model import STonKGsForPreTraining
 
 # Initialize logger
@@ -103,7 +103,7 @@ def preprocess_stonkgs_data(
 def get_nlp_embeddings(
     list_of_indices: List,
 ) -> pd.DataFrame:
-    """Returns a data frame of with embedding_sequence, label columns."""
+    """Return a data frame of with embedding_sequence, label columns."""
     all_embed_sequences = pd.DataFrame(columns=["embedding", "label"])
 
     for idx in tqdm(list_of_indices):
@@ -121,7 +121,7 @@ def get_nlp_embeddings(
 def get_kg_embeddings(
     list_of_indices: List,
 ) -> pd.DataFrame:
-    """Returns a data frame of with embedding_sequence, label columns."""
+    """Return a data frame of with embedding_sequence, label columns."""
     all_embed_sequences = pd.DataFrame(columns=["embedding", "label"])
 
     for idx in tqdm(list_of_indices):
@@ -136,7 +136,7 @@ def get_kg_embeddings(
 def get_stonkgs_embeddings(
     list_of_indices: List,
 ) -> pd.DataFrame:
-    """Returns a data frame of with embedding_sequence, label columns."""
+    """Return a data frame of with embedding_sequence, label columns."""
     all_embed_sequences = pd.DataFrame(columns=["embedding", "label"])
 
     for idx in tqdm(list_of_indices):
@@ -155,6 +155,7 @@ def generate_umap_plot(
     name: str,
     task: str = "species",
 ):
+    """Generate a UMAP plot."""
     # Convert the embeddings into the required format
     embedding_series = embedding_df["embedding"]
     embedding_matrix = pd.DataFrame.from_dict(dict(zip(embedding_series.index, embedding_series.values))).values.T
@@ -172,16 +173,16 @@ def generate_umap_plot(
     plt.scatter(
         two_dim_embedding[:, 0],
         two_dim_embedding[:, 1],
-        c=[sns.color_palette()[x] for x in labels.map({9606: 0, 10116: 1, 10090: 2})]
+        c=[sns.color_palette()[x] for x in labels.map({9606: 0, 10116: 1, 10090: 2})],
     )
     plt.gca().set_aspect('equal', 'datalim')
     plt.title(f'UMAP projection of the {name} model for the {task} dataset', fontsize=24)
-    plt.savefig(os.path.join(MISC_DIR, name + "_embedding_figure.png"), dpi=300)
+    plt.savefig(os.path.join(VISUALIZATIONS_DIR, name + "_embedding_figure.png"), dpi=300)
 
 
 if __name__ == "__main__":
     # Initialize the task specific dataset
-    """    task_dir = SPECIES_DIR
+    task_dir = SPECIES_DIR
     number_unique_tags = 3
     dataset_version = "species_no_duplicates.tsv"
     number_entries = 800
@@ -201,7 +202,7 @@ if __name__ == "__main__":
     task_specific_dataset = task_specific_dataset[
         task_specific_dataset['source'].isin(embeddings_dict.keys()) & task_specific_dataset['target'].isin(
             embeddings_dict.keys())
-        ].reset_index(drop=True)
+    ].reset_index(drop=True)
 
     logger.info(task_specific_dataset['class'].value_counts())
 
@@ -220,7 +221,7 @@ if __name__ == "__main__":
     # Initialize the models and some additional required stuff
     tokenizer = BertTokenizer.from_pretrained(NLP_MODEL_TYPE, model_max_length=512)
     labels = sampled_df["class"].tolist()
-    # nlp_baseline = BertModel.from_pretrained(NLP_MODEL_TYPE)
+    nlp_baseline = BertModel.from_pretrained(NLP_MODEL_TYPE)
     kg_baseline = INDRAEntityDataset(
         embeddings_dict,
         random_walks_dict,
@@ -231,7 +232,7 @@ if __name__ == "__main__":
     stonkgs = STonKGsForPreTraining.from_pretrained(
         pretrained_model_name_or_path=PRETRAINED_STONKGS_DUMMY_PATH,
     )
-    stonkgs_data = preprocess_stonkgs_data(sampled_df)"""
+    stonkgs_data = preprocess_stonkgs_data(sampled_df)
 
     # Get the embeddings
     # 1. NLP
@@ -252,7 +253,7 @@ if __name__ == "__main__":
         os.path.join(MISC_DIR, "nlp_embeds_visualization.tsv"),
         index_col=None,
         sep="\t",
-        converters={"embedding": lambda x: x.strip("[]").split(", ")}
+        converters={"embedding": lambda x: x.strip("[]").split(", ")},
     )
     generate_umap_plot(nlp_embeds, "nlp")
 
@@ -261,7 +262,7 @@ if __name__ == "__main__":
         os.path.join(MISC_DIR, "kg_embeds_visualization.tsv"),
         index_col=None,
         sep="\t",
-        converters={"embedding": lambda x: x.strip("[]").split(", ")}
+        converters={"embedding": lambda x: x.strip("[]").split(", ")},
     )
     generate_umap_plot(kg_embeds, "kg")
 
@@ -270,6 +271,6 @@ if __name__ == "__main__":
         os.path.join(MISC_DIR, "stonkgs_embeds_visualization.tsv"),
         index_col=None,
         sep="\t",
-        converters={"embedding": lambda x: x.strip("[]").split(", ")}
+        converters={"embedding": lambda x: x.strip("[]").split(", ")},
     )
     generate_umap_plot(stonkgs_embeds, "stonkgs")
