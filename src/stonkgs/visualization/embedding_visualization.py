@@ -174,16 +174,16 @@ def generate_umap_plot(
         two_dim_embedding[:, 0],
         two_dim_embedding[:, 1],
         c=[sns.color_palette()[x] for x in labels.map(
-            {1324: 'lung cancer',
-             1936: 'atherosclerosis',
-             1612: 'breast cancer',
-             9538: 'multiple myeloma',
-             1240: 'leukemia',
-             219: 'colon cancer',
-             1909: 'melanoma',
-             769: 'neuroblastoma',
-             3908: 'lung non-small cell carcinoma',
-             3347: 'osteosarcoma',
+            {1324: 0,
+             1936: 1,
+             1612: 2,
+             9538: 3,
+             1240: 4,
+             219: 5,
+             1909: 6,
+             769: 7,
+             3908: 8,
+             3347: 9,
              },
         )],
     )
@@ -247,16 +247,16 @@ if __name__ == "__main__":
 
     # Get the embeddings
     # 1. NLP
-    nlp_embeds = get_nlp_embeddings(list(range(len(sampled_df))))
-    nlp_embeds.to_csv(os.path.join(MISC_DIR, "nlp_embeds_visualization_disease.tsv"), sep="\t", index=None)
+    # nlp_embeds = get_nlp_embeddings(list(range(len(sampled_df))))
+    # nlp_embeds.to_csv(os.path.join(MISC_DIR, "nlp_embeds_visualization_disease.tsv"), sep="\t", index=None)
 
     # 2. KG
-    kg_embeds = get_kg_embeddings(list(range(len(sampled_df))))
-    kg_embeds.to_csv(os.path.join(MISC_DIR, "kg_embeds_visualization_disease.tsv"), sep="\t", index=None)
+    # kg_embeds = get_kg_embeddings(list(range(len(sampled_df))))
+    # kg_embeds.to_csv(os.path.join(MISC_DIR, "kg_embeds_visualization_disease.tsv"), sep="\t", index=None)
 
     # 3. STonKGs
-    stonkgs_embeds = get_stonkgs_embeddings(list(range(len(sampled_df))))
-    stonkgs_embeds.to_csv(os.path.join(MISC_DIR, "stonkgs_embeds_visualization_disease.tsv"), sep="\t", index=None)
+    # stonkgs_embeds = get_stonkgs_embeddings(list(range(len(sampled_df))))
+    # stonkgs_embeds.to_csv(os.path.join(MISC_DIR, "stonkgs_embeds_visualization_disease.tsv"), sep="\t", index=None)
 
     # Load them
     # 1. NLP
