@@ -17,12 +17,12 @@ from tqdm import tqdm
 from transformers import BertModel, BertTokenizer
 
 from stonkgs.constants import (
+    DISEASE_DIR,
     EMBEDDINGS_PATH,
     MISC_DIR,
     NLP_MODEL_TYPE,
     PRETRAINED_STONKGS_DUMMY_PATH,
     RANDOM_WALKS_PATH,
-    SPECIES_DIR,
     VISUALIZATIONS_DIR,
 )
 from stonkgs.models.kg_baseline_model import INDRAEntityDataset, _prepare_df
@@ -173,7 +173,19 @@ def generate_umap_plot(
     plt.scatter(
         two_dim_embedding[:, 0],
         two_dim_embedding[:, 1],
-        c=[sns.color_palette()[x] for x in labels.map({9606: 0, 10116: 1, 10090: 2})],
+        c=[sns.color_palette()[x] for x in labels.map(
+            {1324: 'lung cancer',
+             1936: 'atherosclerosis',
+             1612: 'breast cancer',
+             9538: 'multiple myeloma',
+             1240: 'leukemia',
+             219: 'colon cancer',
+             1909: 'melanoma',
+             769: 'neuroblastoma',
+             3908: 'lung non-small cell carcinoma',
+             3347: 'osteosarcoma',
+             }
+        )],
     )
     plt.gca().set_aspect('equal', 'datalim')
     plt.title(f'UMAP projection of the {name} model for the {task} dataset', fontsize=24)
@@ -182,10 +194,10 @@ def generate_umap_plot(
 
 if __name__ == "__main__":
     # Initialize the task specific dataset
-    task_dir = SPECIES_DIR
-    number_unique_tags = 3
-    dataset_version = "species_no_duplicates.tsv"
-    number_entries = 800
+    task_dir = DISEASE_DIR
+    number_unique_tags = 10
+    dataset_version = "disease_no_duplicates.tsv"
+    number_entries = 1000
 
     # Load the dataset + remove the unnecessary column
     task_specific_dataset = pd.read_csv(os.path.join(task_dir, dataset_version), sep="\t", index_col=None)
@@ -202,7 +214,7 @@ if __name__ == "__main__":
     task_specific_dataset = task_specific_dataset[
         task_specific_dataset['source'].isin(embeddings_dict.keys()) & task_specific_dataset['target'].isin(
             embeddings_dict.keys())
-    ].reset_index(drop=True)
+        ].reset_index(drop=True)
 
     logger.info(task_specific_dataset['class'].value_counts())
 
@@ -236,41 +248,41 @@ if __name__ == "__main__":
 
     # Get the embeddings
     # 1. NLP
-    # nlp_embeds = get_nlp_embeddings(list(range(len(sampled_df))))
-    # nlp_embeds.to_csv(os.path.join(MISC_DIR, "nlp_embeds_visualization.tsv"), sep="\t", index=None)
+    nlp_embeds = get_nlp_embeddings(list(range(len(sampled_df))))
+    nlp_embeds.to_csv(os.path.join(MISC_DIR, "nlp_embeds_visualization_disease.tsv"), sep="\t", index=None)
 
     # 2. KG
-    # kg_embeds = get_kg_embeddings(list(range(len(sampled_df))))
-    # kg_embeds.to_csv(os.path.join(MISC_DIR, "kg_embeds_visualization.tsv"), sep="\t", index=None)
+    kg_embeds = get_kg_embeddings(list(range(len(sampled_df))))
+    kg_embeds.to_csv(os.path.join(MISC_DIR, "kg_embeds_visualization_disease.tsv"), sep="\t", index=None)
 
     # 3. STonKGs
-    # stonkgs_embeds = get_stonkgs_embeddings(list(range(len(sampled_df))))
-    # stonkgs_embeds.to_csv(os.path.join(MISC_DIR, "stonkgs_embeds_visualization.tsv"), sep="\t", index=None)
+    stonkgs_embeds = get_stonkgs_embeddings(list(range(len(sampled_df))))
+    stonkgs_embeds.to_csv(os.path.join(MISC_DIR, "stonkgs_embeds_visualization_disease.tsv"), sep="\t", index=None)
 
     # Load them
     # 1. NLP
     nlp_embeds = pd.read_csv(
-        os.path.join(MISC_DIR, "nlp_embeds_visualization.tsv"),
+        os.path.join(MISC_DIR, "nlp_embeds_visualization_disease.tsv"),
         index_col=None,
         sep="\t",
         converters={"embedding": lambda x: x.strip("[]").split(", ")},
     )
-    generate_umap_plot(nlp_embeds, "nlp")
+    generate_umap_plot(nlp_embeds, "nlp", task="disease")
 
     # 2. KG
     kg_embeds = pd.read_csv(
-        os.path.join(MISC_DIR, "kg_embeds_visualization.tsv"),
+        os.path.join(MISC_DIR, "kg_embeds_visualization_disease.tsv"),
         index_col=None,
         sep="\t",
         converters={"embedding": lambda x: x.strip("[]").split(", ")},
     )
-    generate_umap_plot(kg_embeds, "kg")
+    generate_umap_plot(kg_embeds, "kg", task="disease")
 
     # 3. STonKGs
     stonkgs_embeds = pd.read_csv(
-        os.path.join(MISC_DIR, "stonkgs_embeds_visualization.tsv"),
+        os.path.join(MISC_DIR, "stonkgs_embeds_visualization_disease.tsv"),
         index_col=None,
         sep="\t",
         converters={"embedding": lambda x: x.strip("[]").split(", ")},
     )
-    generate_umap_plot(stonkgs_embeds, "stonkgs")
+    generate_umap_plot(stonkgs_embeds, "stonkgs", task="disease")
