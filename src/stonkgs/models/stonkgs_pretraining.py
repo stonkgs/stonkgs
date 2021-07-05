@@ -21,8 +21,8 @@ from stonkgs.constants import (
     DEEPSPEED_CONFIG_PATH,
     MLFLOW_TRACKING_URI,
     NLP_MODEL_TYPE,
-    PRETRAINING_PREPROCESSED_DF_PATH,
-    STONKGS_PRETRAINING_DIR,
+    PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH,
+    STONKGS_PRETRAINING_NO_NSP_DIR,
 )
 from stonkgs.models.stonkgs_model import STonKGsForPreTraining
 
@@ -34,7 +34,7 @@ logging.getLogger("alembic").setLevel(logging.WARNING)
 
 
 def _load_pre_training_data(
-    pretraining_preprocessed_path: str = PRETRAINING_PREPROCESSED_DF_PATH,
+    pretraining_preprocessed_path: str = PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH,
     dataset_format: str = 'torch',
 ) -> Dataset:
     """Create a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
@@ -62,13 +62,18 @@ def _load_pre_training_data(
 @click.option('--overwrite_output_dir', default=False, help='Whether to override the output dir or not', type=bool)
 @click.option(
     '--pretraining_file',
-    default=PRETRAINING_PREPROCESSED_DF_PATH,
+    default=PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH,
     help='File used in pretraining containing the preprocessed training examples',
     type=str,
 )
 @click.option('--save_limit', default=5, help='Maximum number of saved models/checkpoints', type=int)
 @click.option('--save_steps', default=5000, help='Checkpointing interval', type=int)
-@click.option('--training_dir', default=STONKGS_PRETRAINING_DIR, help='Whether to override the output dir', type=str)
+@click.option(
+    '--training_dir',
+    default=STONKGS_PRETRAINING_NO_NSP_DIR,
+    help='Whether to override the output dir',
+    type=str,
+)
 def pretrain_stonkgs(
     batch_size: int = 8,
     deepspeed: bool = False,
@@ -80,10 +85,10 @@ def pretrain_stonkgs(
     logging_steps: int = 100,
     max_steps: int = 10000,
     overwrite_output_dir: bool = False,
-    pretraining_file: str = PRETRAINING_PREPROCESSED_DF_PATH,
+    pretraining_file: str = PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH,
     save_limit: int = 5,
     save_steps: int = 5000,
-    training_dir: str = STONKGS_PRETRAINING_DIR,
+    training_dir: str = STONKGS_PRETRAINING_NO_NSP_DIR,
 ):
     """Run the pre-training procedure for the STonKGs model based on the transformers Trainer and TrainingArguments."""
     # Part of this code is taken from
@@ -95,7 +100,7 @@ def pretrain_stonkgs(
     # Initialize mlflow run, set tracking URI to use the same experiment for all runs,
     # so that one can compare them
     mlflow.set_tracking_uri(logging_dir)
-    mlflow.set_experiment('STonKGs Pre-Training')
+    mlflow.set_experiment('STonKGs Pre-Training (No NSP Ablation)')
 
     # Initialize the STonKGs model
     # config = None just fills up the required argument for automated method calls such as .from_pretrained, it will be

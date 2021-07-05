@@ -204,12 +204,13 @@ class STonKGsForPreTraining(BertForPreTraining):
                 ent_masked_lm_labels.view(-1),
             )
             # 3. Next "sentence" loss: Whether a text and random walk sequence belong together or not
-            next_sentence_loss = loss_fct(
-                seq_relationship_score.view(-1, 2),
-                next_sentence_labels.view(-1),
-            )
+            # next_sentence_loss = loss_fct(
+            #     seq_relationship_score.view(-1, 2),
+            #    next_sentence_labels.view(-1),
+            # )
             # Total loss = the sum of the individual training objective losses
-            total_loss = masked_lm_loss + ent_masked_lm_loss + next_sentence_loss
+            # !! Leave out NSP loss in the ablation !!
+            total_loss = masked_lm_loss + ent_masked_lm_loss   # + next_sentence_loss
 
         if not return_dict:
             output = (prediction_scores, seq_relationship_score) + outputs[2:]
