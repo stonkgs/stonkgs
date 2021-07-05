@@ -184,7 +184,7 @@ def generate_umap_plot(
              769: 'neuroblastoma',
              3908: 'lung non-small cell carcinoma',
              3347: 'osteosarcoma',
-             }
+             },
         )],
     )
     plt.gca().set_aspect('equal', 'datalim')
@@ -211,10 +211,9 @@ if __name__ == "__main__":
     logger.info('Finished loading the KG embedding dictionaries')
 
     # Filter out unseen nodes
-    task_specific_dataset = task_specific_dataset[
-        task_specific_dataset['source'].isin(embeddings_dict.keys()) & task_specific_dataset['target'].isin(
-            embeddings_dict.keys())
-        ].reset_index(drop=True)
+    task_specific_dataset = task_specific_dataset
+    [task_specific_dataset['source'].isin(embeddings_dict.keys())
+     & task_specific_dataset['target'].isin(embeddings_dict.keys())].reset_index(drop=True)
 
     logger.info(task_specific_dataset['class'].value_counts())
 
