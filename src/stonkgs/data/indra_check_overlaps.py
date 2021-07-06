@@ -14,11 +14,9 @@ import pandas as pd
 
 from stonkgs.constants import (
     PRETRAINING_PATH,
-    CELL_TYPE_DIR,
     CELL_LINE_DIR,
     DISEASE_DIR,
     LOCATION_DIR,
-    ORGAN_DIR,
     RELATION_TYPE_DIR,
     SPECIES_DIR,
 )
@@ -81,13 +79,11 @@ if __name__ == '__main__':
     pre_training_ents = load_entities(PRETRAINING_PATH)
 
     # Iterate through all the fine-tuning stuff for ENTITIES
-    paths = [CELL_TYPE_DIR, CELL_LINE_DIR, DISEASE_DIR, LOCATION_DIR, ORGAN_DIR, RELATION_TYPE_DIR, SPECIES_DIR]
+    paths = [CELL_LINE_DIR, DISEASE_DIR, LOCATION_DIR, RELATION_TYPE_DIR, SPECIES_DIR]
     names = [
-        'cell_type_filtered',
         'cell_line_filtered',
         'disease_filtered',
         'location_filtered',
-        'organ_filtered',
         'relation_type',
         'species_filtered',
     ]
@@ -109,7 +105,7 @@ if __name__ == '__main__':
     pre_training_texts = load_text(PRETRAINING_PATH)
 
     # Iterate through all the fine-tuning stuff for EVIDENCES
-    fine_tuning_dict_evidences = dict()
+    fine_tuning_dict_evidences = {}
     for path, annot_name in zip(paths, names):
         fine_tuning_dict_evidences[annot_name] = load_text(os.path.join(path, annot_name + '.tsv'))
 

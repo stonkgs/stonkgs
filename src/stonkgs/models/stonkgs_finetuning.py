@@ -25,14 +25,12 @@ from transformers.trainer import Trainer, TrainingArguments
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
-    CELL_TYPE_DIR,
     DEEPSPEED_CONFIG_PATH,
     DISEASE_DIR,
     EMBEDDINGS_PATH,
     LOCATION_DIR,
     MLFLOW_FINETUNING_TRACKING_URI,
     NLP_MODEL_TYPE,
-    ORGAN_DIR,
     PRETRAINED_STONKGS_DUMMY_PATH,
     RANDOM_WALKS_PATH,
     RELATION_TYPE_DIR,
@@ -492,36 +490,30 @@ def run_all_fine_tuning_tasks(
     # Specify all directories and file names
     directories = [
         CELL_LINE_DIR,
-        CELL_TYPE_DIR,
         DISEASE_DIR,
         LOCATION_DIR,
-        ORGAN_DIR,
         SPECIES_DIR,
         RELATION_TYPE_DIR,
         RELATION_TYPE_DIR,
     ]
     file_names = [
         'cell_line_no_duplicates.tsv',
-        'cell_type_no_duplicates.tsv',
         'disease_no_duplicates.tsv',
         'location_no_duplicates.tsv',
-        'organ_no_duplicates.tsv',
         'species_no_duplicates.tsv',
         'relation_type_no_duplicates.tsv',
         'relation_type_no_duplicates.tsv',
     ]
     task_names = [
         'cell_line',
-        'cell_type',
         'disease',
         'location',
-        'organ',
         'species',
         'interaction',
         'polarity',
     ]
     # Specify the column names of the target variable
-    column_names = ['class'] * 6 + ['interaction'] + ['polarity']
+    column_names = ['class'] * 4 + ['interaction'] + ['polarity']
 
     # TODO: delete reverse order later on
     for directory, file, column_name, task_name in zip(

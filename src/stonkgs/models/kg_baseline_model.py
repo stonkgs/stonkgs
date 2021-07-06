@@ -22,13 +22,11 @@ from sklearn.model_selection import KFold, StratifiedShuffleSplit
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
-    CELL_TYPE_DIR,
     DISEASE_DIR,
     EMBEDDINGS_PATH,
     KG_BL_OUTPUT_DIR,
     LOCATION_DIR,
     MLFLOW_FINETUNING_TRACKING_URI,
-    ORGAN_DIR,
     RANDOM_WALKS_PATH,
     RELATION_TYPE_DIR,
     SPECIES_DIR,
@@ -448,40 +446,34 @@ def run_all_fine_tuning_tasks(
     max_dataset_size: int = 100000,  # effectively removes the max dataset size restriction
 ):
     """Run all fine-tuning tasks at once."""
-    # Run the 6 annotation type tasks
+    # Run the 6 classification tasks
     # Specify all directories and file names
     directories = [
         CELL_LINE_DIR,
-        CELL_TYPE_DIR,
         DISEASE_DIR,
         LOCATION_DIR,
-        ORGAN_DIR,
         SPECIES_DIR,
         RELATION_TYPE_DIR,
         RELATION_TYPE_DIR,
     ]
     file_names = [
         'cell_line_no_duplicates.tsv',
-        'cell_type_no_duplicates.tsv',
         'disease_no_duplicates.tsv',
         'location_no_duplicates.tsv',
-        'organ_no_duplicates.tsv',
         'species_no_duplicates.tsv',
         'relation_type_no_duplicates.tsv',
         'relation_type_no_duplicates.tsv',
     ]
     task_names = [
         'cell_line',
-        'cell_type',
         'disease',
         'location',
-        'organ',
         'species',
         'interaction',
         'polarity',
     ]
     # Specify the column names of the target variable
-    column_names = ['class'] * 6 + ['interaction'] + ['polarity']
+    column_names = ['class'] * 4 + ['interaction'] + ['polarity']
 
     # TODO: delete reverse order later on
     for directory, file, column_name, task_name in zip(
@@ -490,7 +482,7 @@ def run_all_fine_tuning_tasks(
         column_names,
         task_names,
     ):
-        # Run each of the eight classification tasks
+        # Run each of the six classification tasks
         run_kg_baseline_classification_cv(
             triples_path=os.path.join(directory, file),
             label_column_name=column_name,

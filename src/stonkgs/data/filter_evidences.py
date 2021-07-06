@@ -14,12 +14,10 @@ from transformers import BertTokenizer
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
-    CELL_TYPE_DIR,
     DISEASE_DIR,
     EMBEDDINGS_PATH,
     LOCATION_DIR,
     NLP_MODEL_TYPE,
-    ORGAN_DIR,
     SPECIES_DIR,
     RELATION_TYPE_DIR,
 )
@@ -143,19 +141,15 @@ def filter_out_special_character_sequences(
 if __name__ == "__main__":
     all_names = [
         'cell_line',
-        'cell_type',
         'disease',
         'location',
-        'organ',
         'species',
         'relation_type',
     ]
     all_dirs = [
         CELL_LINE_DIR,
-        CELL_TYPE_DIR,
         DISEASE_DIR,
         LOCATION_DIR,
-        ORGAN_DIR,
         SPECIES_DIR,
         RELATION_TYPE_DIR,
     ]

@@ -10,10 +10,8 @@ import pandas as pd
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
-    CELL_TYPE_DIR,
     DISEASE_DIR,
     LOCATION_DIR,
-    ORGAN_DIR,
     SPECIES_DIR,
 )
 
@@ -60,16 +58,12 @@ def filter_for_majority_classes(
 if __name__ == "__main__":
     # Load all the unfiltered dataframes
     cell_line_df = pd.read_csv(os.path.join(CELL_LINE_DIR, 'cell_line.tsv'), sep='\t')
-    cell_type_df = pd.read_csv(os.path.join(CELL_TYPE_DIR, 'cell_type.tsv'), sep='\t')
     disease_df = pd.read_csv(os.path.join(DISEASE_DIR, 'disease.tsv'), sep='\t')
     location_df = pd.read_csv(os.path.join(LOCATION_DIR, 'location.tsv'), sep='\t')
-    organ_df = pd.read_csv(os.path.join(ORGAN_DIR, 'organ.tsv'), sep='\t')
     species_df = pd.read_csv(os.path.join(SPECIES_DIR, 'species.tsv'), sep='\t')
 
     # See how many entries there are for each filtered dataframe
-    filter_for_majority_classes(cell_line_df, name='cell_line', n_classes=20, output_path=CELL_LINE_DIR)
-    filter_for_majority_classes(cell_type_df, name='cell_type', n_classes=20, output_path=CELL_TYPE_DIR)
-    filter_for_majority_classes(disease_df, name='disease', n_classes=20, output_path=DISEASE_DIR)
+    filter_for_majority_classes(cell_line_df, name='cell_line', n_classes=10, output_path=CELL_LINE_DIR)
+    filter_for_majority_classes(disease_df, name='disease', n_classes=10, output_path=DISEASE_DIR)
     filter_for_majority_classes(location_df, name='location', n_classes=5, output_path=LOCATION_DIR)
-    filter_for_majority_classes(organ_df, name='organ', n_classes=20, output_path=ORGAN_DIR)
     filter_for_majority_classes(species_df, name='species', n_classes=3, output_path=SPECIES_DIR)

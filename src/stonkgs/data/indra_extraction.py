@@ -42,8 +42,6 @@ from stonkgs.constants import (
     MISC_DIR,
     PRETRAINING_DIR,
     SPECIES_DIR,
-    ORGAN_DIR,
-    CELL_TYPE_DIR,
     CELL_LINE_DIR,
     LOCATION_DIR,
     DISEASE_DIR,
@@ -488,31 +486,23 @@ def read_indra_triples(
     """
     Split the KG into two big chunks:
 
-    1. Pre-training dataset -> Any triple + text evidence that is not in any of the 6+1 annotation types above
+    1. Pre-training dataset -> Any triple + text evidence that is not in any of the 4+2 annotation types above
     The rationale is that we want to have a common pre-trained model that can be used as a basis for all the fine tuning
     classification tasks.
 
-    2. Fine-tuning datasets (benchmark for our models). 7 different train-validation-test splits for each of the 
+    2. Fine-tuning datasets (benchmark for our models). 6 different train-validation-test splits for each of the 
     annotation types (each of them will contain multiple classes).
 
     We would like to note that the pre-training dataset is significantly larger than the fine-tuning dataset.
     Naturally, STonKGs requires a pre-training similar to the other two baselines models (i.e., KG-based has been
     trained based on node2vec on the INDRA KG and BioBERT was trained on PubMed).
     """
-    organ_edges, organ_subgraph = create_context_type_specific_subgraph(indra_kg, ['organ'])
     species_edges, species_subgraph = create_context_type_specific_subgraph(indra_kg, ['species'])
     disease_edges, disease_subgraph = create_context_type_specific_subgraph(indra_kg, ['disease'])
-    cell_type_edges, cell_type_subgraph = create_context_type_specific_subgraph(indra_kg, ['cell_type'])
     cell_line_edges, cell_line_subgraph = create_context_type_specific_subgraph(indra_kg, ['cell_line'])
     location_edges, location_subgraph = create_context_type_specific_subgraph(indra_kg, ['location'])
 
-    #: Dump the 6+1 annotation type specific subgraphs (triples)
-    organ_summary = dump_edgelist(
-        graph=organ_subgraph,
-        annotations=['organ'],
-        name='organ',
-        output_dir=ORGAN_DIR,
-    )
+    #: Dump the 4+2 annotation type specific subgraphs (triples)
     species_summary = dump_edgelist(
         graph=species_subgraph,
         annotations=['species'],
@@ -524,12 +514,6 @@ def read_indra_triples(
         annotations=['disease'],
         name='disease',
         output_dir=DISEASE_DIR,
-    )
-    cell_type_summary = dump_edgelist(
-        graph=cell_type_subgraph,
-        annotations=['cell_type'],
-        name='cell_type',
-        output_dir=CELL_TYPE_DIR,
     )
     cell_line_summary = dump_edgelist(
         graph=cell_line_subgraph,
@@ -547,10 +531,8 @@ def read_indra_triples(
     polarity_summary, polarity_edges = binarize_triple_direction(indra_kg)
 
     summary_df = pd.DataFrame([
-        organ_summary,
         species_summary,
         disease_summary,
-        cell_type_summary,
         cell_line_summary,
         location_summary,
         polarity_summary,  # This is actually two tasks (polarity and direction)
@@ -559,10 +541,8 @@ def read_indra_triples(
 
     # Remove all the fine-tuning edges from the pre-training data
     for edges in [
-        organ_edges,
         species_edges,
         disease_edges,
-        cell_type_edges,
         cell_line_edges,
         location_edges,
         polarity_edges,
