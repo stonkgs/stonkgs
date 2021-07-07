@@ -8,7 +8,6 @@ from typing import Optional
 
 import click  # type: ignore
 import mlflow
-# import torch.autograd.profiler as profiler
 from accelerate import Accelerator
 from datasets import Dataset, load_dataset, total_allocated_bytes
 from transformers import (
