@@ -30,8 +30,7 @@ todo
 
 STonKGs is a Sophisticated Transformer that can be joinylu trained on biomedical text and Knowledge Graphs.
 This multimodal Transformer combines structured information from KGs with unstructured text data to learn joint
-representations. While we demonstrated STonKGs on a biomedical knowledge graph (i.e., [INDRA]
-(https://github.com/sorgerlab/indra)), the model can be applied other domains. In the following sections we describe
+representations. While we demonstrated STonKGs on a biomedical knowledge graph (i.e., [INDRA](https://github.com/sorgerlab/indra)), the model can be applied other domains. In the following sections we describe
 the scripts that are necessary to be run to train the model on any given dataset.
 
 ### Training STonKGs
