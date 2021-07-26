@@ -2,6 +2,8 @@
 
 """STonKGs model architecture components."""
 
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass
 from typing import Optional
@@ -132,6 +134,11 @@ class STonKGsForPreTraining(BertForPreTraining):
             self.kg_backbone[special_token_id] = self.lm_backbone(
                 torch.tensor([[special_token_id]]).to(self.lm_backbone.device),
             )[0][0][0]
+
+    @classmethod
+    def from_default_pretrained(cls, **kwargs) -> STonKGsForPreTraining:
+        """Get the default pre-trained STonKGs model."""
+        return cls.from_pretrained('helena-balabin/stonkgs-base', **kwargs)
 
     def forward(
         self,

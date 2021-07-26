@@ -62,10 +62,10 @@ We released the pre-trained STonKGs models on the INDRA KG for possible future a
 Since our code is based on Hugging Face's `transformers` package, the pre-trained model can be easily downloaded and initialized using the `.from_pretrained()` function: 
 
 ```python
-from stonkgs.models.stonkgs_model import STonKGsForPreTraining
+from stonkgs import STonKGsForPreTraining
 
 # Download the model from the model hub and initialize it for pre-training
-stonkgs_model_pretraining = STonKGsForPreTraining.from_pretrained('helena-balabin/stonkgs-base')
+stonkgs_model_pretraining = STonKGsForPreTraining.get_pretrained_model()
 ```
 
 ### Fine-tuning STonKGs
@@ -79,11 +79,10 @@ $ python3 -m stonkgs.models.stonkgs_finetuning
 Moreover, using STonKGs for your own fine-tuning tasks (i.e., sequence classification tasks) in your own code is just as easy as initializing the pre-trained model: 
 
 ```python
-from stonkgs.models.stonkgs_finetuning import STonKGsForSequenceClassification
+from stonkgs import STonKGsForSequenceClassification
 
 # Download the model from the model hub and initialize it for fine-tuning
-stonkgs_model_finetuning = STonKGsForSequenceClassification.from_pretrained(
-    'helena-balabin/stonkgs-base',
+stonkgs_model_finetuning = STonKGsForSequenceClassification.from_default_pretrained(
     num_labels=number_of_labels_in_your_task,
 )
 
