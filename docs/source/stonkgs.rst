@@ -1,5 +1,5 @@
 STonKGs
 =======
 
-.. automodule:: models.stonkgs_model
+.. automodule:: stonkgs.models.stonkgs_model
    :members:

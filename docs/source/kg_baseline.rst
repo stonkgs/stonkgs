@@ -1,10 +1,10 @@
 KG-Baseline
 ===========
 
-.. automodule:: models.kg_baseline_model
+.. automodule:: stonkgs.models.kg_baseline_model
    :members:
 
 Getting the node embeddings via node2vec
 
-.. automodule:: models.node2vec
+.. automodule:: stonkgs.models.node2vec
    :members:
