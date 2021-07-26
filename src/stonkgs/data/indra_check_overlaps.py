@@ -29,10 +29,10 @@ def load_entities(
     df_path: str,
 ) -> Set[str]:
     """Returns all entities in a given dataset."""
-    df = pd.read_csv(df_path, sep='\t')
-    logger.info(f'Number of triples: {len(df)}')
-    all_entities = set(df['source']).union(set(df['target']))
-    logger.info(f'Successfully loaded {len(all_entities)} many entities \n')
+    df = pd.read_csv(df_path, sep="\t")
+    logger.info(f"Number of triples: {len(df)}")
+    all_entities = set(df["source"]).union(set(df["target"]))
+    logger.info(f"Successfully loaded {len(all_entities)} many entities \n")
 
     return all_entities
 
@@ -44,19 +44,21 @@ def find_missing_entities(
     """Identifies the entities (if any) present in the fine tuning BUT NOT in the pretraining dataset."""
     for name, fine_tuning_entities in fine_tuning_entities_dict.items():
         new_entities = fine_tuning_entities.difference(pre_training_entities)
-        logger.info(f'For {name}, there are {len(new_entities)} many entities present in the fine-tuning set that are '
-                    f'not in the pre-training data')
+        logger.info(
+            f"For {name}, there are {len(new_entities)} many entities present in the fine-tuning set that are "
+            f"not in the pre-training data"
+        )
         # logger.info(new_entities)
-        logger.info('\n')
+        logger.info("\n")
 
 
 def load_text(
     df_path: str,
 ) -> Set[str]:
     """Returns all text evidences in a given dataset."""
-    df = pd.read_csv(df_path, sep='\t')
-    all_text = set(df['evidence'])
-    logger.info(f'Successfully loaded {len(all_text)} many text evidences')
+    df = pd.read_csv(df_path, sep="\t")
+    all_text = set(df["evidence"])
+    logger.info(f"Successfully loaded {len(all_text)} many text evidences")
 
     return all_text
 
@@ -68,12 +70,14 @@ def find_information_leakage(
     """Identifies how many text evidences from the fine-tuning sets are present in the pretraining dataset."""
     for name, fine_tuning_ev in fine_tuning_evidences_dict.items():
         new_entities = fine_tuning_ev.intersection(pre_training_text_evidences)
-        logger.info(f'For {name}, there are {len(new_entities)} out of {len(fine_tuning_ev)} many entities that are '
-                    f'also present in the pre-training data')
+        logger.info(
+            f"For {name}, there are {len(new_entities)} out of {len(fine_tuning_ev)} many entities that are "
+            f"also present in the pre-training data"
+        )
         # logger.info(new_entities)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 1. ENTITY OVERLAP
     # Get all the pre-training and fine-tuning datasets
     pre_training_ents = load_entities(PRETRAINING_PATH)
@@ -81,16 +85,16 @@ if __name__ == '__main__':
     # Iterate through all the fine-tuning stuff for ENTITIES
     paths = [CELL_LINE_DIR, DISEASE_DIR, LOCATION_DIR, RELATION_TYPE_DIR, SPECIES_DIR]
     names = [
-        'cell_line_filtered',
-        'disease_filtered',
-        'location_filtered',
-        'relation_type',
-        'species_filtered',
+        "cell_line_filtered",
+        "disease_filtered",
+        "location_filtered",
+        "relation_type",
+        "species_filtered",
     ]
 
     fine_tuning_dict = dict()
     for path, annot_name in zip(paths, names):
-        fine_tuning_dict[annot_name] = load_entities(os.path.join(path, annot_name + '.tsv'))
+        fine_tuning_dict[annot_name] = load_entities(os.path.join(path, annot_name + ".tsv"))
 
     # Get an estimate of the entities that are not in the pretraining data
     find_missing_entities(
@@ -107,13 +111,10 @@ if __name__ == '__main__':
     # Iterate through all the fine-tuning stuff for EVIDENCES
     fine_tuning_dict_evidences = {}
     for path, annot_name in zip(paths, names):
-        fine_tuning_dict_evidences[annot_name] = load_text(os.path.join(path, annot_name + '.tsv'))
+        fine_tuning_dict_evidences[annot_name] = load_text(os.path.join(path, annot_name + ".tsv"))
 
     # Get an estimate of the entities that are not in the pretraining data
     find_information_leakage(
         pre_training_text_evidences=pre_training_texts,
         fine_tuning_evidences_dict=fine_tuning_dict_evidences,
     )
-
-
-

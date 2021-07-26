@@ -34,43 +34,61 @@ logging.getLogger("alembic").setLevel(logging.WARNING)
 
 def _load_pre_training_data(
     pretraining_preprocessed_path: str = PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH,
-    dataset_format: str = 'torch',
+    dataset_format: str = "torch",
 ) -> Dataset:
     """Create a pytorch dataset based on a preprocessed dataframe for the pretraining dataset."""
     # Load the pickled dataframe using the load_dataset function so that it can be cached
-    pretraining_dataset = load_dataset('pandas', data_files=pretraining_preprocessed_path, split='train')
+    pretraining_dataset = load_dataset(
+        "pandas", data_files=pretraining_preprocessed_path, split="train"
+    )
 
     # Do not put the dataset on the GPU even if possible, it is only stealing GPU space, use the dataloader instead
     # Putting it on the GPU might only be worth it if 4+ GPUs are used
     pretraining_dataset.set_format(dataset_format)
-    logger.info('Finished loading the pretraining dataset')
+    logger.info("Finished loading the pretraining dataset")
 
     return pretraining_dataset
 
 
 @click.command()
-@click.option('-b', '--batch_size', default=8, help='Batch size for training (per device)', type=int)
-@click.option('--fp16', default=True, help='Whether to use fp16 precision or not', type=bool)
-@click.option('--lr', default=1e-4, help='Learning rate', type=float)
-@click.option('--dataloader_num_workers', default=8, help='Number of dataloader workers', type=int)
-@click.option('--deepspeed', default=False, help='Whether to use deepspeed or not', type=bool)
-@click.option('--gradient_accumulation_steps', default=1, help='Number of gradient accumulation steps', type=int)
-@click.option('--logging_dir', default=MLFLOW_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
-@click.option('--logging_steps', default=100, help='Logging interval', type=int)
-@click.option('-m', '--max_steps', default=200, help='Number of training steps', type=int)
-@click.option('--overwrite_output_dir', default=False, help='Whether to override the output dir or not', type=bool)
 @click.option(
-    '--pretraining_file',
+    "-b", "--batch_size", default=8, help="Batch size for training (per device)", type=int
+)
+@click.option("--fp16", default=True, help="Whether to use fp16 precision or not", type=bool)
+@click.option("--lr", default=1e-4, help="Learning rate", type=float)
+@click.option("--dataloader_num_workers", default=8, help="Number of dataloader workers", type=int)
+@click.option("--deepspeed", default=False, help="Whether to use deepspeed or not", type=bool)
+@click.option(
+    "--gradient_accumulation_steps",
+    default=1,
+    help="Number of gradient accumulation steps",
+    type=int,
+)
+@click.option(
+    "--logging_dir", default=MLFLOW_TRACKING_URI, help="Mlflow logging/tracking URI", type=str
+)
+@click.option("--logging_steps", default=100, help="Logging interval", type=int)
+@click.option("-m", "--max_steps", default=200, help="Number of training steps", type=int)
+@click.option(
+    "--overwrite_output_dir",
+    default=False,
+    help="Whether to override the output dir or not",
+    type=bool,
+)
+@click.option(
+    "--pretraining_file",
     default=PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH,
-    help='File used in pretraining containing the preprocessed training examples',
+    help="File used in pretraining containing the preprocessed training examples",
     type=str,
 )
-@click.option('--save_limit', default=5, help='Maximum number of saved models/checkpoints', type=int)
-@click.option('--save_steps', default=5000, help='Checkpointing interval', type=int)
 @click.option(
-    '--training_dir',
+    "--save_limit", default=5, help="Maximum number of saved models/checkpoints", type=int
+)
+@click.option("--save_steps", default=5000, help="Checkpointing interval", type=int)
+@click.option(
+    "--training_dir",
     default=STONKGS_PRETRAINING_NO_NSP_DIR,
-    help='Whether to override the output dir',
+    help="Whether to override the output dir",
     type=str,
 )
 def pretrain_stonkgs(
@@ -99,7 +117,7 @@ def pretrain_stonkgs(
     # Initialize mlflow run, set tracking URI to use the same experiment for all runs,
     # so that one can compare them
     mlflow.set_tracking_uri(logging_dir)
-    mlflow.set_experiment('STonKGs Pre-Training (No NSP Ablation)')
+    mlflow.set_experiment("STonKGs Pre-Training (No NSP Ablation)")
 
     # Initialize the STonKGs model
     # config = None just fills up the required argument for automated method calls such as .from_pretrained, it will be
@@ -116,9 +134,13 @@ def pretrain_stonkgs(
     pretraining_data = _load_pre_training_data(pretraining_preprocessed_path=pretraining_file)
 
     # Print logger statements about the allocated number of bytes of the training dataset
-    logger.info(f"The number of bytes allocated by the dataset on the drive is {pretraining_data.dataset_size}")
-    logger.info(f"For comparison, here is the number of bytes allocated in memory by the training dataset"
-                f": {total_allocated_bytes()}")
+    logger.info(
+        f"The number of bytes allocated by the dataset on the drive is {pretraining_data.dataset_size}"
+    )
+    logger.info(
+        f"For comparison, here is the number of bytes allocated in memory by the training dataset"
+        f": {total_allocated_bytes()}"
+    )
 
     # Clean up cache files to be sure
     pretraining_data.cleanup_cache_files()
@@ -143,7 +165,7 @@ def pretrain_stonkgs(
         logging_steps=logging_steps,
         save_steps=save_steps,
         save_total_limit=save_limit,
-        report_to=['mlflow'],
+        report_to=["mlflow"],
         # Make the dataloader faster by using pinning the memory and using multiple workers
         dataloader_pin_memory=True,
         dataloader_num_workers=dataloader_num_workers,
@@ -153,7 +175,11 @@ def pretrain_stonkgs(
 
     # Detecting last checkpoint
     last_checkpoint = None
-    if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
+    if (
+        os.path.isdir(training_args.output_dir)
+        and training_args.do_train
+        and not training_args.overwrite_output_dir
+    ):
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
         if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
             raise ValueError(
@@ -185,7 +211,7 @@ def pretrain_stonkgs(
     trainer.save_state()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Run the pre-training procedure, overwrite the output dir for now (since we're only working with dummy data)
     # Distinguish between local and cluster execution by using different values (steps, batch size etc.) in the
     # CLI arguments

@@ -14,7 +14,12 @@ import pandas as pd
 import torch
 from sklearn.metrics import f1_score
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
+from transformers import (
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    Trainer,
+    TrainingArguments,
+)
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
@@ -50,7 +55,7 @@ class INDRAEvidenceDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         """Return data entries (text evidences) for given indices."""
         item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
-        item['labels'] = torch.tensor(self.labels[idx])
+        item["labels"] = torch.tensor(self.labels[idx])
         return item
 
     def __len__(self):
@@ -88,7 +93,10 @@ def get_train_test_splits(
     # It is shuffled deterministically (determined by random_seed)
     skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
 
-    return [{"train_idx": train_idx, "test_idx": test_idx} for train_idx, test_idx in skf.split(data_no_labels, labels)]
+    return [
+        {"train_idx": train_idx, "test_idx": test_idx}
+        for train_idx, test_idx in skf.split(data_no_labels, labels)
+    ]
 
 
 def run_nlp_baseline_classification_cv(
@@ -104,7 +112,7 @@ def run_nlp_baseline_classification_cv(
     lr: float = 5e-5,
     batch_size: int = 16,
     gradient_accumulation: int = 1,
-    task_name: str = '',
+    task_name: str = "",
     embedding_path: str = EMBEDDINGS_PATH,
     deepspeed: bool = True,
     max_dataset_size: int = 100000,
@@ -117,11 +125,14 @@ def run_nlp_baseline_classification_cv(
     embeddings_dict = _prepare_df(embedding_path)
     original_length = len(indra_data)
     indra_data = indra_data[
-        indra_data['source'].isin(embeddings_dict.keys()) & indra_data['target'].isin(embeddings_dict.keys())
+        indra_data["source"].isin(embeddings_dict.keys())
+        & indra_data["target"].isin(embeddings_dict.keys())
     ].reset_index(drop=True)
     new_length = len(indra_data)
-    logger.info(f'{original_length - new_length} out of {original_length} triples are left out because they contain '
-                f'nodes which are not present in the pre-training data')
+    logger.info(
+        f"{original_length - new_length} out of {original_length} triples are left out because they contain "
+        f"nodes which are not present in the pre-training data"
+    )
 
     train_test_splits = get_train_test_splits(
         indra_data,
@@ -145,7 +156,7 @@ def run_nlp_baseline_classification_cv(
     # Initialize mlflow run, set tracking URI to use the same experiment for all runs,
     # so that one can compare them
     mlflow.set_tracking_uri(logging_uri_mlflow)
-    mlflow.set_experiment('NLP Baseline for STonKGs')
+    mlflow.set_experiment("NLP Baseline for STonKGs")
 
     # Start a parent run so that all CV splits are tracked as nested runs
     # mlflow.start_run(run_name='Parent Run')
@@ -156,11 +167,17 @@ def run_nlp_baseline_classification_cv(
     for idx, indices in enumerate(train_test_splits):
         # Initialize tokenizer and model
         tokenizer = AutoTokenizer.from_pretrained(model_type)
-        model = AutoModelForSequenceClassification.from_pretrained(model_type, num_labels=len(unique_tags))
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_type, num_labels=len(unique_tags)
+        )
 
         # Encode all text evidences, pad and truncate to max_seq_len
-        train_evidences = tokenizer(evidences_text[indices["train_idx"]].tolist(), truncation=True, padding=True)
-        test_evidences = tokenizer(evidences_text[indices["test_idx"]].tolist(), truncation=True, padding=True)
+        train_evidences = tokenizer(
+            evidences_text[indices["train_idx"]].tolist(), truncation=True, padding=True
+        )
+        test_evidences = tokenizer(
+            evidences_text[indices["test_idx"]].tolist(), truncation=True, padding=True
+        )
         train_labels = labels[indices["train_idx"]].tolist()
         test_labels = labels[indices["test_idx"]].tolist()
         train_dataset = INDRAEvidenceDataset(encodings=train_evidences, labels=train_labels)
@@ -193,25 +210,26 @@ def run_nlp_baseline_classification_cv(
         trainer.train()
 
         # Log some details about the datasets used in training and testing
-        mlflow.log_param('label dict', str(tag2id))
-        mlflow.log_param('training dataset size', str(len(train_labels)))
-        mlflow.log_param('training class dist', str(Counter(train_labels)))
-        mlflow.log_param('test dataset size', str(len(test_labels)))
-        mlflow.log_param('test class dist', str(Counter(test_labels)))
+        mlflow.log_param("label dict", str(tag2id))
+        mlflow.log_param("training dataset size", str(len(train_labels)))
+        mlflow.log_param("training class dist", str(Counter(train_labels)))
+        mlflow.log_param("test dataset size", str(len(test_labels)))
+        mlflow.log_param("test class dist", str(Counter(test_labels)))
 
         # Make predictions for the test dataset
         predictions = trainer.predict(test_dataset=test_dataset).predictions
         predicted_labels = np.argmax(predictions, axis=1)
-        logger.info(f'Predicted labels: {predicted_labels}')
+        logger.info(f"Predicted labels: {predicted_labels}")
 
         # Save the predicted + true labels
         partial_result_df = pd.DataFrame(
-            {'split': idx,
-             'index': indices["test_idx"].tolist(),
-             'predicted_label': predicted_labels.tolist(),
-             'true_label': test_labels,
-             'evidence': evidences_text[indices["test_idx"]].tolist(),
-             },
+            {
+                "split": idx,
+                "index": indices["test_idx"].tolist(),
+                "predicted_label": predicted_labels.tolist(),
+                "true_label": test_labels,
+                "evidence": evidences_text[indices["test_idx"]].tolist(),
+            },
         )
         result_df = result_df.append(
             partial_result_df,
@@ -223,18 +241,18 @@ def run_nlp_baseline_classification_cv(
         f1_scores.append(f1_sc)
 
         # Log the final f1 score of the split
-        mlflow.log_metric('f1_score_weighted', f1_sc)
+        mlflow.log_metric("f1_score_weighted", f1_sc)
 
     # Log mean and std f1-scores from the cross validation procedure (average and std across all splits) to the
     # standard logger
-    logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
-    logger.info(f'Std f1-score: {np.std(f1_scores)}')
+    logger.info(f"Mean f1-score: {np.mean(f1_scores)}")
+    logger.info(f"Std f1-score: {np.std(f1_scores)}")
 
     # Map the labels in the result df back to their original names
-    result_df = result_df.replace({'predicted_label': id2tag, 'true_label': id2tag})
+    result_df = result_df.replace({"predicted_label": id2tag, "true_label": id2tag})
     # Save the result_df
     result_df.to_csv(
-        os.path.join(NLP_BL_OUTPUT_DIR, 'predicted_labels_nlp_' + task_name + 'df.tsv'),
+        os.path.join(NLP_BL_OUTPUT_DIR, "predicted_labels_nlp_" + task_name + "df.tsv"),
         index=False,
         sep="\t",
     )
@@ -248,9 +266,9 @@ def run_nlp_baseline_classification_cv(
     # Log the mean and std f1 score from the cross validation procedure to mlflow
     with mlflow.start_run():
         # Log the task name as well
-        mlflow.log_param('task name', task_name)
-        mlflow.log_metric('f1_score_mean', np.mean(f1_scores))
-        mlflow.log_metric('f1_score_std', np.std(f1_scores))
+        mlflow.log_param("task name", task_name)
+        mlflow.log_metric("f1_score_mean", np.mean(f1_scores))
+        mlflow.log_metric("f1_score_std", np.std(f1_scores))
 
     # End parent run
     # mlflow.end_run()
@@ -259,16 +277,28 @@ def run_nlp_baseline_classification_cv(
 
 
 @click.command()
-@click.option('-e', '--epochs', default=5, help='Number of epochs', type=int)
-@click.option('--lr', default=5e-5, help='Learning rate', type=float)
-@click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
-@click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
-@click.option('--output_dir', default=STONKGS_OUTPUT_DIR, help='Output directory', type=str)
-@click.option('--batch_size', default=8, help='Batch size used in fine-tuning', type=int)
-@click.option('--gradient_accumulation_steps', default=1, help='Gradient accumulation steps', type=int)
-@click.option('--deepspeed', default=True, help='Whether to use deepspeed or not', type=bool)
-@click.option('--max_dataset_size', default=100000, help='Maximum dataset size of the fine-tuning datasets', type=int)
-@click.option('--local_rank', default=-1, help='THIS PARAMETER IS IGNORED', type=int)
+@click.option("-e", "--epochs", default=5, help="Number of epochs", type=int)
+@click.option("--lr", default=5e-5, help="Learning rate", type=float)
+@click.option(
+    "--logging_dir",
+    default=MLFLOW_FINETUNING_TRACKING_URI,
+    help="Mlflow logging/tracking URI",
+    type=str,
+)
+@click.option("--log_steps", default=500, help="Number of steps between each log", type=int)
+@click.option("--output_dir", default=STONKGS_OUTPUT_DIR, help="Output directory", type=str)
+@click.option("--batch_size", default=8, help="Batch size used in fine-tuning", type=int)
+@click.option(
+    "--gradient_accumulation_steps", default=1, help="Gradient accumulation steps", type=int
+)
+@click.option("--deepspeed", default=True, help="Whether to use deepspeed or not", type=bool)
+@click.option(
+    "--max_dataset_size",
+    default=100000,
+    help="Maximum dataset size of the fine-tuning datasets",
+    type=int,
+)
+@click.option("--local_rank", default=-1, help="THIS PARAMETER IS IGNORED", type=int)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
     log_steps: int = 500,
@@ -292,23 +322,23 @@ def run_all_fine_tuning_tasks(
         RELATION_TYPE_DIR,
     ]
     file_names = [
-        'cell_line_no_duplicates.tsv',
-        'disease_no_duplicates.tsv',
-        'location_no_duplicates.tsv',
-        'species_no_duplicates.tsv',
-        'relation_type_no_duplicates.tsv',
-        'relation_type_no_duplicates.tsv',
+        "cell_line_no_duplicates.tsv",
+        "disease_no_duplicates.tsv",
+        "location_no_duplicates.tsv",
+        "species_no_duplicates.tsv",
+        "relation_type_no_duplicates.tsv",
+        "relation_type_no_duplicates.tsv",
     ]
     task_names = [
-        'cell_line',
-        'disease',
-        'location',
-        'species',
-        'interaction',
-        'polarity',
+        "cell_line",
+        "disease",
+        "location",
+        "species",
+        "interaction",
+        "polarity",
     ]
     # Specify the column names of the target variable
-    column_names = ['class'] * 4 + ['interaction'] + ['polarity']
+    column_names = ["class"] * 4 + ["interaction"] + ["polarity"]
 
     for directory, file, column_name, task_name in zip(
         directories,
@@ -331,7 +361,7 @@ def run_all_fine_tuning_tasks(
             deepspeed=deepspeed,
             max_dataset_size=max_dataset_size,
         )
-        logger.info(f'Finished the {task_name} task')
+        logger.info(f"Finished the {task_name} task")
 
 
 if __name__ == "__main__":

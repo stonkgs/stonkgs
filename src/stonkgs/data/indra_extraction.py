@@ -33,7 +33,14 @@ from pybel.constants import (
     PART_OF,
 )
 from pybel.dsl import (
-    CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna, BaseConcept, ListAbundance, Reaction
+    CentralDogma,
+    ComplexAbundance,
+    Abundance,
+    CompositeAbundance,
+    MicroRna,
+    BaseConcept,
+    ListAbundance,
+    Reaction,
 )
 from tqdm import tqdm
 
@@ -68,20 +75,14 @@ INDIRECT_RELATIONS = {
     PART_OF,
 }
 
-UP_RELATIONS = {
-    INCREASES,
-    POSITIVE_CORRELATION,
-    DIRECTLY_INCREASES
-}
+UP_RELATIONS = {INCREASES, POSITIVE_CORRELATION, DIRECTLY_INCREASES}
 
-DOWN_RELATIONS = {
-    DECREASES,
-    NEGATIVE_CORRELATION,
-    DIRECTLY_DECREASES
-}
+DOWN_RELATIONS = {DECREASES, NEGATIVE_CORRELATION, DIRECTLY_DECREASES}
 
 
-def binarize_triple_direction(graph: pybel.BELGraph, triples_per_class: int = 25000) -> Tuple[Dict[str, Any], List]:
+def binarize_triple_direction(
+    graph: pybel.BELGraph, triples_per_class: int = 25000
+) -> Tuple[Dict[str, Any], List]:
     """Binarize triples depending on the type of direction.
 
     Extract the fine-tuning data for the interaction type (direct vs. indirect) and polarity (up vs. down) tasks.
@@ -95,12 +96,12 @@ def binarize_triple_direction(graph: pybel.BELGraph, triples_per_class: int = 25
     counter_inc = 0
     counter_dec = 0
 
-    summary = {'context': '(in)direct relations and polarity'}
+    summary = {"context": "(in)direct relations and polarity"}
 
     # Iterate through the graph and infer a subgraph
     for u, v, k, data in graph.edges(keys=True, data=True):
 
-        if EVIDENCE not in data or not data[EVIDENCE] or data[EVIDENCE] == 'No evidence text.':
+        if EVIDENCE not in data or not data[EVIDENCE] or data[EVIDENCE] == "No evidence text.":
             # logger.warning(f'not evidence found in {data}')
             continue
 
@@ -109,16 +110,16 @@ def binarize_triple_direction(graph: pybel.BELGraph, triples_per_class: int = 25
             continue
 
         if data[RELATION] in UP_RELATIONS:
-            polarity_label = 'up'
+            polarity_label = "up"
         elif data[RELATION] in DOWN_RELATIONS:
-            polarity_label = 'down'
+            polarity_label = "down"
         else:
             continue
 
         if data[RELATION] in {INCREASES, DECREASES}:
-            interaction_label = 'indirect_interaction'
+            interaction_label = "indirect_interaction"
         elif data[RELATION] in {DIRECTLY_INCREASES, DIRECTLY_DECREASES}:
-            interaction_label = 'direct_interaction'
+            interaction_label = "direct_interaction"
         else:
             continue
 
@@ -144,27 +145,29 @@ def binarize_triple_direction(graph: pybel.BELGraph, triples_per_class: int = 25
         else:
             continue
 
-        triples.append({
-            'source': u,
-            'relation': data[RELATION],
-            'target': v,
-            'evidence': data[EVIDENCE],
-            'pmid': data[CITATION],
-            'polarity': polarity_label,
-            'interaction': interaction_label,
-        })
+        triples.append(
+            {
+                "source": u,
+                "relation": data[RELATION],
+                "target": v,
+                "evidence": data[EVIDENCE],
+                "pmid": data[CITATION],
+                "polarity": polarity_label,
+                "interaction": interaction_label,
+            }
+        )
 
         edges_to_removes.append((u, v, k))
 
     df = pd.DataFrame(triples)
 
-    logger.info(f'Number of binarized triples for fine-tuning: {df.shape[0]}')
+    logger.info(f"Number of binarized triples for fine-tuning: {df.shape[0]}")
 
-    summary['number_of_triples'] = df.shape[0]
-    summary['number_of_labels'] = '4 or 2 depending on the task'
-    summary['labels'] = 'NA'
+    summary["number_of_triples"] = df.shape[0]
+    summary["number_of_labels"] = "4 or 2 depending on the task"
+    summary["labels"] = "NA"
 
-    df.to_csv(os.path.join(RELATION_TYPE_DIR, f'relation_type.tsv'), sep='\t', index=False)
+    df.to_csv(os.path.join(RELATION_TYPE_DIR, f"relation_type.tsv"), sep="\t", index=False)
 
     return summary, edges_to_removes
 
@@ -173,46 +176,60 @@ def create_polarity_annotations(graph: pybel.BELGraph) -> Dict[str, Any]:
     """Group triples depending on the type of polarity."""
     triples = []
 
-    summary = {'context': 'polarity'}
+    summary = {"context": "polarity"}
 
     # Iterate through the graph and infer a subgraph
     for u, v, data in graph.edges(data=True):
 
-        if EVIDENCE not in data or not data[EVIDENCE] or data[EVIDENCE] == 'No evidence text.':
-            logger.warning(f'not evidence found in {data}')
+        if EVIDENCE not in data or not data[EVIDENCE] or data[EVIDENCE] == "No evidence text.":
+            logger.warning(f"not evidence found in {data}")
             continue
 
         # todo: check this we will focus only on molecular interactions
         if not any(
             isinstance(u, class_to_check)
-            for class_to_check in (CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna)
+            for class_to_check in (
+                CentralDogma,
+                ComplexAbundance,
+                Abundance,
+                CompositeAbundance,
+                MicroRna,
+            )
         ):
             continue
 
         if not any(
             isinstance(v, class_to_check)
-            for class_to_check in (CentralDogma, ComplexAbundance, Abundance, CompositeAbundance, MicroRna)
+            for class_to_check in (
+                CentralDogma,
+                ComplexAbundance,
+                Abundance,
+                CompositeAbundance,
+                MicroRna,
+            )
         ):
             continue
 
-        class_label = 'indirect' if data[RELATION] in INDIRECT_RELATIONS else 'direct'
+        class_label = "indirect" if data[RELATION] in INDIRECT_RELATIONS else "direct"
 
-        triples.append({
-            'source': u,
-            'relation': data[RELATION],
-            'target': v,
-            'evidence': data[EVIDENCE],
-            'pmid': data[CITATION],
-            'class': class_label,
-        })
+        triples.append(
+            {
+                "source": u,
+                "relation": data[RELATION],
+                "target": v,
+                "evidence": data[EVIDENCE],
+                "pmid": data[CITATION],
+                "class": class_label,
+            }
+        )
 
     df = pd.DataFrame(triples)
 
-    summary['number_of_triples'] = df.shape[0]
-    summary['number_of_labels'] = df['class'].unique().size
-    summary['labels'] = df['class'].value_counts().to_dict()
+    summary["number_of_triples"] = df.shape[0]
+    summary["number_of_labels"] = df["class"].unique().size
+    summary["labels"] = df["class"].value_counts().to_dict()
 
-    df.to_csv(os.path.join(RELATION_TYPE_DIR, f'relation_type.tsv'), sep='\t', index=False)
+    df.to_csv(os.path.join(RELATION_TYPE_DIR, f"relation_type.tsv"), sep="\t", index=False)
 
     return summary
 
@@ -223,15 +240,14 @@ def create_context_type_specific_subgraph(
 ) -> Tuple[List, pybel.BELGraph]:
     """Create a subgraph based on context annotations and also return edges that should be removed later on."""
     subgraph = graph.child()
-    subgraph.name = f'INDRA graph contextualized for {context_annotations}'
+    subgraph.name = f"INDRA graph contextualized for {context_annotations}"
 
     edges_to_remove = []
 
     # Iterate through the graph and infer a subgraph with edges that contain the annotation of interest
     for u, v, k, data in graph.edges(data=True, keys=True):
         if ANNOTATIONS in data and any(
-            annotation in data[ANNOTATIONS]
-            for annotation in context_annotations
+            annotation in data[ANNOTATIONS] for annotation in context_annotations
         ):
             subgraph.add_edge(u, v, k, **data)
             # Triples to be removed
@@ -264,14 +280,14 @@ def dump_edgelist(
     triples = []
 
     summary = {
-        'context': name,
+        "context": name,
     }
 
     # Iterate through the graph and infer a subgraph with edges that contain the annotation of interest
     for u, v, data in graph.edges(data=True):
 
         # If the data entry has no text evidence or the following filler text, don't add it
-        if not data[EVIDENCE] or data[EVIDENCE] == 'No evidence text.':
+        if not data[EVIDENCE] or data[EVIDENCE] == "No evidence text.":
             continue
 
         # Multiple annotations
@@ -282,27 +298,27 @@ def dump_edgelist(
 
             # Skip multiple classes in the triple for the same annotation
             if len(data[ANNOTATIONS][annotation]) > 1:
-                logger.warning(f'triple has more than one label -> {data[ANNOTATIONS][annotation]}')
+                logger.warning(f"triple has more than one label -> {data[ANNOTATIONS][annotation]}")
                 continue
 
             for label_annotation in data[ANNOTATIONS][annotation]:
                 triples.append(
                     {
-                        'source': u,
-                        'relation': data[RELATION],
-                        'target': v,
-                        'evidence': data[EVIDENCE],
-                        'pmid': data[CITATION],
-                        'class': label_annotation,
+                        "source": u,
+                        "relation": data[RELATION],
+                        "target": v,
+                        "evidence": data[EVIDENCE],
+                        "pmid": data[CITATION],
+                        "class": label_annotation,
                     },
                 )
 
     if not triples:
         return {
-            'context': name,
-            'number_of_triples': '0',
-            'number_of_labels': '0',
-            'labels': '0',
+            "context": name,
+            "number_of_triples": "0",
+            "number_of_labels": "0",
+            "labels": "0",
         }
 
     df = pd.DataFrame(triples)
@@ -325,16 +341,16 @@ def dump_edgelist(
     logger.info(f'raw triples {df.shape[0]}')
     df = df[~df['class'].isin(list(labels_to_remove.keys()))]"""
 
-    logger.info(f'triples (no filtering) for {name}: {df.shape[0]}')
+    logger.info(f"triples (no filtering) for {name}: {df.shape[0]}")
 
     final_labels = df["class"].unique()
-    logger.info(f' final number of classes {final_labels.size}')
+    logger.info(f" final number of classes {final_labels.size}")
 
-    summary['number_of_triples'] = df.shape[0]
-    summary['number_of_labels'] = final_labels.size
-    summary['labels'] = df['class'].value_counts().to_dict()
+    summary["number_of_triples"] = df.shape[0]
+    summary["number_of_labels"] = final_labels.size
+    summary["labels"] = df["class"].value_counts().to_dict()
 
-    df.to_csv(os.path.join(output_dir, f'{name}.tsv'), sep='\t', index=False)
+    df.to_csv(os.path.join(output_dir, f"{name}.tsv"), sep="\t", index=False)
 
     return summary
 
@@ -342,12 +358,12 @@ def dump_edgelist(
 def munge_evidence_text(text: str) -> str:
     """Clean evidence."""
     # Deal with the xrefs in text
-    if 'XREF_BIBR' in text:
-        text = text.replace('XREF_BIBR, ', '')
-        text = text.replace('XREF_BIBR,', '')
-        text = text.replace('XREF_BIBR', '')
-        text = text.replace('[', '')
-        text = text.replace(']', '')
+    if "XREF_BIBR" in text:
+        text = text.replace("XREF_BIBR, ", "")
+        text = text.replace("XREF_BIBR,", "")
+        text = text.replace("XREF_BIBR", "")
+        text = text.replace("[", "")
+        text = text.replace("]", "")
 
     return text
 
@@ -365,7 +381,7 @@ def read_indra_triples(
     with open(path) as file:
         for line_number, line in tqdm(
             enumerate(file),
-            desc='parsing file',
+            desc="parsing file",
             total=35150093,  # TODO: hard coded
         ):
             try:
@@ -375,25 +391,27 @@ def read_indra_triples(
 
             lines.append(line_dict)
 
-    logger.info(f'{len(errors)} statements with errors from {len(lines)} statements')
+    logger.info(f"{len(errors)} statements with errors from {len(lines)} statements")
 
     if batch_processing:
         # round down the number of chunks
-        chunks = len(lines)//batch_size
+        chunks = len(lines) // batch_size
 
         # create a list for the partial KGs that should be merged in the end
         partial_indra_kgs = []
-        for i in tqdm(range(chunks), total=chunks, desc='processing partial KGs'):
+        for i in tqdm(range(chunks), total=chunks, desc="processing partial KGs"):
             # process the lines chunk wise
-            partial_indra_kgs.append(pybel.io.indra.from_indra_statements_json(
-                lines[i*batch_size:(i+1)*batch_size]
-            ))
+            partial_indra_kgs.append(
+                pybel.io.indra.from_indra_statements_json(
+                    lines[i * batch_size : (i + 1) * batch_size]
+                )
+            )
         # process last chunk differently
-        partial_indra_kgs.append(pybel.io.indra.from_indra_statements_json(
-            lines[(i+1)*batch_size:]
-        ))
+        partial_indra_kgs.append(
+            pybel.io.indra.from_indra_statements_json(lines[(i + 1) * batch_size :])
+        )
 
-        logger.info(f'Finished processing {chunks + 1} many chunks')
+        logger.info(f"Finished processing {chunks + 1} many chunks")
 
         indra_kg = pybel.union(partial_indra_kgs)
 
@@ -406,7 +424,7 @@ def read_indra_triples(
     non_grounded_nodes = {
         node
         for node in indra_kg.nodes()
-        if isinstance(node, BaseConcept) and node.curie.startswith('TEXT:')
+        if isinstance(node, BaseConcept) and node.curie.startswith("TEXT:")
     }
 
     # Remove non grounded nodes from complex nodes
@@ -414,62 +432,59 @@ def read_indra_triples(
         # Process Complex/Composites
         if isinstance(node, ListAbundance):
             for member in node.members:
-                if isinstance(member, BaseConcept) and member.curie.startswith('TEXT:'):
+                if isinstance(member, BaseConcept) and member.curie.startswith("TEXT:"):
                     non_grounded_nodes.add(node)
 
         # Process Reactions
         if isinstance(node, Reaction):
             for member in node.reactants:
-                if isinstance(member, BaseConcept) and member.curie.startswith('TEXT:'):
+                if isinstance(member, BaseConcept) and member.curie.startswith("TEXT:"):
                     non_grounded_nodes.add(node)
 
             for member in node.products:
-                if isinstance(member, BaseConcept) and member.curie.startswith('TEXT:'):
+                if isinstance(member, BaseConcept) and member.curie.startswith("TEXT:"):
                     non_grounded_nodes.add(node)
 
-    logger.warning(f'removing {len(non_grounded_nodes)} non grounded nodes')
+    logger.warning(f"removing {len(non_grounded_nodes)} non grounded nodes")
 
     indra_kg.remove_nodes_from(non_grounded_nodes)
 
     # Remove any nodes that are not in the largest component
     connected_components = [
         component
-        for component in sorted(nx.connected_components(indra_kg.to_undirected()), key=len, reverse=True)
+        for component in sorted(
+            nx.connected_components(indra_kg.to_undirected()), key=len, reverse=True
+        )
     ]
-    logger.warning(f'Components of the KG: {len(connected_components)}')
-    connected_components_size = [
-        len(c)
-        for c in connected_components
-    ]
+    logger.warning(f"Components of the KG: {len(connected_components)}")
+    connected_components_size = [len(c) for c in connected_components]
     logger.warning(
-        f'Largest component {connected_components_size[0]}, first 50... -> {connected_components_size[1: 50]}'
+        f"Largest component {connected_components_size[0]}, first 50... -> {connected_components_size[1: 50]}"
     )
     nodes_not_in_largest_component = [
-        node
-        for subgraph in connected_components[1:]
-        for node in subgraph
+        node for subgraph in connected_components[1:] for node in subgraph
     ]
-    indra_kg.remove_nodes_from(
-        nodes_not_in_largest_component
+    indra_kg.remove_nodes_from(nodes_not_in_largest_component)
+
+    logger.warning(
+        f"{len(nodes_not_in_largest_component)} nodes were removed because they are not in the largest "
+        f"component"
     )
 
-    logger.warning(f'{len(nodes_not_in_largest_component)} nodes were removed because they are not in the largest '
-                   f'component')
-
     #: Summarize content of the KG
-    logger.info(f'{indra_kg.number_of_edges()} edges from {len(lines)} statements')
+    logger.info(f"{indra_kg.number_of_edges()} edges from {len(lines)} statements")
     logger.info(indra_kg.summarize())
 
     # Dump the most important characteristics of the summary to a file
     summary = {
-        'node_summary': indra_kg.count.namespaces(),
-        'relation_summary': indra_kg.count.relations(),
-        'functions_summary': indra_kg.count.functions(),
-        'annotations_summary': indra_kg.count.annotations(),
+        "node_summary": indra_kg.count.namespaces(),
+        "relation_summary": indra_kg.count.relations(),
+        "functions_summary": indra_kg.count.functions(),
+        "annotations_summary": indra_kg.count.annotations(),
     }
-    summary_list = [{'name': key, 'value': value} for key, value in summary.items()]
+    summary_list = [{"name": key, "value": value} for key, value in summary.items()]
 
-    with open(os.path.join(MISC_DIR, 'indra_kg_overview_summary.json'), 'w') as f:
+    with open(os.path.join(MISC_DIR, "indra_kg_overview_summary.json"), "w") as f:
         json.dump(summary_list, f, ensure_ascii=False)
 
     # Print all the annotations in the graph
@@ -481,7 +496,7 @@ def read_indra_triples(
                 all_annotations.add(key)
 
     # Summarize all annotations
-    logger.info(f'all annotations -> {all_annotations}')
+    logger.info(f"all annotations -> {all_annotations}")
 
     """
     Split the KG into two big chunks:
@@ -497,47 +512,53 @@ def read_indra_triples(
     Naturally, STonKGs requires a pre-training similar to the other two baselines models (i.e., KG-based has been
     trained based on node2vec on the INDRA KG and BioBERT was trained on PubMed).
     """
-    species_edges, species_subgraph = create_context_type_specific_subgraph(indra_kg, ['species'])
-    disease_edges, disease_subgraph = create_context_type_specific_subgraph(indra_kg, ['disease'])
-    cell_line_edges, cell_line_subgraph = create_context_type_specific_subgraph(indra_kg, ['cell_line'])
-    location_edges, location_subgraph = create_context_type_specific_subgraph(indra_kg, ['location'])
+    species_edges, species_subgraph = create_context_type_specific_subgraph(indra_kg, ["species"])
+    disease_edges, disease_subgraph = create_context_type_specific_subgraph(indra_kg, ["disease"])
+    cell_line_edges, cell_line_subgraph = create_context_type_specific_subgraph(
+        indra_kg, ["cell_line"]
+    )
+    location_edges, location_subgraph = create_context_type_specific_subgraph(
+        indra_kg, ["location"]
+    )
 
     #: Dump the 4+2 annotation type specific subgraphs (triples)
     species_summary = dump_edgelist(
         graph=species_subgraph,
-        annotations=['species'],
-        name='species',
+        annotations=["species"],
+        name="species",
         output_dir=SPECIES_DIR,
     )
     disease_summary = dump_edgelist(
         graph=disease_subgraph,
-        annotations=['disease'],
-        name='disease',
+        annotations=["disease"],
+        name="disease",
         output_dir=DISEASE_DIR,
     )
     cell_line_summary = dump_edgelist(
         graph=cell_line_subgraph,
-        annotations=['cell_line'],
-        name='cell_line',
+        annotations=["cell_line"],
+        name="cell_line",
         output_dir=CELL_LINE_DIR,
     )
     location_summary = dump_edgelist(
         graph=location_subgraph,
-        annotations=['location'],
-        name='location',
+        annotations=["location"],
+        name="location",
         output_dir=LOCATION_DIR,
     )
 
     polarity_summary, polarity_edges = binarize_triple_direction(indra_kg)
 
-    summary_df = pd.DataFrame([
-        species_summary,
-        disease_summary,
-        cell_line_summary,
-        location_summary,
-        polarity_summary,  # This is actually two tasks (polarity and direction)
-    ])
-    summary_df.to_csv(os.path.join(MISC_DIR, 'summary.tsv'), sep='\t', index=False)
+    summary_df = pd.DataFrame(
+        [
+            species_summary,
+            disease_summary,
+            cell_line_summary,
+            location_summary,
+            polarity_summary,  # This is actually two tasks (polarity and direction)
+        ]
+    )
+    summary_df.to_csv(os.path.join(MISC_DIR, "summary.tsv"), sep="\t", index=False)
 
     # Remove all the fine-tuning edges from the pre-training data
     for edges in [
@@ -553,24 +574,28 @@ def read_indra_triples(
     triples = []
 
     # Iterate through the graph and infer a subgraph with edges that contain the annotation of interest
-    for u, v, data in tqdm(indra_kg.edges(data=True), desc='Building final pre-training dataframe'):
+    for u, v, data in tqdm(indra_kg.edges(data=True), desc="Building final pre-training dataframe"):
         # Skip relations without evidences
         if EVIDENCE not in data or data[EVIDENCE] == "No evidence text.":
             continue
 
-        triples.append({
-            'source': u,
-            'relation': data[RELATION],
-            'target': v,
-            'evidence': munge_evidence_text(data[EVIDENCE]),
-            'pmid': data[CITATION],
-            'belief_score': data[ANNOTATIONS].get('belief', ''),
-        })
+        triples.append(
+            {
+                "source": u,
+                "relation": data[RELATION],
+                "target": v,
+                "evidence": munge_evidence_text(data[EVIDENCE]),
+                "pmid": data[CITATION],
+                "belief_score": data[ANNOTATIONS].get("belief", ""),
+            }
+        )
 
     pretraining_triples = pd.DataFrame(triples)
     del triples
-    pretraining_triples.to_csv(os.path.join(PRETRAINING_DIR, 'pretraining_triples.tsv'), sep='\t', index=False)
+    pretraining_triples.to_csv(
+        os.path.join(PRETRAINING_DIR, "pretraining_triples.tsv"), sep="\t", index=False
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     read_indra_triples()

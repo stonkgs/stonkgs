@@ -108,7 +108,7 @@ class KGEClassificationModel(pl.LightningModule):
         loss = loss_fct(train_outputs, train_labels)
 
         # Log loss at each training step
-        self.log('loss', loss.item(), on_step=True)
+        self.log("loss", loss.item(), on_step=True)
 
         return loss
 
@@ -120,22 +120,22 @@ class KGEClassificationModel(pl.LightningModule):
         test_predictions = torch.argmax(test_class_probs, dim=1)
         # logger.info(f'Predicted labels: {test_predictions}')
 
-        return {'labels': test_labels, 'predictions': test_predictions}
+        return {"labels": test_labels, "predictions": test_predictions}
 
     def test_epoch_end(self, outputs):
         """Return average and std weighted-averaged f1-score over all batches."""
         # Get the weighted-averaged f1-score
-        all_labels = torch.cat([x['labels'] for x in outputs])
-        all_predictions = torch.cat([x['predictions'] for x in outputs])
+        all_labels = torch.cat([x["labels"] for x in outputs])
+        all_predictions = torch.cat([x["predictions"] for x in outputs])
         test_f1 = f1_score(all_labels, all_predictions, average="weighted")
 
         # Log the final f1 score
-        self.log('f1_score_weighted', test_f1)
+        self.log("f1_score_weighted", test_f1)
 
         # Use this (weird) fix to save the predicted labels
         self.predicted_labels = all_predictions
 
-        return {'test_f1': test_f1}
+        return {"test_f1": test_f1}
 
 
 class INDRAEntityDataset(torch.utils.data.Dataset):
@@ -194,14 +194,16 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
             # and half target.
             random_walk = random_walk_source.tolist() + random_walk_target.tolist()  # noqa: N400
             # 3. Get embeddings for each node using embedding_dict stated by its index in each random walk
-            embeds_random_walk = np.stack([self.embedding_dict[node] for node in random_walk], axis=0)
+            embeds_random_walk = np.stack(
+                [self.embedding_dict[node] for node in random_walk], axis=0
+            )
             # The final embedding sequence for a given triple has the dimension max_length x embedding_dim
             embeddings[idx, :, :] = embeds_random_walk
 
         return embeddings
 
 
-def _prepare_df(embedding_path: str, sep: str = '\t') -> Dict[str, List[str]]:
+def _prepare_df(embedding_path: str, sep: str = "\t") -> Dict[str, List[str]]:
     """Prepare dataframe to node->embeddings/random walks."""
     # Load embeddings
     df = pd.read_csv(
@@ -211,10 +213,7 @@ def _prepare_df(embedding_path: str, sep: str = '\t') -> Dict[str, List[str]]:
         index_col=0,
     )
     # Node id -> embeddings
-    return {
-        index: row.values
-        for index, row in df.iterrows()
-    }
+    return {index: row.values for index, row in df.iterrows()}
 
 
 def get_train_test_splits(
@@ -248,7 +247,10 @@ def get_train_test_splits(
     skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
 
     # Return a list of dictionaries for train and test indices
-    return [{"train_idx": train_idx, "test_idx": test_idx} for train_idx, test_idx in skf.split(data_no_labels, labels)]
+    return [
+        {"train_idx": train_idx, "test_idx": test_idx}
+        for train_idx, test_idx in skf.split(data_no_labels, labels)
+    ]
 
 
 def run_kg_baseline_classification_cv(
@@ -261,19 +263,19 @@ def run_kg_baseline_classification_cv(
     train_batch_size: int = 8,
     test_batch_size: int = 64,
     lr: float = 1e-3,
-    label_column_name: str = 'class',
+    label_column_name: str = "class",
     log_steps: int = 500,
-    task_name: str = '',
+    task_name: str = "",
     max_dataset_size: int = 100000,
 ) -> Dict[str, float]:
     """Run KG baseline classification."""
     # Step 1. load the tsv file with the annotation types you want to test and make the splits
     triples_df = pd.read_csv(
         triples_path,
-        sep='\t',
+        sep="\t",
         usecols=[
-            'source',
-            'target',
+            "source",
+            "target",
             label_column_name,
         ],
     )
@@ -285,11 +287,14 @@ def run_kg_baseline_classification_cv(
     # Filter out any triples that contain a node that is not in the embeddings_dict
     original_length = len(triples_df)
     triples_df = triples_df[
-        triples_df['source'].isin(embeddings_dict.keys()) & triples_df['target'].isin(embeddings_dict.keys())
+        triples_df["source"].isin(embeddings_dict.keys())
+        & triples_df["target"].isin(embeddings_dict.keys())
     ].reset_index(drop=True)
     new_length = len(triples_df)
-    logger.info(f'{original_length - new_length} out of {original_length} triples are left out because they contain '
-                f'nodes which are not present in the pre-training data')
+    logger.info(
+        f"{original_length - new_length} out of {original_length} triples are left out because they contain "
+        f"nodes which are not present in the pre-training data"
+    )
 
     # Numerically encode labels
     unique_tags = set(label for label in triples_df[label_column_name])
@@ -320,7 +325,7 @@ def run_kg_baseline_classification_cv(
     )
 
     mlflow.set_tracking_uri(logging_uri_mlflow)
-    mlflow.set_experiment('KG Baseline for STonKGs')
+    mlflow.set_experiment("KG Baseline for STonKGs")
 
     mlflow.pytorch.autolog()
 
@@ -335,11 +340,15 @@ def run_kg_baseline_classification_cv(
         # CE class weights for the model based on training data class distribution,
         # based on the class counts (Inverse Number of Samples, INS)
         weights = [
-            1 / len([i
-                     for i in triples_df.iloc[indices["train_idx"], :][label_column_name]
-                     # note that we only employ train idx
-                     if i == id2tag[id_num]
-                     ])
+            1
+            / len(
+                [
+                    i
+                    for i in triples_df.iloc[indices["train_idx"], :][label_column_name]
+                    # note that we only employ train idx
+                    if i == id2tag[id_num]
+                ]
+            )
             for id_num in range(len(unique_tags))
         ]
 
@@ -376,11 +385,12 @@ def run_kg_baseline_classification_cv(
 
             # Save the predicted + true labels
             partial_result_df = pd.DataFrame(
-                {'split': idx,
-                 'index': indices["test_idx"].tolist(),
-                 'predicted_label': model.predicted_labels.tolist(),
-                 'true_label': labels[indices["test_idx"]].tolist(),
-                 },
+                {
+                    "split": idx,
+                    "index": indices["test_idx"].tolist(),
+                    "predicted_label": model.predicted_labels.tolist(),
+                    "true_label": labels[indices["test_idx"]].tolist(),
+                },
             )
             result_df = result_df.append(
                 partial_result_df,
@@ -388,55 +398,65 @@ def run_kg_baseline_classification_cv(
             )
 
             # Log some details about the datasets used in training and testing
-            mlflow.log_param('label dict', str(tag2id))
-            mlflow.log_param('training dataset size', str(len(trainloader.dataset)))
-            mlflow.log_param('training class dist', str(Counter(trainloader.dataset.labels)))
-            mlflow.log_param('test dataset size', str(len(testloader.dataset)))
-            mlflow.log_param('test class dist', str(Counter(testloader.dataset.labels)))
+            mlflow.log_param("label dict", str(tag2id))
+            mlflow.log_param("training dataset size", str(len(trainloader.dataset)))
+            mlflow.log_param("training class dist", str(Counter(trainloader.dataset.labels)))
+            mlflow.log_param("test dataset size", str(len(testloader.dataset)))
+            mlflow.log_param("test class dist", str(Counter(testloader.dataset.labels)))
 
         # Append f1 score per split based on the weighted average
         f1_scores.append(test_results[0]["test_f1"])
 
     # Map the labels in the result df back to their original names
-    result_df = result_df.replace({'predicted_label': id2tag, 'true_label': id2tag})
+    result_df = result_df.replace({"predicted_label": id2tag, "true_label": id2tag})
     # Save the result_df
     result_df.to_csv(
-        os.path.join(KG_BL_OUTPUT_DIR, 'predicted_labels_kg_' + task_name + 'df.tsv'),
+        os.path.join(KG_BL_OUTPUT_DIR, "predicted_labels_kg_" + task_name + "df.tsv"),
         index=False,
         sep="\t",
     )
 
     # Save the last model
-    trainer.save_checkpoint(os.path.join(KG_BL_OUTPUT_DIR, 'kg_baseline.ckpt'))
+    trainer.save_checkpoint(os.path.join(KG_BL_OUTPUT_DIR, "kg_baseline.ckpt"))
 
     # Log the mean and std f1 score from the cross validation procedure to mlflow
     with mlflow.start_run():
-        mlflow.log_metric('f1_score_mean', np.mean(f1_scores))
-        mlflow.log_metric('f1_score_std', np.std(f1_scores))
+        mlflow.log_metric("f1_score_mean", np.mean(f1_scores))
+        mlflow.log_metric("f1_score_std", np.std(f1_scores))
 
         # Log the task name as well
-        mlflow.log_param('task name', task_name)
+        mlflow.log_param("task name", task_name)
 
         # Also log how many triples were left out
-        mlflow.log_param('original no. of triples', original_length)
-        mlflow.log_param('no. of left out triples', original_length - new_length)
+        mlflow.log_param("original no. of triples", original_length)
+        mlflow.log_param("no. of left out triples", original_length - new_length)
 
     # Log mean and std f1-scores from the cross validation procedure (average and std across all splits) to the
     # standard logger
-    logger.info(f'Mean f1-score: {np.mean(f1_scores)}')
-    logger.info(f'Std f1-score: {np.std(f1_scores)}')
+    logger.info(f"Mean f1-score: {np.mean(f1_scores)}")
+    logger.info(f"Std f1-score: {np.std(f1_scores)}")
 
     # Return the final f1 score mean and the std for all CV folds
     return {"f1_score_mean": np.mean(f1_scores), "f1_score_std": float(np.std(f1_scores))}
 
 
 @click.command()
-@click.option('-e', '--epochs', default=5, help='Number of epochs', type=int)
-@click.option('--lr', default=1e-4, help='Learning rate', type=float)
-@click.option('--logging_dir', default=MLFLOW_FINETUNING_TRACKING_URI, help='Mlflow logging/tracking URI', type=str)
-@click.option('--log_steps', default=500, help='Number of steps between each log', type=int)
-@click.option('--batch_size', default=16, help='Batch size', type=int)
-@click.option('--max_dataset_size', default=100000, help='Maximum dataset size of the fine-tuning datasets', type=int)
+@click.option("-e", "--epochs", default=5, help="Number of epochs", type=int)
+@click.option("--lr", default=1e-4, help="Learning rate", type=float)
+@click.option(
+    "--logging_dir",
+    default=MLFLOW_FINETUNING_TRACKING_URI,
+    help="Mlflow logging/tracking URI",
+    type=str,
+)
+@click.option("--log_steps", default=500, help="Number of steps between each log", type=int)
+@click.option("--batch_size", default=16, help="Batch size", type=int)
+@click.option(
+    "--max_dataset_size",
+    default=100000,
+    help="Maximum dataset size of the fine-tuning datasets",
+    type=int,
+)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
     log_steps: int = 500,
@@ -457,23 +477,23 @@ def run_all_fine_tuning_tasks(
         RELATION_TYPE_DIR,
     ]
     file_names = [
-        'cell_line_no_duplicates.tsv',
-        'disease_no_duplicates.tsv',
-        'location_no_duplicates.tsv',
-        'species_no_duplicates.tsv',
-        'relation_type_no_duplicates.tsv',
-        'relation_type_no_duplicates.tsv',
+        "cell_line_no_duplicates.tsv",
+        "disease_no_duplicates.tsv",
+        "location_no_duplicates.tsv",
+        "species_no_duplicates.tsv",
+        "relation_type_no_duplicates.tsv",
+        "relation_type_no_duplicates.tsv",
     ]
     task_names = [
-        'cell_line',
-        'disease',
-        'location',
-        'species',
-        'interaction',
-        'polarity',
+        "cell_line",
+        "disease",
+        "location",
+        "species",
+        "interaction",
+        "polarity",
     ]
     # Specify the column names of the target variable
-    column_names = ['class'] * 4 + ['interaction'] + ['polarity']
+    column_names = ["class"] * 4 + ["interaction"] + ["polarity"]
 
     # TODO: delete reverse order later on
     for directory, file, column_name, task_name in zip(
@@ -494,7 +514,7 @@ def run_all_fine_tuning_tasks(
             task_name=task_name,
             max_dataset_size=max_dataset_size,
         )
-        logger.info(f'Finished the {task_name} task')
+        logger.info(f"Finished the {task_name} task")
 
 
 if __name__ == "__main__":

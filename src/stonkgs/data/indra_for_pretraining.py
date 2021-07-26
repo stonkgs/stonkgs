@@ -85,7 +85,7 @@ def _add_negative_nsp_samples(
     negative_samples = []
 
     # Get the length of half a sequence
-    half_length = len(processed_df.iloc[0]['input_ids']) // 2
+    half_length = len(processed_df.iloc[0]["input_ids"]) // 2
 
     # First get the indices that serve as the basis for the negative examples
     negative_sample_idx = random.sample(
@@ -103,7 +103,7 @@ def _add_negative_nsp_samples(
     for i, j in tqdm(
         zip(negative_sample_idx, negative_sample_idx_partner),
         total=int(nsp_negative_proportion * len(processed_df)),
-        desc='Generating negative samples',
+        desc="Generating negative samples",
     ):
         # Get the features from i
         text_features = processed_df.iloc[i]
@@ -113,12 +113,13 @@ def _add_negative_nsp_samples(
         # 2. Replace the entity mask labels
         # 3. Replace the NSP label
         new_entry = {
-            'input_ids': text_features['input_ids'][:half_length] + entity_features['input_ids'][half_length:],
-            'attention_mask': text_features['attention_mask'],
-            'token_type_ids': text_features['token_type_ids'],
-            'masked_lm_labels': text_features['masked_lm_labels'],
-            'ent_masked_lm_labels': entity_features['ent_masked_lm_labels'],
-            'next_sentence_labels': 1,  # 1 indicates it's a corrupted training sample
+            "input_ids": text_features["input_ids"][:half_length]
+            + entity_features["input_ids"][half_length:],
+            "attention_mask": text_features["attention_mask"],
+            "token_type_ids": text_features["token_type_ids"],
+            "masked_lm_labels": text_features["masked_lm_labels"],
+            "ent_masked_lm_labels": entity_features["ent_masked_lm_labels"],
+            "next_sentence_labels": 1,  # 1 indicates it's a corrupted training sample
         }
         negative_samples.append(new_entry)
 
@@ -143,21 +144,29 @@ def indra_to_pretraining_df(
     # Load the random walks for each node
     random_walk_dict = _prepare_df(embedding_name_to_random_walk_path)
     # Assert that embeddings and random walks are generated based on the same dataset
-    assert len(kg_embed_dict) == len(random_walk_dict), 'Embeddings and random walks must cover the same entities'
+    assert len(kg_embed_dict) == len(
+        random_walk_dict
+    ), "Embeddings and random walks must cover the same entities"
 
     # Log the number of entities
-    logger.info(f'There are {len(kg_embed_dict)} many entities in the pre-trained KG')
+    logger.info(f"There are {len(kg_embed_dict)} many entities in the pre-trained KG")
 
     # Convert random walk sequences to list of numeric indices
-    random_walk_idx_dict = {k: [kg_name_to_idx[node] for node in v] for k, v in random_walk_dict.items()}
+    random_walk_idx_dict = {
+        k: [kg_name_to_idx[node] for node in v] for k, v in random_walk_dict.items()
+    }
 
     # Load the pre-training dataframe
-    pretraining_df = pd.read_csv(pre_training_path, sep='\t')
+    pretraining_df = pd.read_csv(pre_training_path, sep="\t")
 
     # Check if all pretraining entities are covered by the embedding dict
-    number_of_pre_training_nodes = len(set(pretraining_df["source"]).union(set(pretraining_df["target"])))
+    number_of_pre_training_nodes = len(
+        set(pretraining_df["source"]).union(set(pretraining_df["target"]))
+    )
     if number_of_pre_training_nodes > len(kg_embed_dict):
-        logger.warning('The learned KG embeddings do not cover all of the nodes in the pre-training data')
+        logger.warning(
+            "The learned KG embeddings do not cover all of the nodes in the pre-training data"
+        )
         return
 
     # Get the length of the text or entity embedding sequences (2 random walks + 2 = entity embedding sequence length)
@@ -178,7 +187,7 @@ def indra_to_pretraining_df(
     for idx, row in tqdm(
         pretraining_df.iterrows(),
         total=pretraining_df.shape[0],
-        desc='Generating positive samples',
+        desc="Generating positive samples",
     ):
         # 1. "Token type IDs": 0 for text tokens, 1 for entity tokens
         token_type_ids = [0] * half_length + [1] * half_length
@@ -186,16 +195,21 @@ def indra_to_pretraining_df(
         # 2. Tokenization for getting the input ids and attention masks for the text
         # Use encode_plus to also get the attention mask ("padding" mask)
         encoded_text = tokenizer.encode_plus(
-            row['evidence'],
-            padding='max_length',
+            row["evidence"],
+            padding="max_length",
             truncation=True,
             max_length=half_length,
         )
-        text_token_ids = encoded_text['input_ids']
-        text_attention_mask = encoded_text['attention_mask']
+        text_token_ids = encoded_text["input_ids"]
+        text_attention_mask = encoded_text["attention_mask"]
 
         # 3. Get the random walks sequence and the node indices, add the SEP (usually with id=102) in between
-        random_walks = random_walk_idx_dict[row['source']] + [sep_id] + random_walk_idx_dict[row['target']] + [sep_id]
+        random_walks = (
+            random_walk_idx_dict[row["source"]]
+            + [sep_id]
+            + random_walk_idx_dict[row["target"]]
+            + [sep_id]
+        )
 
         # 4. Total attention mask (attention mask is all 1 for the entity sequence)
         attention_mask = text_attention_mask + [1] * half_length
@@ -215,29 +229,31 @@ def indra_to_pretraining_df(
         input_ids = masked_lm_token_ids + ent_masked_lm_token_ids
 
         # Add all the features to the preprocessed data
-        pre_training_preprocessed.append({
-            'input_ids': input_ids,
-            'attention_mask': attention_mask,
-            'token_type_ids': token_type_ids,
-            'masked_lm_labels': masked_lm_labels,
-            'ent_masked_lm_labels': ent_masked_lm_labels,
-            'next_sentence_labels': 0  # 0 indicates the random walks belong to the text evidence
-        })
+        pre_training_preprocessed.append(
+            {
+                "input_ids": input_ids,
+                "attention_mask": attention_mask,
+                "token_type_ids": token_type_ids,
+                "masked_lm_labels": masked_lm_labels,
+                "ent_masked_lm_labels": ent_masked_lm_labels,
+                "next_sentence_labels": 0,  # 0 indicates the random walks belong to the text evidence
+            }
+        )
 
     # Put the preprocessed data into a dataframe
     pre_training_preprocessed_df = pd.DataFrame(pre_training_preprocessed)
 
-    logger.info('Finished generating positive training examples')
+    logger.info("Finished generating positive training examples")
 
     # Save the positive examples
     pre_training_preprocessed_df.to_csv(
-        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed_positive.tsv'),
-        sep='\t',
+        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed_positive.tsv"),
+        sep="\t",
         index=False,
     )
     # Pickle it, too (easier for reading in the lists in the pandas dataframe)
     pre_training_preprocessed_df.to_pickle(
-        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed_positive.pkl'),
+        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed_positive.pkl"),
     )
 
     """
@@ -259,27 +275,27 @@ def indra_to_pretraining_df(
         pre_training_negative_samples
     ).reset_index(drop=True)
 
-    logger.info('Finished generating negative training examples')
+    logger.info("Finished generating negative training examples")
 
     # Shuffle the dataframe just to be sure
     pre_training_preprocessed_df_shuffled = pre_training_preprocessed_df.iloc[
         np.random.permutation(pre_training_preprocessed_df.index)
     ].reset_index(drop=True)
 
-    logger.info('Finished shuffling the data')
+    logger.info("Finished shuffling the data")
 
     # Save the final dataframe
     pre_training_preprocessed_df_shuffled.to_csv(
-        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed.tsv'),
-        sep='\t',
+        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed.tsv"),
+        sep="\t",
         index=False,
     )
     # Pickle it, too (easier for reading in the lists in the pandas dataframe)
     pre_training_preprocessed_df_shuffled.to_pickle(
-        os.path.join(PRETRAINING_DIR, 'pretraining_preprocessed.pkl'),
+        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed.pkl"),
     )
 
-    logger.info(f'Saved the data under {PRETRAINING_DIR}')
+    logger.info(f"Saved the data under {PRETRAINING_DIR}")
 
     return pre_training_preprocessed_df
 

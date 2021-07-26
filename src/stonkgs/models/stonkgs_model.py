@@ -64,8 +64,8 @@ class STonKGsELMPredictionHead(BertLMPredictionHead):
 
         # The first half is processed with the text decoder, the second with the entity decoder to map to the text
         # vocab size and kg vocab size, respectively
-        text_hidden_states_to_vocab = self.text_decoder(hidden_states[:, :self.half_length])
-        ent_hidden_states_to_kg_vocab = self.entity_decoder(hidden_states[:, self.half_length:])
+        text_hidden_states_to_vocab = self.text_decoder(hidden_states[:, : self.half_length])
+        ent_hidden_states_to_kg_vocab = self.entity_decoder(hidden_states[:, self.half_length :])
 
         return text_hidden_states_to_vocab, ent_hidden_states_to_kg_vocab
 
@@ -87,7 +87,7 @@ class STonKGsForPreTraining(BertForPreTraining):
 
         # Add the number of KG entities to the default config of a standard BERT model
         config = BertConfig.from_pretrained(nlp_model_type)
-        config.update({'kg_vocab_size': len(kg_embedding_dict)})
+        config.update({"kg_vocab_size": len(kg_embedding_dict)})
         # Initialize the underlying BertForPreTraining model that will be used to build the STonKGs Transformer layers
         super().__init__(config)
 
@@ -100,7 +100,7 @@ class STonKGsForPreTraining(BertForPreTraining):
         self.lm_backbone = BertModel.from_pretrained(nlp_model_type)
         # Put the LM backbone on the GPU if possible
         if torch.cuda.is_available():
-            self.lm_backbone.to('cuda')
+            self.lm_backbone.to("cuda")
         # Freeze the parameters of the LM backbone so that they're not updated during training
         # (We only want to train the STonKGs Transformer layers)
         for param in self.lm_backbone.parameters():
@@ -121,8 +121,10 @@ class STonKGsForPreTraining(BertForPreTraining):
         # Generate numeric indices for the KG node names (iterating .keys() is deterministic)
         self.kg_idx_to_name = {i: key for i, key in zip(numeric_indices, kg_embedding_dict.keys())}
         # Initialize KG index to embeddings based on the provided kg_embedding_dict
-        self.kg_backbone = {i: torch.tensor(kg_embedding_dict[self.kg_idx_to_name[i]]).to(self.lm_backbone.device)
-                            for i in self.kg_idx_to_name.keys()}
+        self.kg_backbone = {
+            i: torch.tensor(kg_embedding_dict[self.kg_idx_to_name[i]]).to(self.lm_backbone.device)
+            for i in self.kg_idx_to_name.keys()
+        }
         # Add the MASK, SEP and UNK (LM backbone) embedding vectors to the KG backbone so that the labels are correctly
         # identified in the loss function later on
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
@@ -151,23 +153,29 @@ class STonKGsForPreTraining(BertForPreTraining):
         # Use the LM backbone to get the pre-trained token embeddings
         # batch x half_length x hidden_size
         # The first element of the returned tuple from the LM backbone forward() pass is the sequence of hidden states
-        token_embeddings = self.lm_backbone(input_ids[:, :self.cls.predictions.half_length])[0]
+        token_embeddings = self.lm_backbone(input_ids[:, : self.cls.predictions.half_length])[0]
 
         # Use the KG backbone to obtain the pre-trained entity embeddings
         # batch x half_length x hidden_size
-        ent_embeddings = torch.stack([
-            # for each numeric index in the random walks sequence: get the embedding vector from the KG backbone
-            torch.stack([self.kg_backbone[i.item()] for i in j])
-            # for each example in the batch: get the random walks sequence
-            for j in input_ids[:, self.cls.predictions.half_length:]],
+        ent_embeddings = torch.stack(
+            [
+                # for each numeric index in the random walks sequence: get the embedding vector from the KG backbone
+                torch.stack([self.kg_backbone[i.item()] for i in j])
+                # for each example in the batch: get the random walks sequence
+                for j in input_ids[:, self.cls.predictions.half_length :]
+            ],
         )
 
         # Concatenate token and entity embeddings obtained from the LM and KG backbones and cast to float
         # batch x seq_len x hidden_size
-        inputs_embeds = torch.cat(
-            [token_embeddings, ent_embeddings.to(token_embeddings.device)],
-            dim=1,
-        ).type(torch.FloatTensor).to(self.device)
+        inputs_embeds = (
+            torch.cat(
+                [token_embeddings, ent_embeddings.to(token_embeddings.device)],
+                dim=1,
+            )
+            .type(torch.FloatTensor)
+            .to(self.device)
+        )
 
         # Get the hidden states from the basic STonKGs Transformer layers
         # batch x half_length x hidden_size
@@ -191,7 +199,11 @@ class STonKGsForPreTraining(BertForPreTraining):
 
         # Calculate the loss
         total_loss = None
-        if masked_lm_labels is not None and ent_masked_lm_labels is not None and next_sentence_labels is not None:
+        if (
+            masked_lm_labels is not None
+            and ent_masked_lm_labels is not None
+            and next_sentence_labels is not None
+        ):
             loss_fct = nn.CrossEntropyLoss()
             # 1. Text-based MLM
             masked_lm_loss = loss_fct(
@@ -210,7 +222,7 @@ class STonKGsForPreTraining(BertForPreTraining):
             # )
             # Total loss = the sum of the individual training objective losses
             # !! Leave out NSP loss in the ablation !!
-            total_loss = masked_lm_loss + ent_masked_lm_loss   # + next_sentence_loss
+            total_loss = masked_lm_loss + ent_masked_lm_loss  # + next_sentence_loss
 
         if not return_dict:
             output = (prediction_scores, seq_relationship_score) + outputs[2:]
