@@ -35,7 +35,8 @@ the scripts that are necessary to be run to train the model on any given dataset
 ## 💪 Getting Started
 
 ### Data Format
-todo
+
+TODO @Helena
 
 ### Pre-training STonKGs
 
@@ -52,17 +53,78 @@ dataset.
 
 ### Downloading the pre-trained STonKGs model on the INDRA KG
 
-We released the pre-trained STonKGs model on the INDRA KG for possible future adaptations. The model is available at
+We released the pre-trained STonKGs models on the INDRA KG for possible future adaptations, such as further pretraining on other KGs. Both [STonKGs<sub>BASE</sub>](https://huggingface.co/helena-balabin/stonkgs-base) as well as [STonKGs<sub>LARGE</sub>](https://huggingface.co/helena-balabin/stonkgs-large) are accessible through Hugging Face's model hub. 
 
-TODO @Helena
+Since our code is based on Hugging Face's `transformers` package, the pre-trained model can be easily downloaded and initialized using the `.from_pretrained()` function: 
+
+```
+from stonkgs.models.stonkgs_model import STonKGsForPreTraining
+
+# Download the model from the model hub and initialize it for pre-training
+stonkgs_model_pretraining = STonKGsForPreTraining.from_pretrained('helena-balabin/stonkgs-base')
+```
 
 ### Fine-tuning STonKGs
 
-TODO @Helena
+The most straightforward way of fine-tuning STonKGs on the original six classfication tasks is to run the fine-tuning script (note that this script assumes that you have a mlflow logger specified, e.g. using the --logging_dir argument):
+```bash
+$ python3 -m stonkgs.models.stonkgs_finetuning
+```
+
+Moreover, using STonKGs for your own fine-tuning tasks (i.e., sequence classification tasks) in your own code is just as easy as initializing the pre-trained model: 
+
+```
+from stonkgs.models.stonkgs_finetuning import STonKGsForSequenceClassification
+
+# Download the model from the model hub and initialize it for fine-tuning
+stonkgs_model_finetuning = STonKGsForSequenceClassification.from_pretrained(
+    'helena-balabin/stonkgs-base',
+    num_labels=number_of_labels_in_your_task,
+)
+
+# Initialize Trainer based on the training dataset
+trainer = Trainer(
+    model=model,
+    args=some_previously_defined_training_args,
+    train_dataset=some_previously_defined_finetuning_data,
+)
+
+# Fine-tune the model to the moon 
+trainer.train()
+```
 
 ### Requirements 
 
-TODO @Helena
+```
+more_itertools
+ijson
+jupyterlab
+ipywidgets
+tqdm
+click
+more_click
+python-dotenv
+accelerate
+pytorch-lightning
+numpy 
+pandas 
+matplotlib
+seaborn
+scikit-learn 
+torch==1.8.1
+transformers==4.6.1
+datasets==1.6.2
+tokenizers
+mlflow 
+optuna
+psutil
+indra
+stellargraph
+nodevectors
+pybel
+pykeen
+umap-learn[plot]
+```
 
 
 ## ⬇️ Installation
