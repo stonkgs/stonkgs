@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 @click.version_option()
 def main():
     """CLI for stonkgs."""
+    click.echo('Please check the documentation to learn how to train the STonKGs model')
 
 
 if __name__ == '__main__':
