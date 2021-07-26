@@ -8,6 +8,10 @@ STonKGs |release| Documentation
 
    installation
    cli
+   nlp_baseline
+   kg_baseline
+   stonkgs
+   training
 
 Indices and Tables
 ------------------
