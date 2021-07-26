@@ -65,7 +65,7 @@ Since our code is based on Hugging Face's `transformers` package, the pre-traine
 from stonkgs import STonKGsForPreTraining
 
 # Download the model from the model hub and initialize it for pre-training
-stonkgs_model_pretraining = STonKGsForPreTraining.get_pretrained_model()
+stonkgs_model_pretraining = STonKGsForPreTraining.from_default_pretrained()
 ```
 
 ### Fine-tuning STonKGs
