@@ -36,7 +36,11 @@ the scripts that are necessary to be run to train the model on any given dataset
 
 ### Data Format
 
-TODO @Helena
+Since STonKGs is operating on both text and KG data, it's expected that the respective data files include columns for both modalities. More specifically, the expected data format is a `pandas` dataframe (or a pickled `pandas` dataframe for the pre-training script), in which each row is containing one text-triple pair. The following columns are expected:
+* **source**: Source node in the triple of a given text-triple pair
+* **target**: Target node in the triple of a given text-triple pair
+* **evidence**: Text of a given text-triple pair
+* (optional) **class**: Class label for a given text-triple pair in fine-tuning tasks (does not apply to the pre-training procedure)
 
 ### Pre-training STonKGs
 
