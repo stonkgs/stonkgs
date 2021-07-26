@@ -22,16 +22,19 @@
     <a href='https://stonkgs.readthedocs.io/en/latest/?badge=latest'>
         <img src='https://readthedocs.org/projects/stonkgs/badge/?version=latest' alt='Documentation Status' />
     </a>
+    <a href='https://github.com/psf/black'>
+        <img src='https://img.shields.io/badge/code%20style-black-000000.svg' alt='Code style: black' />
+    </a>
 </p>
 
-todo
-
-## 💪 Getting Started
-
-STonKGs is a Sophisticated Transformer that can be joinylu trained on biomedical text and Knowledge Graphs.
+STonKGs is a Sophisticated Transformer that can be jointly trained on biomedical text and knowledge graphs.
 This multimodal Transformer combines structured information from KGs with unstructured text data to learn joint
 representations. While we demonstrated STonKGs on a biomedical knowledge graph (i.e., [INDRA](https://github.com/sorgerlab/indra)), the model can be applied other domains. In the following sections we describe
 the scripts that are necessary to be run to train the model on any given dataset.
+
+## 💪 Getting Started
+
+todo
 
 ### Training STonKGs
 
