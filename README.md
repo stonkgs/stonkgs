@@ -28,20 +28,28 @@ todo
 
 ## 💪 Getting Started
 
-> TODO show in a very small amount of space the **MOST** useful thing your package can do.
-Make it as short as possible! You have an entire set of docs for later.
+STonKGs is a Sophisticated Transformer that can be joinylu trained on biomedical text and Knowledge Graphs.
+This multimodal Transformer combines structured information from KGs with unstructured text data to learn joint
+representations. While we demonstrated STonKGs on a biomedical knowledge graph (i.e., [INDRA]
+(https://github.com/sorgerlab/indra)), the model can be applied other domains. In the following sections we describe
+the scripts that are necessary to be run to train the model on any given dataset.
 
-### Command Line Interface
+### Training STonKGs
 
-The stonkgs command line tool is automatically installed. It can
-be used from the shell with the `--help` flag to show all subcommands:
+Once you have installed STonKGs as a Python package (see below), you can start training the STonKGs on your dataset
+by running:
 
-```shell
-$ stonkgs --help
+```bash
+$ python3 -m stonkgs.models.stonkgs_pretraining
 ```
 
-> TODO show the most useful thing the CLI does! The CLI will have document auto-generated
-by sphinx.
+The configuration of the model can be easily modified by altering the parameters of the *pretrain_stonkgs* method.
+The only required argument to be changed is *PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH*, which should point to your
+dataset. 
+
+### Using the pre-trained model
+
+TODO @Helena
 
 ## ⬇️ Installation
 
@@ -65,6 +73,12 @@ $ git clone git+https://github.com/stonkgs/stonkgs.git
 $ cd stonkgs
 $ pip install -e .
 ```
+
+## Citation
+
+Balabin H., Hoyt C.T., Birkenbihl C., Gyori B.M., Bachman J.A., Komdaullil A.T., Plöger P.G., Hofmann-Apitius M.,
+Domingo-Fernández D. [STonKGs: A Sophisticated Transformer Trained on Biomedical Text and Knowledge Graphs
+]() (2021), bioRxiv, TODO.
 
 ## ⚖️ License
 
