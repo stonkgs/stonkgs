@@ -34,9 +34,10 @@ the scripts that are necessary to be run to train the model on any given dataset
 
 ## 💪 Getting Started
 
+### Data Format
 todo
 
-### Training STonKGs
+### Pre-training STonKGs
 
 Once you have installed STonKGs as a Python package (see below), you can start training the STonKGs on your dataset
 by running:
@@ -49,9 +50,16 @@ The configuration of the model can be easily modified by altering the parameters
 The only required argument to be changed is *PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH*, which should point to your
 dataset. 
 
-### Using the pre-trained model
+### Downloading the pre-trained STonKGs model on the INDRA KG
+
+We released the pre-trained STonKGs model on the INDRA KG for possible future adaptations. The model is available at
 
 TODO @Helena
+
+### Fine-tuning STonKGs
+
+TODO @Helena
+
 
 ## ⬇️ Installation
 
