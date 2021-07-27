@@ -64,8 +64,9 @@ The easiest way to download and initialize the pre-trained STonKGs model is to u
 ```python
 from stonkgs import STonKGsForPreTraining
 
-# Download the model from the model hub and initialize it for pre-training using from_default_pretrained
-stonkgs_model_pretraining = STonKGsForPreTraining.from_default_pretrained()
+# Download the model from the model hub and initialize it for pre-training 
+# using from_default_pretrained
+stonkgs_pretraining = STonKGsForPreTraining.from_default_pretrained()
 ```
 
 Alternatively, since our code is based on Hugging Face's `transformers` package, the pre-trained model can be easily downloaded and initialized using the `.from_pretrained()` function: 
@@ -73,8 +74,11 @@ Alternatively, since our code is based on Hugging Face's `transformers` package,
 ```python
 from stonkgs import STonKGsForPreTraining
 
-# Download the model from the model hub and initialize it for pre-training using from_pretrained
-stonkgs_model_pretraining = STonKGsForPreTraining.from_pretrained('helena-balabin/stonkgs-base')
+# Download the model from the model hub and initialize it for pre-training 
+# using from_pretrained
+stonkgs_pretraining = STonKGsForPreTraining.from_pretrained(
+    'helena-balabin/stonkgs-base',
+)
 ```
 
 ### Extracting Embeddings 
