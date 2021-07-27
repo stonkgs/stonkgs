@@ -77,6 +77,20 @@ from stonkgs import STonKGsForPreTraining
 stonkgs_model_pretraining = STonKGsForPreTraining.from_pretrained('helena-balabin/stonkgs-base')
 ```
 
+### Extracting Embeddings 
+
+The learned embeddings of the pre-trained STonKGs models (or your own STonKGs variants) can be extracted in two simple steps. First, a given dataset with text-triple pairs (a pandas `DataFrame`, see **Data Format**) needs to be preprocessed using the `preprocess_file_for_embeddings` function. Then, one can obtain the learned embeddings using the preprocessed data and the `get_stonkgs_embeddings` function:
+
+```python
+from stonkgs import get_stonkgs_embeddings, preprocess_file_for_embeddings
+
+# 1. Preprocess the text-triple data for embedding extraction
+preprocessed_df_for_embeddings = preprocess_file_for_embeddings(some_previously_specified_file_path) 
+
+# 2. Extract the embeddings 
+embedding_df = get_stonkgs_embeddings(preprocessed_df_for_embeddings)
+```
+
 ### Fine-tuning STonKGs
 
 The most straightforward way of fine-tuning STonKGs on the original six classfication tasks is to run the fine-tuning script (note that this script assumes that you have a mlflow logger specified, e.g. using the --logging_dir argument):
