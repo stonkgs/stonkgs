@@ -23,15 +23,15 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def preprocess_file_for_embeddings(
-    data_path: str,
+def preprocess_df_for_embeddings(
+    df: pd.DataFrame,
     embedding_name_to_vector_path: str = EMBEDDINGS_PATH,
     embedding_name_to_random_walk_path: str = RANDOM_WALKS_PATH,
     nlp_model_type: str = NLP_MODEL_TYPE,
     sep_id: int = 102,
     unk_id: int = 100,
 ) -> pd.DataFrame:
-    """Preprocesses a given file specified by data_path so that it's ready for embedding extraction by STonKGs."""
+    """Preprocesses a given pandas dataframe so that it's ready for embedding extraction by STonKGs."""
     # Load the KG embedding dict to convert the names to numeric indices
     kg_embed_dict = prepare_df(embedding_name_to_vector_path)
     kg_name_to_idx = {key: i for i, key in enumerate(kg_embed_dict.keys())}
@@ -46,9 +46,6 @@ def preprocess_file_for_embeddings(
     random_walk_idx_dict = {
         k: [kg_name_to_idx[node] for node in v] for k, v in random_walk_dict.items()
     }
-
-    # Load the dataframe for which embeddings are going to be generated
-    pretraining_df = pd.read_csv(data_path, sep="\t")
 
     # Get the length of the text or entity embedding sequences (2 random walks + 2 = entity embedding sequence length)
     half_length = len(next(iter(random_walk_idx_dict.values()))) * 2 + 2
@@ -66,8 +63,8 @@ def preprocess_file_for_embeddings(
 
     # Log progress with a progress bar
     for _, row in tqdm(
-        pretraining_df.iterrows(),
-        total=pretraining_df.shape[0],
+        df.iterrows(),
+        total=df.shape[0],
         desc="Preprocessing the dataset",
     ):
         # 1. "Token type IDs": 0 for text tokens, 1 for entity tokens
