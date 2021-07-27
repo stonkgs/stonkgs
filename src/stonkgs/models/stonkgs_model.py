@@ -20,7 +20,7 @@ from transformers import (
 from transformers.models.bert.modeling_bert import BertForPreTrainingOutput, BertLMPredictionHead
 
 from stonkgs.constants import EMBEDDINGS_PATH, NLP_MODEL_TYPE
-from stonkgs.models.kg_baseline_model import _prepare_df
+from stonkgs.models.kg_baseline_model import prepare_df
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -86,7 +86,7 @@ class STonKGsForPreTraining(BertForPreTraining):
         """Initialize the model architecture components of STonKGs."""
         # Initialize the KG dict from the file here, rather than passing it as a parameter, so that it can
         # be loaded from a checkpoint
-        kg_embedding_dict = _prepare_df(kg_embedding_dict_path)
+        kg_embedding_dict = prepare_df(kg_embedding_dict_path)
 
         # Add the number of KG entities to the default config of a standard BERT model
         config = BertConfig.from_pretrained(nlp_model_type)

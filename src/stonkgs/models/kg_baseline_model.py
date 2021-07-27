@@ -203,7 +203,7 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         return embeddings
 
 
-def _prepare_df(embedding_path: str, sep: str = "\t") -> Dict[str, List[str]]:
+def prepare_df(embedding_path: str, sep: str = "\t") -> Dict[str, List[str]]:
     """Prepare dataframe to node->embeddings/random walks."""
     # Load embeddings
     df = pd.read_csv(
@@ -281,8 +281,8 @@ def run_kg_baseline_classification_cv(
     )
 
     # Prepare embeddings and random walks
-    embeddings_dict = _prepare_df(embedding_path)
-    random_walks_dict = _prepare_df(random_walks_path)
+    embeddings_dict = prepare_df(embedding_path)
+    random_walks_dict = prepare_df(random_walks_path)
 
     # Filter out any triples that contain a node that is not in the embeddings_dict
     original_length = len(triples_df)

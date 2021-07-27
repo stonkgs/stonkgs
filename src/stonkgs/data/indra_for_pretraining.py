@@ -24,13 +24,13 @@ from stonkgs.constants import (
     RANDOM_WALKS_PATH,
     VOCAB_FILE,
 )
-from stonkgs.models.kg_baseline_model import _prepare_df
+from stonkgs.models.kg_baseline_model import prepare_df
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def _replace_mlm_tokens(
+def replace_mlm_tokens(
     tokens: List[int],
     vocab_len: int,
     mask_id: int = 103,
@@ -138,11 +138,11 @@ def indra_to_pretraining_df(
 ):
     """Preprocesses the INDRA statements from the pre-training file so that it contains all the necessary attributes."""
     # Load the KG embedding dict to convert the names to numeric indices
-    kg_embed_dict = _prepare_df(embedding_name_to_vector_path)
+    kg_embed_dict = prepare_df(embedding_name_to_vector_path)
     kg_name_to_idx = {key: i for i, key in enumerate(kg_embed_dict.keys())}
 
     # Load the random walks for each node
-    random_walk_dict = _prepare_df(embedding_name_to_random_walk_path)
+    random_walk_dict = prepare_df(embedding_name_to_random_walk_path)
     # Assert that embeddings and random walks are generated based on the same dataset
     assert len(kg_embed_dict) == len(
         random_walk_dict
@@ -215,13 +215,13 @@ def indra_to_pretraining_df(
         attention_mask = text_attention_mask + [1] * half_length
 
         # Apply the masking strategy to the text tokens and get the text MLM labels
-        masked_lm_token_ids, masked_lm_labels = _replace_mlm_tokens(
+        masked_lm_token_ids, masked_lm_labels = replace_mlm_tokens(
             tokens=text_token_ids,
             vocab_len=len(tokenizer.vocab),
         )
         # Apply the masking strategy to the entity tokens and get the entity (E)LM labels
         # Use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
-        ent_masked_lm_token_ids, ent_masked_lm_labels = _replace_mlm_tokens(
+        ent_masked_lm_token_ids, ent_masked_lm_labels = replace_mlm_tokens(
             tokens=random_walks,
             vocab_len=len(kg_embed_dict),
         )
