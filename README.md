@@ -86,10 +86,32 @@ stonkgs_pretraining = STonKGsForPreTraining.from_pretrained(
 The learned embeddings of the pre-trained STonKGs models (or your own STonKGs variants) can be extracted in two simple steps. First, a given dataset with text-triple pairs (a pandas `DataFrame`, see **Data Format**) needs to be preprocessed using the `preprocess_file_for_embeddings` function. Then, one can obtain the learned embeddings using the preprocessed data and the `get_stonkgs_embeddings` function:
 
 ```python
+import pandas as pd
 from stonkgs import get_stonkgs_embeddings, preprocess_df_for_embeddings
 
+# Generate some example data
+# Note that the evidence sentences are typically longer than in this example data
+example_data = pd.DataFrame.from_dict(
+   {"source": [
+       "p(HGNC:1748 ! CDH1)",
+       "p(HGNC:6871 ! MAPK1)",
+       "p(HGNC:3229 ! EGF)",
+       ],
+    "target": [
+        "p(HGNC:2515 ! CTNND1)",
+        "p(HGNC:6018 ! IL6)",
+        "p(HGNC:4066 ! GAB1)",
+        ],
+    "evidence": [
+          "Some example sentence about CDH1 and CTNND1.",
+          "Another example about some interaction between MAPK and IL6.",
+          "One last example in which Gab1 and EGF are mentioned.",
+        ],
+    }
+)
+
 # 1. Preprocess the text-triple data for embedding extraction
-preprocessed_df_for_embeddings = preprocess_df_for_embeddings(some_previously_specified_file_path)
+preprocessed_df_for_embeddings = preprocess_df_for_embeddings(example_data)
 
 # 2. Extract the embeddings 
 embedding_df = get_stonkgs_embeddings(preprocessed_df_for_embeddings)
