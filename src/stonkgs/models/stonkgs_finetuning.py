@@ -38,7 +38,7 @@ from stonkgs.constants import (
     STONKGS_OUTPUT_DIR,
     VOCAB_FILE,
 )
-from stonkgs.models.kg_baseline_model import _prepare_df
+from stonkgs.models.kg_baseline_model import prepare_df
 from stonkgs.models.stonkgs_model import STonKGsForPreTraining
 
 logger = logging.getLogger(__name__)
@@ -93,10 +93,10 @@ def preprocess_fine_tuning_data(
 ) -> pd.DataFrame:
     """Generate input_ids, attention_mask, token_type_ids etc. based on the source, target, evidence columns."""
     # Load the KG embedding dict to convert the names to numeric indices
-    kg_embed_dict = _prepare_df(embedding_name_to_vector_path)
+    kg_embed_dict = prepare_df(embedding_name_to_vector_path)
     kg_name_to_idx = {key: i for i, key in enumerate(kg_embed_dict.keys())}
     # Load the random walks for each node
-    random_walk_dict = _prepare_df(embedding_name_to_random_walk_path)
+    random_walk_dict = prepare_df(embedding_name_to_random_walk_path)
     # Convert random walk sequences to list of numeric indices
     random_walk_idx_dict = {
         k: [kg_name_to_idx[node] for node in v] for k, v in random_walk_dict.items()

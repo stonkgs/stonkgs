@@ -21,7 +21,7 @@ from stonkgs.constants import (
     SPECIES_DIR,
     RELATION_TYPE_DIR,
 )
-from stonkgs.data.indra_for_pretraining import _prepare_df
+from stonkgs.data.indra_for_pretraining import prepare_df
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -54,7 +54,7 @@ def apply_kg_filtering(
     name: str = "",
 ) -> pd.DataFrame:
     """Filters out entries in the fine-tuning dataset that contain nodes which are not part of the pre-trained KG."""
-    kg_embed_dict = _prepare_df(embedding_name_to_vector_path)
+    kg_embed_dict = prepare_df(embedding_name_to_vector_path)
     original_length = len(df)
     df = df[
         df["source"].isin(kg_embed_dict.keys()) & df["target"].isin(kg_embed_dict.keys())

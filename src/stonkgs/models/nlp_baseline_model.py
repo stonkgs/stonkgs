@@ -34,7 +34,7 @@ from stonkgs.constants import (
     SPECIES_DIR,
     STONKGS_OUTPUT_DIR,
 )
-from stonkgs.data.indra_for_pretraining import _prepare_df
+from stonkgs.data.indra_for_pretraining import prepare_df
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -122,7 +122,7 @@ def run_nlp_baseline_classification_cv(
     indra_data = pd.read_csv(train_data_path, sep=sep)
     # TODO: leave it out later on?
     # Filter out any triples that contain a node that is not in the embeddings_dict
-    embeddings_dict = _prepare_df(embedding_path)
+    embeddings_dict = prepare_df(embedding_path)
     original_length = len(indra_data)
     indra_data = indra_data[
         indra_data["source"].isin(embeddings_dict.keys())
