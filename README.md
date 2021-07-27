@@ -42,6 +42,8 @@ Since STonKGs is operating on both text and KG data, it's expected that the resp
 * **evidence**: Text of a given text-triple pair
 * (optional) **class**: Class label for a given text-triple pair in fine-tuning tasks (does not apply to the pre-training procedure)
 
+Note that both source and target nodes are required to be in the Biological Expression Langauge (BEL) format, more specifically, they need to be contained in the INDRA KG. For more details on the BEL format, see for example the [INDRA documentation for BEL processor](https://indra.readthedocs.io/en/latest/modules/sources/bel/index.html?) and [PyBEL](https://github.com/pybel/pybel). 
+
 ### Pre-training STonKGs
 
 Once you have installed STonKGs as a Python package (see below), you can start training the STonKGs on your dataset
@@ -86,28 +88,31 @@ stonkgs_pretraining = STonKGsForPreTraining.from_pretrained(
 The learned embeddings of the pre-trained STonKGs models (or your own STonKGs variants) can be extracted in two simple steps. First, a given dataset with text-triple pairs (a pandas `DataFrame`, see **Data Format**) needs to be preprocessed using the `preprocess_file_for_embeddings` function. Then, one can obtain the learned embeddings using the preprocessed data and the `get_stonkgs_embeddings` function:
 
 ```python
+import numpy as np
 import pandas as pd
 from stonkgs import get_stonkgs_embeddings, preprocess_df_for_embeddings
 
 # Generate some example data
 # Note that the evidence sentences are typically longer than in this example data
-example_data = pd.DataFrame.from_dict(
-   {"source": [
-       "p(HGNC:1748 ! CDH1)",
-       "p(HGNC:6871 ! MAPK1)",
-       "p(HGNC:3229 ! EGF)",
-       ],
-    "target": [
-        "p(HGNC:2515 ! CTNND1)",
-        "p(HGNC:6018 ! IL6)",
-        "p(HGNC:4066 ! GAB1)",
-        ],
-    "evidence": [
-          "Some example sentence about CDH1 and CTNND1.",
-          "Another example about some interaction between MAPK and IL6.",
-          "One last example in which Gab1 and EGF are mentioned.",
-        ],
-    }
+example_data = pd.DataFrame(
+    data=np.array([
+            [
+              "p(HGNC:1748 ! CDH1)", 
+              "p(HGNC:6871 ! MAPK1)", 
+              "p(HGNC:3229 ! EGF)",
+            ], 
+            [
+              "p(HGNC:2515 ! CTNND1)", 
+              "p(HGNC:6018 ! IL6)", 
+              "p(HGNC:4066 ! GAB1)",
+            ], 
+            [
+              "Some example sentence about CDH1 and CTNND1.",
+              "Another example about some interaction between MAPK and IL6.",
+              "One last example in which Gab1 and EGF are mentioned.",
+            ],
+        ]), 
+    columns=["source", "target", "evidence"],
 )
 
 # 1. Preprocess the text-triple data for embedding extraction
