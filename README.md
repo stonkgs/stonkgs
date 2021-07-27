@@ -57,15 +57,24 @@ dataset.
 
 ### Downloading the pre-trained STonKGs model on the INDRA KG
 
-We released the pre-trained STonKGs models on the INDRA KG for possible future adaptations, such as further pretraining on other KGs. Both [STonKGs<sub>BASE</sub>](https://huggingface.co/helena-balabin/stonkgs-base) as well as [STonKGs<sub>LARGE</sub>](https://huggingface.co/helena-balabin/stonkgs-large) are accessible through Hugging Face's model hub. 
+We released the pre-trained STonKGs models on the INDRA KG for possible future adaptations, such as further pre-training on other KGs. Both [STonKGs<sub>BASE</sub>](https://huggingface.co/helena-balabin/stonkgs-base) as well as [STonKGs<sub>LARGE</sub>](https://huggingface.co/helena-balabin/stonkgs-large) are accessible through Hugging Face's model hub. 
 
-Since our code is based on Hugging Face's `transformers` package, the pre-trained model can be easily downloaded and initialized using the `.from_pretrained()` function: 
+The easiest way to download and initialize the pre-trained STonKGs model is to use the `from_default_pretrained()` class method (with STonKGs<sub>BASE</sub> being the default): 
 
 ```python
 from stonkgs import STonKGsForPreTraining
 
-# Download the model from the model hub and initialize it for pre-training
+# Download the model from the model hub and initialize it for pre-training using from_default_pretrained
 stonkgs_model_pretraining = STonKGsForPreTraining.from_default_pretrained()
+```
+
+Alternatively, since our code is based on Hugging Face's `transformers` package, the pre-trained model can be easily downloaded and initialized using the `.from_pretrained()` function: 
+
+```python
+from stonkgs import STonKGsForPreTraining
+
+# Download the model from the model hub and initialize it for pre-training using from_pretrained
+stonkgs_model_pretraining = STonKGsForPreTraining.from_pretrained('helena-balabin/stonkgs-base')
 ```
 
 ### Fine-tuning STonKGs
@@ -86,7 +95,7 @@ stonkgs_model_finetuning = STonKGsForSequenceClassification.from_default_pretrai
     num_labels=number_of_labels_in_your_task,
 )
 
-# Initialize Trainer based on the training dataset
+# Initialize a Trainer based on the training dataset
 trainer = Trainer(
     model=model,
     args=some_previously_defined_training_args,
@@ -96,40 +105,6 @@ trainer = Trainer(
 # Fine-tune the model to the moon 
 trainer.train()
 ```
-
-### Requirements 
-
-```
-more_itertools
-ijson
-jupyterlab
-ipywidgets
-tqdm
-click
-more_click
-python-dotenv
-accelerate
-pytorch-lightning
-numpy 
-pandas 
-matplotlib
-seaborn
-scikit-learn 
-torch==1.8.1
-transformers==4.6.1
-datasets==1.6.2
-tokenizers
-mlflow 
-optuna
-psutil
-indra
-stellargraph
-nodevectors
-pybel
-pykeen
-umap-learn[plot]
-```
-
 
 ## ⬇️ Installation
 
