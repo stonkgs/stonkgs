@@ -10,7 +10,7 @@ import torch
 from tqdm import tqdm
 from transformers import BertTokenizer, BertTokenizerFast
 
-from stonkgs import STonKGsForPreTraining
+from stonkgs.models.stonkgs_pretraining import STonKGsForPreTraining
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
     NLP_MODEL_TYPE,
