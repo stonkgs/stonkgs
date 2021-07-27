@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Optional
 
 import torch
@@ -136,6 +137,7 @@ class STonKGsForPreTraining(BertForPreTraining):
             )[0][0][0]
 
     @classmethod
+    @lru_cache
     def from_default_pretrained(cls, **kwargs) -> STonKGsForPreTraining:
         """Get the default pre-trained STonKGs model."""
         return cls.from_pretrained('helena-balabin/stonkgs-base', **kwargs)
