@@ -20,6 +20,7 @@ OUTPUT_DIR = os.path.join(DATA_DIR, "output")
 MISC_DIR = os.path.join(DATA_DIR, "misc")
 
 # Directories for each annotation type
+CORRECT_DIR = os.path.join(INPUT_DIR, "correct_incorrect")
 DISEASE_DIR = os.path.join(INPUT_DIR, "disease")
 LOCATION_DIR = os.path.join(INPUT_DIR, "location")
 CELL_LINE_DIR = os.path.join(INPUT_DIR, "cell_line")

@@ -25,6 +25,7 @@ from transformers.trainer import Trainer, TrainingArguments
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
+    CORRECT_DIR,
     DEEPSPEED_CONFIG_PATH,
     DISEASE_DIR,
     EMBEDDINGS_PATH,
@@ -547,6 +548,8 @@ def run_all_fine_tuning_tasks(
     # Specify all directories and file names
     directories = [
         CELL_LINE_DIR,
+        CORRECT_DIR,
+        CORRECT_DIR,
         DISEASE_DIR,
         LOCATION_DIR,
         SPECIES_DIR,
@@ -555,6 +558,8 @@ def run_all_fine_tuning_tasks(
     ]
     file_names = [
         "cell_line_no_duplicates.tsv",
+        "correct_incorrect_binary_no_duplicates.tsv",
+        "correct_incorrect_multiclass_no_duplicates.tsv",
         "disease_no_duplicates.tsv",
         "location_no_duplicates.tsv",
         "species_no_duplicates.tsv",
@@ -563,6 +568,8 @@ def run_all_fine_tuning_tasks(
     ]
     task_names = [
         "cell_line",
+        "correct_binary",
+        "correct_multiclass",
         "disease",
         "location",
         "species",
@@ -570,32 +577,33 @@ def run_all_fine_tuning_tasks(
         "polarity",
     ]
     # Specify the column names of the target variable
-    column_names = ["class"] * 4 + ["interaction"] + ["polarity"]
+    column_names = ["class"] * 6 + ["interaction"] + ["polarity"]
 
-    # TODO: delete reverse order later on
     for directory, file, column_name, task_name in zip(
         directories,
         file_names,
         column_names,
         task_names,
     ):
-        # Run the 8 fine-tuning tasks
-        run_sequence_classification_cv(
-            train_data_path=os.path.join(directory, file),
-            model_path=model_path,
-            output_dir=output_dir,
-            logging_uri_mlflow=logging_dir,
-            epochs=epochs,
-            log_steps=log_steps,
-            lr=lr,
-            batch_size=batch_size,
-            gradient_accumulation=gradient_accumulation_steps,
-            class_column_name=column_name,
-            task_name=task_name,
-            deepspeed=deepspeed,
-            max_dataset_size=max_dataset_size,
-        )
-        logger.info(f"Finished the {task_name} task")
+        # TODO comment out if clause to run all tasks
+        if directory == CORRECT_DIR:
+            # Run the 8 fine-tuning tasks
+            run_sequence_classification_cv(
+                train_data_path=os.path.join(directory, file),
+                model_path=model_path,
+                output_dir=output_dir,
+                logging_uri_mlflow=logging_dir,
+                epochs=epochs,
+                log_steps=log_steps,
+                lr=lr,
+                batch_size=batch_size,
+                gradient_accumulation=gradient_accumulation_steps,
+                class_column_name=column_name,
+                task_name=task_name,
+                deepspeed=deepspeed,
+                max_dataset_size=max_dataset_size,
+            )
+            logger.info(f"Finished the {task_name} task")
 
 
 if __name__ == "__main__":

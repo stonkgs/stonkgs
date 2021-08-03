@@ -22,6 +22,7 @@ from sklearn.model_selection import KFold, StratifiedShuffleSplit
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
+    CORRECT_DIR,
     DISEASE_DIR,
     EMBEDDINGS_PATH,
     KG_BL_OUTPUT_DIR,
@@ -466,10 +467,11 @@ def run_all_fine_tuning_tasks(
     max_dataset_size: int = 100000,  # effectively removes the max dataset size restriction
 ):
     """Run all fine-tuning tasks at once."""
-    # Run the 6 classification tasks
     # Specify all directories and file names
     directories = [
         CELL_LINE_DIR,
+        CORRECT_DIR,
+        CORRECT_DIR,
         DISEASE_DIR,
         LOCATION_DIR,
         SPECIES_DIR,
@@ -478,6 +480,8 @@ def run_all_fine_tuning_tasks(
     ]
     file_names = [
         "cell_line_no_duplicates.tsv",
+        "correct_incorrect_binary_no_duplicates.tsv",
+        "correct_incorrect_multiclass_no_duplicates.tsv",
         "disease_no_duplicates.tsv",
         "location_no_duplicates.tsv",
         "species_no_duplicates.tsv",
@@ -486,6 +490,8 @@ def run_all_fine_tuning_tasks(
     ]
     task_names = [
         "cell_line",
+        "correct_binary",
+        "correct_multiclass",
         "disease",
         "location",
         "species",
@@ -493,28 +499,29 @@ def run_all_fine_tuning_tasks(
         "polarity",
     ]
     # Specify the column names of the target variable
-    column_names = ["class"] * 4 + ["interaction"] + ["polarity"]
+    column_names = ["class"] * 6 + ["interaction"] + ["polarity"]
 
-    # TODO: delete reverse order later on
     for directory, file, column_name, task_name in zip(
         directories,
         file_names,
         column_names,
         task_names,
     ):
-        # Run each of the six classification tasks
-        run_kg_baseline_classification_cv(
-            triples_path=os.path.join(directory, file),
-            label_column_name=column_name,
-            logging_uri_mlflow=logging_dir,
-            epochs=epochs,
-            lr=lr,
-            log_steps=log_steps,
-            train_batch_size=batch_size,
-            task_name=task_name,
-            max_dataset_size=max_dataset_size,
-        )
-        logger.info(f"Finished the {task_name} task")
+        # TODO comment out if clause to run all tasks
+        if directory == CORRECT_DIR:
+            # Run each of the six classification tasks
+            run_kg_baseline_classification_cv(
+                triples_path=os.path.join(directory, file),
+                label_column_name=column_name,
+                logging_uri_mlflow=logging_dir,
+                epochs=epochs,
+                lr=lr,
+                log_steps=log_steps,
+                train_batch_size=batch_size,
+                task_name=task_name,
+                max_dataset_size=max_dataset_size,
+            )
+            logger.info(f"Finished the {task_name} task")
 
 
 if __name__ == "__main__":
