@@ -59,9 +59,9 @@ dataset.
 
 ### Downloading the pre-trained STonKGs model on the INDRA KG
 
-We released the pre-trained STonKGs models on the INDRA KG for possible future adaptations, such as further pre-training on other KGs. Both [STonKGs<sub>BASE</sub>](https://huggingface.co/helena-balabin/stonkgs-base) as well as [STonKGs<sub>LARGE</sub>](https://huggingface.co/helena-balabin/stonkgs-large) are accessible through Hugging Face's model hub. 
+We released the pre-trained STonKGs models on the INDRA KG for possible future adaptations, such as further pre-training on other KGs. Both [STonKGs<sub>150k</sub>](https://huggingface.co/helena-balabin/stonkgs-150k) as well as [STonKGs<sub>300k</sub>](https://huggingface.co/helena-balabin/stonkgs-300k) are accessible through Hugging Face's model hub. 
 
-The easiest way to download and initialize the pre-trained STonKGs model is to use the `from_default_pretrained()` class method (with STonKGs<sub>BASE</sub> being the default): 
+The easiest way to download and initialize the pre-trained STonKGs model is to use the `from_default_pretrained()` class method (with STonKGs<sub>150k</sub> being the default): 
 
 ```python
 from stonkgs import STonKGsForPreTraining
@@ -79,7 +79,7 @@ from stonkgs import STonKGsForPreTraining
 # Download the model from the model hub and initialize it for pre-training 
 # using from_pretrained
 stonkgs_pretraining = STonKGsForPreTraining.from_pretrained(
-    'helena-balabin/stonkgs-base',
+    'helena-balabin/stonkgs-150k',
 )
 ```
 
