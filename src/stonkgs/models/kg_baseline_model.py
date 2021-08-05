@@ -507,21 +507,19 @@ def run_all_fine_tuning_tasks(
         column_names,
         task_names,
     ):
-        # TODO comment out if clause to run all tasks
-        if directory == CORRECT_DIR:
-            # Run each of the six classification tasks
-            run_kg_baseline_classification_cv(
-                triples_path=os.path.join(directory, file),
-                label_column_name=column_name,
-                logging_uri_mlflow=logging_dir,
-                epochs=epochs,
-                lr=lr,
-                log_steps=log_steps,
-                train_batch_size=batch_size,
-                task_name=task_name,
-                max_dataset_size=max_dataset_size,
-            )
-            logger.info(f"Finished the {task_name} task")
+        # Run each of the six classification tasks
+        run_kg_baseline_classification_cv(
+            triples_path=os.path.join(directory, file),
+            label_column_name=column_name,
+            logging_uri_mlflow=logging_dir,
+            epochs=epochs,
+            lr=lr,
+            log_steps=log_steps,
+            train_batch_size=batch_size,
+            task_name=task_name,
+            max_dataset_size=max_dataset_size,
+        )
+        logger.info(f"Finished the {task_name} task")
 
 
 if __name__ == "__main__":
