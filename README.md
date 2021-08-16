@@ -174,6 +174,9 @@ $ cd stonkgs
 $ pip install -e .
 ```
 
+**Warning**: Because stellargraph doesn't currently work on Python 3.9, this
+software can only be installed on Python 3.8.
+
 ## Citation
 
 Balabin H., Hoyt C.T., Birkenbihl C., Gyori B.M., Bachman J.A., Komdaullil A.T., Plöger P.G., Hofmann-Apitius M.,

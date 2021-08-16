@@ -2,8 +2,7 @@
 
 """Node2vec model.
 
-run with:
-python -m src.stonkgs.models.node2vec
+Run with: ``python -m src.stonkgs.models.node2vec``
 """
 
 import logging
@@ -31,12 +30,6 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-def negative_sampling():
-    """Create negative samples for CSRGraph data."""
-    # TODO: smarter negative sampling
-    return NotImplementedError()
-
-
 def run_link_prediction(
     kg: Union[nx.DiGraph, cg.csrgraph],
     model: Node2Vec,
@@ -50,8 +43,7 @@ def run_link_prediction(
     if isinstance(kg, cg.csrgraph):
         # The sparse matrix needs to be converted first
         kg_triples = kg.mat  # noqa: F841
-        # TODO insert negative sampling here
-
+        raise NotImplementedError("negative sampling has not yet been implemented")
     else:
         # follow https://stellargraph.readthedocs.io/en/stable/demos/link-prediction/node2vec-link-prediction.html
         _, indra_kg_triples, edge_labels = EdgeSplitter(kg).train_test_split()
