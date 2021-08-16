@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/source/logo.png" height="150">
+  <img src="https://github.com/stonkgs/stonkgs/raw/master/docs/source/logo.png" height="150">
 </p>
 
 <h1 align="center">
@@ -21,6 +21,9 @@
     </a>
     <a href='https://stonkgs.readthedocs.io/en/latest/?badge=latest'>
         <img src='https://readthedocs.org/projects/stonkgs/badge/?version=latest' alt='Documentation Status' />
+    </a>
+    <a href="https://zenodo.org/badge/latestdoi/342646831">
+        <img src="https://zenodo.org/badge/342646831.svg" alt="DOI">
     </a>
     <a href='https://github.com/psf/black'>
         <img src='https://img.shields.io/badge/code%20style-black-000000.svg' alt='Code style: black' />
@@ -59,7 +62,7 @@ dataset.
 
 ### Downloading the pre-trained STonKGs model on the INDRA KG
 
-We released the pre-trained STonKGs models on the INDRA KG for possible future adaptations, such as further pre-training on other KGs. Both [STonKGs<sub>150k</sub>](https://huggingface.co/helena-balabin/stonkgs-150k) as well as [STonKGs<sub>300k</sub>](https://huggingface.co/helena-balabin/stonkgs-300k) are accessible through Hugging Face's model hub. 
+We released the pre-trained STonKGs models on the INDRA KG for possible future adaptations, such as further pre-training on other KGs. Both [STonKGs<sub>150k</sub>](https://huggingface.co/stonkgs/stonkgs-150k) as well as [STonKGs<sub>300k</sub>](https://huggingface.co/stonkgs/stonkgs-300k) are accessible through Hugging Face's model hub. 
 
 The easiest way to download and initialize the pre-trained STonKGs model is to use the `from_default_pretrained()` class method (with STonKGs<sub>150k</sub> being the default): 
 
@@ -79,7 +82,7 @@ from stonkgs import STonKGsForPreTraining
 # Download the model from the model hub and initialize it for pre-training 
 # using from_pretrained
 stonkgs_pretraining = STonKGsForPreTraining.from_pretrained(
-    'helena-balabin/stonkgs-150k',
+    'stonkgs/stonkgs-150k',
 )
 ```
 
@@ -173,18 +176,47 @@ $ cd stonkgs
 $ pip install -e .
 ```
 
-**Warning**: Because stellargraph doesn't currently work on Python 3.9, this
-software can only be installed on Python 3.8.
+**Warning**: Because stellargraph [doesn't currently work on Python 3.9](https://github.com/stellargraph/stellargraph/issues/1960),
+this software can only be installed on Python 3.8.
 
-## Citation
+## Artifacts
+
+The pre-trained models are hosted on [HuggingFace](https://huggingface.co/stonkgs)
+The fine-tuned models are hosted on the [STonKGs community page on Zenodo](https://zenodo.org/communities/stonkgs/)
+along with the other artifacts (node2vec embeddings, random walks, etc.)
+
+## Acknowledgements
+
+### ⚖️ License
+
+The code in this package is licensed under the [MIT License](https://github.com/stonkgs/stonkgs/blob/main/LICENSE).
+
+### 📖 Citation
 
 Balabin H., Hoyt C.T., Birkenbihl C., Gyori B.M., Bachman J.A., Komdaullil A.T., Plöger P.G., Hofmann-Apitius M.,
-Domingo-Fernández D. [STonKGs: A Sophisticated Transformer Trained on Biomedical Text and Knowledge Graphs
-]() (2021), bioRxiv, TODO.
+Domingo-Fernández D. [STonKGs: A Sophisticated Transformer Trained on Biomedical Text and Knowledge Graphs]()
+(2021), *bioRxiv*, TODO.
 
-## ⚖️ License
+### 🎁 Support
 
-The code in this package is licensed under the MIT License.
+This project has been supported by several organizations (in alphabetical order):
+
+- [Fraunhofer Center for Machine Learning](https://www.cit.fraunhofer.de/de/zentren/maschinelles-lernen.html)
+- [Harvard Program in Therapeutic Science - Laboratory of Systems Pharmacology](https://hits.harvard.edu/the-program/laboratory-of-systems-pharmacology/)
+
+### 💰 Funding
+
+This project has been funded by the following grants:
+
+| Funding Body                                             | Program                                                                                                                       | Grant           |
+|----------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| DARPA                                                    | [Automating Scientific Knowledge Extraction (ASKE)](https://www.darpa.mil/program/automating-scientific-knowledge-extraction) | HR00111990009   |
+
+### 🍪 Cookiecutter
+
+This package was created with [@audreyfeldroy](https://github.com/audreyfeldroy)'s
+[cookiecutter](https://github.com/cookiecutter/cookiecutter) package using [@cthoyt](https://github.com/cthoyt)'s
+[cookiecutter-snekpack](https://github.com/cthoyt/cookiecutter-snekpack) template.
 
 ## 🛠️ Development
 
@@ -221,9 +253,3 @@ This script does the following:
 4. Push to GitHub. You'll need to make a release going with the commit where the version was bumped.
 5. Bump the version to the next patch. If you made big changes and want to bump the version by minor, you can
    use `tox -e bumpversion minor` after.
-
-## 🍪 Cookiecutter Acknowledgement
-
-This package was created with [@audreyfeldroy](https://github.com/audreyfeldroy)'s
-[cookiecutter](https://github.com/cookiecutter/cookiecutter) package using [@cthoyt](https://github.com/cthoyt)'s
-[cookiecutter-snekpack](https://github.com/cthoyt/cookiecutter-snekpack) template.

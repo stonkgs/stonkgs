@@ -12,7 +12,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-import click  # type: ignore
+import click
 import mlflow
 import numpy as np
 import pandas as pd

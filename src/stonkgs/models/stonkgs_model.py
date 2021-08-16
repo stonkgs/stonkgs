@@ -140,7 +140,7 @@ class STonKGsForPreTraining(BertForPreTraining):
     @lru_cache(maxsize=32)
     def from_default_pretrained(cls, **kwargs) -> STonKGsForPreTraining:
         """Get the default pre-trained STonKGs model."""
-        return cls.from_pretrained("helena-balabin/stonkgs-150k", **kwargs)
+        return cls.from_pretrained("stonkgs/stonkgs-150k", **kwargs)
 
     def forward(
         self,

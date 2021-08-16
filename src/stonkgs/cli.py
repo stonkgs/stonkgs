@@ -15,7 +15,7 @@ later, but that will cause problems--the code will get executed twice:
 
 import logging
 
-import click  # type: ignore
+import click
 
 __all__ = ["main"]
 
