@@ -26,6 +26,7 @@ LOCATION_DIR = os.path.join(INPUT_DIR, "location")
 CELL_LINE_DIR = os.path.join(INPUT_DIR, "cell_line")
 SPECIES_DIR = os.path.join(INPUT_DIR, "species")
 RELATION_TYPE_DIR = os.path.join(INPUT_DIR, "relation_type")
+NDD_DIR = os.path.join(INPUT_DIR, "ndd")
 
 # Path for the pretraining data
 PRETRAINING_DIR = os.path.join(INPUT_DIR, "pretraining")

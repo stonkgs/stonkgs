@@ -31,6 +31,7 @@ from stonkgs.constants import (
     EMBEDDINGS_PATH,
     LOCATION_DIR,
     MLFLOW_FINETUNING_TRACKING_URI,
+    NDD_DIR,
     NLP_MODEL_TYPE,
     PRETRAINED_STONKGS_DUMMY_PATH,
     RANDOM_WALKS_PATH,
@@ -555,6 +556,7 @@ def run_all_fine_tuning_tasks(
         SPECIES_DIR,
         RELATION_TYPE_DIR,
         RELATION_TYPE_DIR,
+        NDD_DIR,
     ]
     file_names = [
         "cell_line_no_duplicates.tsv",
@@ -565,6 +567,7 @@ def run_all_fine_tuning_tasks(
         "species_no_duplicates.tsv",
         "relation_type_no_duplicates.tsv",
         "relation_type_no_duplicates.tsv",
+        "ndd_no_duplicates.tsv",
     ]
     task_names = [
         "cell_line",
@@ -575,9 +578,10 @@ def run_all_fine_tuning_tasks(
         "species",
         "interaction",
         "polarity",
+        "ndd",
     ]
     # Specify the column names of the target variable
-    column_names = ["class"] * 6 + ["interaction"] + ["polarity"]
+    column_names = ["class"] * 6 + ["interaction"] + ["polarity"] + ["class"]
 
     for directory, file, column_name, task_name in zip(
         directories,
@@ -585,23 +589,25 @@ def run_all_fine_tuning_tasks(
         column_names,
         task_names,
     ):
-        # Run the 8 fine-tuning tasks
-        run_sequence_classification_cv(
-            train_data_path=os.path.join(directory, file),
-            model_path=model_path,
-            output_dir=output_dir,
-            logging_uri_mlflow=logging_dir,
-            epochs=epochs,
-            log_steps=log_steps,
-            lr=lr,
-            batch_size=batch_size,
-            gradient_accumulation=gradient_accumulation_steps,
-            class_column_name=column_name,
-            task_name=task_name,
-            deepspeed=deepspeed,
-            max_dataset_size=max_dataset_size,
-        )
-        logger.info(f"Finished the {task_name} task")
+        # TODO comment out later
+        if task_name == "ndd":
+            # Run the 8 fine-tuning tasks
+            run_sequence_classification_cv(
+                train_data_path=os.path.join(directory, file),
+                model_path=model_path,
+                output_dir=output_dir,
+                logging_uri_mlflow=logging_dir,
+                epochs=epochs,
+                log_steps=log_steps,
+                lr=lr,
+                batch_size=batch_size,
+                gradient_accumulation=gradient_accumulation_steps,
+                class_column_name=column_name,
+                task_name=task_name,
+                deepspeed=deepspeed,
+                max_dataset_size=max_dataset_size,
+            )
+            logger.info(f"Finished the {task_name} task")
 
 
 if __name__ == "__main__":
