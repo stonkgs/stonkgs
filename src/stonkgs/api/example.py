@@ -2,8 +2,13 @@
 
 """Full example of how to use a fine tuned model."""
 
+import pickle
+import time
+
 import click
 import pandas as pd
+from tqdm import tqdm
+from transformers.trainer_utils import PredictionOutput
 
 from stonkgs import STonKGsForSequenceClassification, preprocess_df_for_embeddings
 from stonkgs.api.constants import SPECIES_MODULE, ensure_embeddings, ensure_walks
@@ -14,12 +19,13 @@ def main():
     walks_path = ensure_walks()
     embeddings_path = ensure_embeddings()
 
-    click.echo('Model loading')
+    click.echo("Model loading")
+    t = time.time()
     model = STonKGsForSequenceClassification.from_pretrained(
         SPECIES_MODULE.base,
         kg_embedding_dict_path=embeddings_path,
     )
-    click.echo('Model loaded')
+    click.echo(f"Model loaded in {time.time() - t:.2f} seconds")
 
     rows = [
         [
@@ -39,19 +45,35 @@ def main():
         ],
     ]
 
-    df = pd.DataFrame(rows, columns=["source", "target", "evidence"])
+    source_df = pd.DataFrame(rows, columns=["source", "target", "evidence"])
 
     click.echo("Processing df for embeddings")
+    t = time.time()
     preprocessed_df = preprocess_df_for_embeddings(
-        df=df,
+        df=source_df,
         embedding_name_to_vector_path=embeddings_path,
         embedding_name_to_random_walk_path=walks_path,
-        vocab_file_path=...,
     )
-    click.echo("done processing df for embeddings")
+    click.echo(f"done processing df for embeddings after {time.time() - t:.2f} seconds")
 
-    # TODO finish
-    model.predict()
+    # TODO fix @hbalabin
+    # dataset = Dataset.from_pandas(preprocessed_df)
+    # dataset.set_format('torch')
+
+    # Three entries in this named tuple: predictions, label_ids, metrics
+    results = []
+    for _, row in tqdm(preprocessed_df.iterrows(), desc="Inferring"):
+        prediction_output: PredictionOutput = model(**row, return_dict=True)
+        results.append(prediction_output)
+
+    with open("/Users/cthoyt/Desktop/results.pkl", "wb") as file:
+        pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # output_df = pd.DataFrame({
+    #     "predictions": prediction_output.predictions,
+    #     "label_ids": prediction_output.label_ids,
+    # })
+    # output_df.to_csv('/Users/cthoyt/Desktop/results.tsv', sep='\t', index=False)
 
 
 if __name__ == "__main__":
