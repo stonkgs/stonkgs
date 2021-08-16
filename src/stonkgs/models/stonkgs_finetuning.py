@@ -236,9 +236,9 @@ class STonKGsForSequenceClassification(STonKGsForPreTraining):
     the typical huggingface inheritance logic of the fine-tuning classes.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         """Initialize the STonKGs sequence classification model based on the pre-trained STonKGs model architecture."""
-        super().__init__(config)
+        super().__init__(config, **kwargs)
         self.num_labels = config.num_labels
         self.config = config
 

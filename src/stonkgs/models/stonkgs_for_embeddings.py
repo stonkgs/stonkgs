@@ -26,8 +26,10 @@ logging.basicConfig(level=logging.INFO)
 
 def preprocess_df_for_embeddings(
     df: pd.DataFrame,
+    *,
     embedding_name_to_vector_path: Union[str, Path] = EMBEDDINGS_PATH,
     embedding_name_to_random_walk_path: Union[str, Path] = RANDOM_WALKS_PATH,
+    vocab_file_path: Union[str, Path] = VOCAB_FILE,
     nlp_model_type: str = NLP_MODEL_TYPE,
     sep_id: int = 102,
     unk_id: int = 100,
@@ -55,7 +57,7 @@ def preprocess_df_for_embeddings(
     # Initialize a FAST tokenizer if it's the default one (BioBERT)
     if nlp_model_type == NLP_MODEL_TYPE:
         # Initialize the fast tokenizer for getting the text token ids
-        tokenizer = BertTokenizerFast(vocab_file=VOCAB_FILE)
+        tokenizer = BertTokenizerFast(vocab_file=vocab_file_path)
     else:
         # Initialize a slow tokenizer used for getting the text token ids
         tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
