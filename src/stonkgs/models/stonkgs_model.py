@@ -157,6 +157,9 @@ class STonKGsForPreTraining(BertForPreTraining):
         head_mask=None,
     ):
         """Perform one forward pass for a given sequence of text_input_ids + ent_input_ids."""
+        # TODO documentation for each parameter
+        # TODO type annotations for each parameter
+
         # The code is based on CoLAKE: https://github.com/txsun1997/CoLAKE/blob/master/pretrain/model.py
 
         # Use the LM backbone to get the pre-trained token embeddings
