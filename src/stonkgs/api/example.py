@@ -14,18 +14,19 @@ from tqdm import tqdm
 from transformers.trainer_utils import PredictionOutput
 
 from stonkgs import STonKGsForPreTraining, preprocess_df_for_embeddings
-from stonkgs.api.constants import SPECIES_MODULE, ensure_embeddings, ensure_walks
+from stonkgs.api.constants import ensure_embeddings, ensure_species, ensure_walks
 
 
 def main():
     """Example application of the species model."""
+    species_path = ensure_species()
     walks_path = ensure_walks()
     embeddings_path = ensure_embeddings()
 
     click.echo("Model loading")
     t = time.time()
     model = STonKGsForPreTraining.from_pretrained(
-        SPECIES_MODULE.base,
+        species_path.parent,
         kg_embedding_dict_path=embeddings_path,
     )
     click.echo(f"Model {model.__class__.__name__} loaded in {time.time() - t:.2f} seconds")
