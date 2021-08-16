@@ -10,7 +10,6 @@ import pickle
 import time
 
 import click
-import numpy as np
 import pandas as pd
 import torch
 from datasets import Dataset
@@ -55,7 +54,7 @@ def main():
             "One last example in which Gab1 and EGF are mentioned.",
         ],
     ]
-    source_df = pd.DataFrame(np.array(rows), columns=["source", "target", "evidence"])
+    source_df = pd.DataFrame(rows, columns=["source", "target", "evidence"])
 
     click.echo("Processing df for embeddings")
     t = time.time()
