@@ -14,11 +14,8 @@ SPECIES_BIN = "https://zenodo.org/record/5205530/files/pytorch_model.bin"
 SPECIES_TRAINING = "https://zenodo.org/record/5205530/files/training_args.bin"
 SPECIES_MODULE = STONKGS.submodule("species")
 
-WALKS_RECORD = ""
-WALKS_URL = "https://zenodo.org/record/.../files/random_walks_best_model.tsv"
-
-EMBEDDINGS_RECORD = ""
-EMBEDDINGS_URL = "https://zenodo.org/record/.../files/embeddings_best_model.tsv"
+WALKS_URL = "https://zenodo.org/record/5205687/files/random_walks_best_model.tsv"
+EMBEDDINGS_URL = "https://zenodo.org/record/5205687/files/embeddings_best_model.tsv"
 
 
 def ensure_walks() -> Path:
