@@ -14,6 +14,22 @@ SPECIES_BIN = 'https://zenodo.org/record/5205530/files/pytorch_model.bin'
 SPECIES_TRAINING = 'https://zenodo.org/record/5205530/files/training_args.bin'
 SPECIES_MODULE = STONKGS.submodule('species')
 
+WALKS_RECORD = ''
+WALKS_URL = ''
+
+EMBEDDINGS_RECORD = ''
+EMBEDDINGS_URL = ''
+
+
+def ensure_walks() -> Path:
+    """Ensure the walks file is downloaded from zenodo."""
+    return STONKGS.ensure(url=WALKS_URL)
+
+
+def ensure_embeddings() -> Path:
+    """Ensure the embeddings file is downloaded from zenodo."""
+    return STONKGS.ensure(url=EMBEDDINGS_URL)
+
 
 def ensure_species() -> Path:
     """Ensure that the species model is downloaded from `Zenodo <https://zenodo.org/record/5205530>`_.
