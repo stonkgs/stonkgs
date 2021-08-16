@@ -180,9 +180,9 @@ this software can only be installed on Python 3.8.
 
 ## Acknowledgements
 
-## ⚖️ License
+### ⚖️ License
 
-The code in this package is licensed under the MIT License.
+The code in this package is licensed under the [MIT License](https://github.com/stonkgs/stonkgs/blob/main/LICENSE).
 
 ### 📖 Citation
 
