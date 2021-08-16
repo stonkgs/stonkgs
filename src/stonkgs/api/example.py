@@ -5,12 +5,12 @@
 Run with: ``python -m stonkgs.api.example``
 """
 
+import os
 import pickle
 import time
 
-import click
+import click  # type: ignore
 import numpy as np
-import os
 import pandas as pd
 import torch
 from datasets import Dataset
@@ -23,7 +23,7 @@ from stonkgs.constants import OUTPUT_DIR
 
 
 def main():
-    """Example application of the species model."""
+    """Do an example application of the species model."""
     # Ensure that all the necessary files are loaded (embeddings, random walks, fine-tuned model)
     species_path = ensure_species()
     walks_path = ensure_walks()
@@ -67,7 +67,7 @@ def main():
     click.echo(f"done processing df for embeddings after {time.time() - t:.2f} seconds")
 
     dataset = Dataset.from_pandas(preprocessed_df)
-    dataset.set_format('torch')
+    dataset.set_format("torch")
 
     # Initialize Softmax to process the logits predictions later on
     softmax = torch.nn.Softmax(dim=1)
@@ -75,7 +75,7 @@ def main():
     # Save both the raw prediction results (as a pickle) as well as the processed probabilities (in a dataframe)
     raw_results = []
     probabilities = []
-    for idx, row in tqdm(preprocessed_df.iterrows(), desc="Inferring"):
+    for idx, _ in tqdm(preprocessed_df.iterrows(), desc="Inferring"):
         # Process each row at once
         data_entry = {
             key: torch.tensor([value]) for key, value in dict(preprocessed_df.iloc[idx]).items()
@@ -86,13 +86,13 @@ def main():
         raw_results.append(prediction_output)
 
     # Save as pickle
-    with open(os.path.join(OUTPUT_DIR, 'species_predictions.pkl'), 'wb') as file:
+    with open(os.path.join(OUTPUT_DIR, "species_predictions.pkl"), "wb") as file:
         pickle.dump(raw_results, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Save as a dataframe
     probabilities_df = pd.DataFrame(probabilities, columns=["mouse", "rat", "human"])
     output_df = pd.concat([source_df, probabilities_df], axis=1)
-    output_df.to_csv(os.path.join(OUTPUT_DIR, 'species_predictions.tsv'), sep='\t', index=False)
+    output_df.to_csv(os.path.join(OUTPUT_DIR, "species_predictions.tsv"), sep="\t", index=False)
 
 
 if __name__ == "__main__":

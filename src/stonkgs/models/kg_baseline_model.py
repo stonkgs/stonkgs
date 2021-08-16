@@ -9,8 +9,8 @@ python -m src.stonkgs.models.kg_baseline_model
 import logging
 import os
 from collections import Counter
-from typing import Dict, List, Optional, Union
 from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 import click  # type: ignore
 import mlflow

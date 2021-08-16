@@ -32,7 +32,9 @@ def ensure_embeddings() -> Path:
 def _ensure_fine_tuned(submodule, record) -> Path:
     STONKGS.ensure(submodule, url=f"https://zenodo.org/record/{record}/files/config.json")
     STONKGS.ensure(submodule, url=f"https://zenodo.org/record/{record}/files/training_args.bin")
-    return STONKGS.ensure(submodule, url=f"https://zenodo.org/record/{record}/files/pytorch_model.bin")
+    return STONKGS.ensure(
+        submodule, url=f"https://zenodo.org/record/{record}/files/pytorch_model.bin"
+    )
 
 
 def ensure_species() -> Path:
