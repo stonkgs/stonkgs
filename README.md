@@ -96,22 +96,22 @@ from stonkgs import get_stonkgs_embeddings, preprocess_df_for_embeddings
 # Note that the evidence sentences are typically longer than in this example data
 example_data = pd.DataFrame(
     data=np.array([
-            [
-              "p(HGNC:1748 ! CDH1)", 
-              "p(HGNC:6871 ! MAPK1)", 
-              "p(HGNC:3229 ! EGF)",
-            ], 
-            [
-              "p(HGNC:2515 ! CTNND1)", 
-              "p(HGNC:6018 ! IL6)", 
-              "p(HGNC:4066 ! GAB1)",
-            ], 
-            [
-              "Some example sentence about CDH1 and CTNND1.",
-              "Another example about some interaction between MAPK and IL6.",
-              "One last example in which Gab1 and EGF are mentioned.",
-            ],
-        ]), 
+           [
+               "p(HGNC:1748 ! CDH1)",
+               "p(HGNC:2515 ! CTNND1)",
+               "Some example sentence about CDH1 and CTNND1.",
+           ],
+           [
+               "p(HGNC:6871 ! MAPK1)",
+               "p(HGNC:6018 ! IL6)",
+               "Another example about some interaction between MAPK and IL6.",
+           ],
+           [
+               "p(HGNC:3229 ! EGF)",
+               "p(HGNC:4066 ! GAB1)",
+               "One last example in which Gab1 and EGF are mentioned.",
+           ],
+       ]), 
     columns=["source", "target", "evidence"],
 )
 

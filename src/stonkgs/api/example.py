@@ -9,6 +9,8 @@ import pickle
 import time
 
 import click
+import numpy as np
+import os
 import pandas as pd
 import torch
 from datasets import Dataset
@@ -17,6 +19,7 @@ from transformers.trainer_utils import PredictionOutput
 
 from stonkgs import STonKGsForSequenceClassification, preprocess_df_for_embeddings
 from stonkgs.api.constants import ensure_embeddings, ensure_species, ensure_walks
+from stonkgs.constants import OUTPUT_DIR
 
 
 def main():
@@ -38,22 +41,21 @@ def main():
     rows = [
         [
             "p(HGNC:1748 ! CDH1)",
-            "p(HGNC:6871 ! MAPK1)",
-            "p(HGNC:3229 ! EGF)",
-        ],
-        [
             "p(HGNC:2515 ! CTNND1)",
-            "p(HGNC:6018 ! IL6)",
-            "p(HGNC:4066 ! GAB1)",
+            "Some example sentence about CDH1 and CTNND1.",
         ],
         [
-            "Some example sentence about CDH1 and CTNND1.",
+            "p(HGNC:6871 ! MAPK1)",
+            "p(HGNC:6018 ! IL6)",
             "Another example about some interaction between MAPK and IL6.",
+        ],
+        [
+            "p(HGNC:3229 ! EGF)",
+            "p(HGNC:4066 ! GAB1)",
             "One last example in which Gab1 and EGF are mentioned.",
         ],
     ]
-
-    source_df = pd.DataFrame(rows, columns=["source", "target", "evidence"])
+    source_df = pd.DataFrame(np.array(rows), columns=["source", "target", "evidence"])
 
     click.echo("Processing df for embeddings")
     t = time.time()
@@ -67,8 +69,12 @@ def main():
     dataset = Dataset.from_pandas(preprocessed_df)
     dataset.set_format('torch')
 
-    # Three entries in this named tuple: predictions, label_ids, metrics
-    results = []
+    # Initialize Softmax to process the logits predictions later on
+    softmax = torch.nn.Softmax(dim=1)
+
+    # Save both the raw prediction results (as a pickle) as well as the processed probabilities (in a dataframe)
+    raw_results = []
+    probabilities = []
     for idx, row in tqdm(preprocessed_df.iterrows(), desc="Inferring"):
         # Process each row at once
         data_entry = {
@@ -76,16 +82,17 @@ def main():
         }
 
         prediction_output: PredictionOutput = model(**data_entry, return_dict=True)
-        results.append(prediction_output)
+        probabilities.append(softmax(prediction_output.logits)[0].tolist())
+        raw_results.append(prediction_output)
 
-    with open("/home/hbalabin/Downloads/results.pkl", "wb") as file:
-        pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
+    # Save as pickle
+    with open(os.path.join(OUTPUT_DIR, 'species_predictions.pkl'), 'wb') as file:
+        pickle.dump(raw_results, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-    # output_df = pd.DataFrame({
-    #     "predictions": prediction_output.predictions,
-    #     "label_ids": prediction_output.label_ids,
-    # })
-    # output_df.to_csv('/Users/cthoyt/Desktop/results.tsv', sep='\t', index=False)
+    # Save as a dataframe
+    probabilities_df = pd.DataFrame(probabilities, columns=["mouse", "rat", "human"])
+    output_df = pd.concat([source_df, probabilities_df], axis=1)
+    output_df.to_csv(os.path.join(OUTPUT_DIR, 'species_predictions.tsv'), sep='\t', index=False)
 
 
 if __name__ == "__main__":
