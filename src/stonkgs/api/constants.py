@@ -6,19 +6,19 @@ from pathlib import Path
 
 import pystow
 
-STONKGS = pystow.module('stonkgs')
+STONKGS = pystow.module("stonkgs")
 
-SPECIES_RECORD = '5205530'
-SPECIES_CONFIG = 'https://zenodo.org/record/5205530/files/config.json'
-SPECIES_BIN = 'https://zenodo.org/record/5205530/files/pytorch_model.bin'
-SPECIES_TRAINING = 'https://zenodo.org/record/5205530/files/training_args.bin'
-SPECIES_MODULE = STONKGS.submodule('species')
+SPECIES_RECORD = "5205530"
+SPECIES_CONFIG = "https://zenodo.org/record/5205530/files/config.json"
+SPECIES_BIN = "https://zenodo.org/record/5205530/files/pytorch_model.bin"
+SPECIES_TRAINING = "https://zenodo.org/record/5205530/files/training_args.bin"
+SPECIES_MODULE = STONKGS.submodule("species")
 
-WALKS_RECORD = ''
-WALKS_URL = ''
+WALKS_RECORD = ""
+WALKS_URL = "https://zenodo.org/record/.../files/random_walks_best_model.tsv"
 
-EMBEDDINGS_RECORD = ''
-EMBEDDINGS_URL = ''
+EMBEDDINGS_RECORD = ""
+EMBEDDINGS_URL = "https://zenodo.org/record/.../files/embeddings_best_model.tsv"
 
 
 def ensure_walks() -> Path:
