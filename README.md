@@ -180,6 +180,11 @@ $ pip install -e .
 **Warning**: Because stellargraph [doesn't currently work on Python 3.9](https://github.com/stellargraph/stellargraph/issues/1960),
 this software can only be installed on Python 3.8.
 
+## Artifacts
+
+The pre-trained models are hosted on [HuggingFace](https://huggingface.co/stonkgs)
+The fine-tuned models are hosted on the [STonKGs community page on Zenodo](https://zenodo.org/communities/stonkgs/)
+along with the other artifacts (node2vec embeddings, random walks, etc.)
 
 ## Acknowledgements
 
