@@ -10,22 +10,25 @@ import time
 
 import click
 import pandas as pd
+import torch
+from datasets import Dataset
 from tqdm import tqdm
 from transformers.trainer_utils import PredictionOutput
 
-from stonkgs import STonKGsForPreTraining, preprocess_df_for_embeddings
+from stonkgs import STonKGsForSequenceClassification, preprocess_df_for_embeddings
 from stonkgs.api.constants import ensure_embeddings, ensure_species, ensure_walks
 
 
 def main():
     """Example application of the species model."""
+    # Ensure that all the necessary files are loaded (embeddings, random walks, fine-tuned model)
     species_path = ensure_species()
     walks_path = ensure_walks()
     embeddings_path = ensure_embeddings()
 
     click.echo("Model loading")
     t = time.time()
-    model = STonKGsForPreTraining.from_pretrained(
+    model = STonKGsForSequenceClassification.from_pretrained(
         species_path.parent,
         kg_embedding_dict_path=embeddings_path,
     )
@@ -58,20 +61,24 @@ def main():
         df=source_df,
         embedding_name_to_vector_path=embeddings_path,
         embedding_name_to_random_walk_path=walks_path,
-    )
+    )[["input_ids", "attention_mask", "token_type_ids"]]
     click.echo(f"done processing df for embeddings after {time.time() - t:.2f} seconds")
 
-    # TODO fix @hbalabin
-    # dataset = Dataset.from_pandas(preprocessed_df)
-    # dataset.set_format('torch')
+    dataset = Dataset.from_pandas(preprocessed_df)
+    dataset.set_format('torch')
 
     # Three entries in this named tuple: predictions, label_ids, metrics
     results = []
-    for _, row in tqdm(preprocessed_df.iterrows(), desc="Inferring"):
-        prediction_output: PredictionOutput = model(**row, return_dict=True)
+    for idx, row in tqdm(preprocessed_df.iterrows(), desc="Inferring"):
+        # Process each row at once
+        data_entry = {
+            key: torch.tensor([value]) for key, value in dict(preprocessed_df.iloc[idx]).items()
+        }
+
+        prediction_output: PredictionOutput = model(**data_entry, return_dict=True)
         results.append(prediction_output)
 
-    with open("/Users/cthoyt/Desktop/results.pkl", "wb") as file:
+    with open("/home/hbalabin/Downloads/results.pkl", "wb") as file:
         pickle.dump(results, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     # output_df = pd.DataFrame({
