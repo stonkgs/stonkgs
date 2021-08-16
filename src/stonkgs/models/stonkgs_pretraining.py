@@ -6,7 +6,7 @@ import logging
 import os
 from typing import Optional
 
-import click  # type: ignore
+import click
 import mlflow
 from accelerate import Accelerator
 from datasets import Dataset, load_dataset, total_allocated_bytes

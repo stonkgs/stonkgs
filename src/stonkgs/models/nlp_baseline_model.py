@@ -7,7 +7,7 @@ import os
 from collections import Counter
 from typing import Dict, List, Optional
 
-import click  # type: ignore
+import click
 import mlflow
 import numpy as np
 import pandas as pd
