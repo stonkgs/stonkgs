@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 
-"""Full example of how to use a fine tuned model."""
+"""Full example of how to use a fine tuned model.
+
+Run with: ``python -m stonkgs.api.example``
+"""
 
 import pickle
 import time
@@ -10,7 +13,7 @@ import pandas as pd
 from tqdm import tqdm
 from transformers.trainer_utils import PredictionOutput
 
-from stonkgs import STonKGsForSequenceClassification, preprocess_df_for_embeddings
+from stonkgs import STonKGsForPreTraining, preprocess_df_for_embeddings
 from stonkgs.api.constants import SPECIES_MODULE, ensure_embeddings, ensure_walks
 
 
@@ -21,11 +24,12 @@ def main():
 
     click.echo("Model loading")
     t = time.time()
-    model = STonKGsForSequenceClassification.from_pretrained(
+    model = STonKGsForPreTraining.from_pretrained(
         SPECIES_MODULE.base,
         kg_embedding_dict_path=embeddings_path,
     )
-    click.echo(f"Model loaded in {time.time() - t:.2f} seconds")
+    click.echo(f"Model {model.__class__.__name__} loaded in {time.time() - t:.2f} seconds")
+    click.echo(repr(model))
 
     rows = [
         [
