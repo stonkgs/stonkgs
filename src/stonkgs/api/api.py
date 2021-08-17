@@ -262,15 +262,14 @@ def _convert_indra_statements(statements: Iterable[Statement]) -> pd.DataFrame:
 def _prepare_df(data: InferenceHint) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
         return data
-    if isinstance(data, list):
-        if isinstance(data[0], (list, tuple)):
-            return pd.DataFrame(data, columns=["source", "target", "evidence"])
-        elif isinstance(data[0], Statement):
-            return _convert_indra_statements(data)
-        else:
-            raise TypeError(f"row has invalid type: {type(data[0])}")
-    else:
+    if not isinstance(data, list):
         raise TypeError(f"source df has invalid type: {type(data)}")
+    if isinstance(data[0], (list, tuple)):
+        return pd.DataFrame(data, columns=["source", "target", "evidence"])
+    elif isinstance(data[0], Statement):
+        return _convert_indra_statements(data)
+    else:
+        raise TypeError(f"row has invalid type: {type(data[0])}")
 
 
 def infer(model: STonKGsForSequenceClassification, data: InferenceHint):
