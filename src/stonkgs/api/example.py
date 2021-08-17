@@ -12,7 +12,6 @@ import click
 import pandas as pd
 import pystow
 import torch
-import torch.nn.functional as F
 from datasets import Dataset
 from tqdm import tqdm
 from transformers.trainer_utils import PredictionOutput
@@ -44,7 +43,9 @@ def _onrows(source_df: pd.DataFrame, model):
         }
 
         prediction_output: PredictionOutput = model(**data_entry, return_dict=True)
-        probabilities.append(F.softmax(prediction_output.logits, dim=1)[0].tolist())
+        probabilities.append(
+            torch.nn.functional.softmax(prediction_output.logits, dim=1)[0].tolist()
+        )
         raw_results.append(prediction_output)
 
     return raw_results, probabilities
@@ -87,16 +88,16 @@ def main():
     raw_results, probabilities = _onrows(source_df, model)
 
     # Save as pickle
-    pickle_path = pystow.join('stonkgs', 'species', name='predictions.pkl')
+    pickle_path = pystow.join("stonkgs", "species", name="predictions.pkl")
     with pickle_path.open("wb") as file:
         pickle.dump(raw_results, file, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Save as a dataframe
-    df_path = pystow.join('stonkgs', 'species', name='predictions.tsv')
+    df_path = pystow.join("stonkgs", "species", name="predictions.tsv")
     probabilities_df = pd.DataFrame(probabilities, columns=["mouse", "rat", "human"])
     output_df = pd.concat([source_df, probabilities_df], axis=1)
     output_df.to_csv(df_path, sep="\t", index=False)
-    click.echo(f'Results at {df_path}')
+    click.echo(f"Results at {df_path}")
 
 
 if __name__ == "__main__":
