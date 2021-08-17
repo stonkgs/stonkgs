@@ -160,28 +160,26 @@ You can generate new predictions for previously unseen text-triple pairs (as lon
 
 ```python
 from stonkgs import STonKGsForSequenceClassification
-from stonkgs.api.constants import ensure_embeddings, ensure_species
+from stonkgs.api import ensure_embeddings, ensure_species, infer
 
 embeddings_path = ensure_embeddings()
 # Use 1) the fine-tuned models from the benchmark 
 species_path = ensure_species()
 
-
 model = STonKGsForSequenceClassification.from_pretrained(
     species_path.parent, # Alternatively: Specify the path to 2) your own fine-tuned model
     kg_embedding_dict_path=embeddings_path,
 )
-```
 
-Next, you want to use that model on your dataframe (consisting of at least source, target and evidence columns, see **Data Format**) to generate the class probabilities for each text-triple pair belonging to each of the specified classes in the respective fine-tuning task: 
-
-```python
-from stonkgs.api.example import _onrows
+# Next, you want to use that model on your dataframe (consisting of at least source, target
+# and evidence columns, see **Data Format**) to generate the class probabilities for each
+# text-triple pair belonging to each of the specified classes in the respective fine-tuning task:
+example_data = ...
 
 # See Extracting Embeddings for the initialization of the example data
 # This returns both the raw (transformers) PredictionOutput as well as the class probabilities 
 # for each text-triple pair
-raw_results, probabilities = _onrows(example_data, model)
+raw_results, probabilities = infer(model, example_data)
 ```
 
 ## ⬇️ Installation

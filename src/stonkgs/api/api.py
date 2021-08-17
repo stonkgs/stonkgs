@@ -2,9 +2,20 @@
 
 """Functionality for ensuring the fine-tuned models are ready to use."""
 
+import time
 from pathlib import Path
+from typing import List, Union
 
+import click
+import pandas as pd
 import pystow
+import torch
+from datasets import Dataset
+from tqdm import tqdm
+from transformers.trainer_utils import PredictionOutput
+
+from ..models.stonkgs_finetuning import STonKGsForSequenceClassification
+from ..models.stonkgs_for_embeddings import preprocess_df_for_embeddings
 
 STONKGS = pystow.module("stonkgs")
 
@@ -70,3 +81,40 @@ def ensure_correct_binary() -> Path:
 def ensure_cell_binary() -> Path:
     """Ensure that the cell line model is downloaded."""
     return _ensure_fine_tuned("cell_line", CELL_LINE_RECORD)
+
+
+def infer(model: STonKGsForSequenceClassification, source_df: Union[pd.DataFrame, List]):
+    """Run inference on a given model."""
+    if isinstance(source_df, pd.DataFrame):
+        pass
+    elif isinstance(source_df, list):
+        source_df = pd.DataFrame(source_df, columns=["source", "target", "evidence"])
+    else:
+        raise TypeError
+    click.echo("Processing df for embeddings")
+    t = time.time()
+    preprocessed_df = preprocess_df_for_embeddings(
+        df=source_df,
+        embedding_name_to_vector_path=ensure_embeddings(),
+        embedding_name_to_random_walk_path=ensure_walks(),
+    )[["input_ids", "attention_mask", "token_type_ids"]]
+    click.echo(f"done processing df for embeddings after {time.time() - t:.2f} seconds")
+
+    dataset = Dataset.from_pandas(preprocessed_df)
+    dataset.set_format("torch")
+
+    # Save both the raw prediction results (as a pickle) as well as the processed probabilities (in a dataframe)
+    raw_results = []
+    probabilities = []
+    for idx, _ in tqdm(preprocessed_df.iterrows(), desc="Inferring"):
+        # Process each row at once
+        data_entry = {
+            key: torch.tensor([value]) for key, value in dict(preprocessed_df.iloc[idx]).items()
+        }
+        prediction_output: PredictionOutput = model(**data_entry, return_dict=True)
+        probabilities.append(
+            torch.nn.functional.softmax(prediction_output.logits, dim=1)[0].tolist()
+        )
+        raw_results.append(prediction_output)
+
+    return raw_results, probabilities
