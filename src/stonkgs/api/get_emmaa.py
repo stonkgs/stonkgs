@@ -24,7 +24,7 @@ def main():
     if RESULTS_PATH.is_file():
         df = pd.read_csv(RESULTS_PATH, sep="\t")
     else:
-        with gzip.open(STATEMENTS_PATH, 'rt') as file:
+        with gzip.open(STATEMENTS_PATH, "rt") as file:
             statements = stmts_from_json(json.load(file))
         df = stonkgs.infer_correct_binary(statements)
         df.to_csv(RESULTS_PATH, sep="\t", index=False)
@@ -34,5 +34,5 @@ def main():
     fig.savefig(SCATTER_PATH)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
