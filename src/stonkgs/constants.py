@@ -4,6 +4,7 @@
 
 import os
 
+import pystow
 from dotenv import load_dotenv
 
 HERE = os.path.dirname(os.path.realpath(__file__))
@@ -101,4 +102,5 @@ NLP_MODEL_TYPE = "dmis-lab/biobert-v1.1"
 
 # Specify the vocab file of the language model that is used in this project
 # (the file can be obtained here: https://huggingface.co/dmis-lab/biobert-v1.1/tree/main)
-VOCAB_FILE = os.path.join(MISC_DIR, "biobert_vocab.txt")
+VOCAB_URL = "https://huggingface.co/dmis-lab/biobert-v1.1/raw/main/vocab.txt"
+VOCAB_FILE = pystow.ensure("stonkgs", "misc", url=VOCAB_URL)

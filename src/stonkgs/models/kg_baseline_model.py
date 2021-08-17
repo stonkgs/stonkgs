@@ -9,7 +9,8 @@ python -m src.stonkgs.models.kg_baseline_model
 import logging
 import os
 from collections import Counter
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 import click
 import mlflow
@@ -204,7 +205,7 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
         return embeddings
 
 
-def prepare_df(embedding_path: str, sep: str = "\t") -> Dict[str, List[str]]:
+def prepare_df(embedding_path: Union[str, Path], sep: str = "\t") -> Dict[str, List[str]]:
     """Prepare dataframe to node->embeddings/random walks."""
     # Load embeddings
     df = pd.read_csv(

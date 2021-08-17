@@ -92,6 +92,7 @@ The learned embeddings of the pre-trained STonKGs models (or your own STonKGs va
 
 ```python
 import pandas as pd
+
 from stonkgs import get_stonkgs_embeddings, preprocess_df_for_embeddings
 
 # Generate some example data
@@ -151,6 +152,26 @@ trainer = Trainer(
 
 # Fine-tune the model to the moon 
 trainer.train()
+```
+
+### Using STonKGs for Inference 
+
+You can generate new predictions for previously unseen text-triple pairs (as long as the nodes are contained in the INDRA KG) based on either 1) the fine-tuned models used for the benchmark or 2) your own fine-tuned models. In order to do that, you first need to load/initialize the fine-tuned model:
+
+```python
+from stonkgs.api import get_species_model, infer
+
+model = get_species_model()
+
+# Next, you want to use that model on your dataframe (consisting of at least source, target
+# and evidence columns, see **Data Format**) to generate the class probabilities for each
+# text-triple pair belonging to each of the specified classes in the respective fine-tuning task:
+example_data = ...
+
+# See Extracting Embeddings for the initialization of the example data
+# This returns both the raw (transformers) PredictionOutput as well as the class probabilities 
+# for each text-triple pair
+raw_results, probabilities = infer(model, example_data)
 ```
 
 ## ⬇️ Installation

@@ -236,9 +236,9 @@ class STonKGsForSequenceClassification(STonKGsForPreTraining):
     the typical huggingface inheritance logic of the fine-tuning classes.
     """
 
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         """Initialize the STonKGs sequence classification model based on the pre-trained STonKGs model architecture."""
-        super().__init__(config)
+        super().__init__(config, **kwargs)
         self.num_labels = config.num_labels
         self.config = config
 
@@ -264,6 +264,8 @@ class STonKGsForSequenceClassification(STonKGsForPreTraining):
         return_dict=None,
     ):
         """Perform one forward pass for a given sequence of text_input_ids + ent_input_ids."""
+        # TODO documentation for each parameter
+        # TODO type annotations for each parameter
         # Use the LM backbone to get the pre-trained token embeddings
         # batch x half_length x hidden_size
         # The first element of the returned tuple from the LM backbone forward() pass is the sequence of hidden states

@@ -3,7 +3,8 @@
 """Embeddings from the pre-trained STonKGs model."""
 
 import logging
-from typing import List, Optional
+from pathlib import Path
+from typing import List, Optional, Union
 
 import pandas as pd
 import torch
@@ -25,13 +26,16 @@ logging.basicConfig(level=logging.INFO)
 
 def preprocess_df_for_embeddings(
     df: pd.DataFrame,
-    embedding_name_to_vector_path: str = EMBEDDINGS_PATH,
-    embedding_name_to_random_walk_path: str = RANDOM_WALKS_PATH,
+    *,
+    embedding_name_to_vector_path: Union[str, Path] = EMBEDDINGS_PATH,
+    embedding_name_to_random_walk_path: Union[str, Path] = RANDOM_WALKS_PATH,
+    vocab_file_path: Union[str, Path] = VOCAB_FILE,
     nlp_model_type: str = NLP_MODEL_TYPE,
     sep_id: int = 102,
     unk_id: int = 100,
 ) -> pd.DataFrame:
     """Preprocesses a given pandas dataframe so that it's ready for embedding extraction by STonKGs."""
+    # TODO docs for all parameters
     # Load the KG embedding dict to convert the names to numeric indices
     kg_embed_dict = prepare_df(embedding_name_to_vector_path)
     kg_name_to_idx = {key: i for i, key in enumerate(kg_embed_dict.keys())}
@@ -53,7 +57,7 @@ def preprocess_df_for_embeddings(
     # Initialize a FAST tokenizer if it's the default one (BioBERT)
     if nlp_model_type == NLP_MODEL_TYPE:
         # Initialize the fast tokenizer for getting the text token ids
-        tokenizer = BertTokenizerFast(vocab_file=VOCAB_FILE)
+        tokenizer = BertTokenizerFast(vocab_file=vocab_file_path)
     else:
         # Initialize a slow tokenizer used for getting the text token ids
         tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
@@ -133,8 +137,8 @@ def preprocess_df_for_embeddings(
 
 def get_stonkgs_embeddings(
     preprocessed_df: pd.DataFrame,
-    pretrained_stonkgs_model_name: Optional[str],
-    list_of_indices: Optional[List],
+    pretrained_stonkgs_model_name: Optional[str] = None,
+    list_of_indices: Optional[List] = None,
 ) -> pd.DataFrame:
     """Extract embeddings for a preprocessed_df based on a pretrained_stonkgs_model_name."""
     all_embed_sequences = pd.DataFrame(columns=["embedding"])
