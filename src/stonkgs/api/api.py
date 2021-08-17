@@ -186,7 +186,22 @@ def get_correct_binary_model() -> STonKGsForSequenceClassification:
 
 
 def infer_correct_binary(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
-    """Infer the correct binary output for the given input."""
+    """Infer the correct binary output for the given input.
+
+    :param source_df: A pandas dataframe or rows to a dataframe with source, target, and evidence as columns
+    :return: A pandas dataframe with source, target, evidence, incorrect probability, and correct probability based
+        on :data:`CORRECT_BINARY_COLUMNS`.
+
+    >>> from stonkgs import infer_correct_binary
+    >>> rows = [
+    ...     [
+    ...         "p(HGNC:17927 ! SENP1)",
+    ...         "p(HGNC:4910 ! HIF1A)",
+    ...         "Hence, deSUMOylation of HIF-1alpha by SENP1 could prevent degradation of HIF-1alpha "],
+    ...     ],
+    ... ]
+    >>> df = infer_correct_binary(rows)
+    """
     return infer_concat(get_correct_binary_model(), source_df, columns=CORRECT_BINARY_COLUMNS)
 
 
