@@ -242,6 +242,7 @@ def infer_concat(
 
 INDRA_DF_COLUMNS = [
     "stmt_hash",
+    "belief",
     "source",
     "target",
     "evidence",
@@ -254,7 +255,13 @@ def _convert_indra_statements(statements: Iterable[Statement]) -> pd.DataFrame:
     rows = []
     for u, v, data in bel_graph.edges(data=True):
         rows.append(
-            (list(data[pc.ANNOTATIONS]["stmt_hash"].keys())[0], str(u), str(v), data[pc.EVIDENCE])
+            (
+                list(data[pc.ANNOTATIONS]["stmt_hash"].keys())[0],
+                list(data[pc.ANNOTATIONS]["belief"].keys())[0],
+                str(u),
+                str(v),
+                data[pc.EVIDENCE],
+            )
         )
     return pd.DataFrame(rows, columns=INDRA_DF_COLUMNS)
 
