@@ -7,6 +7,8 @@ Run with: ``python -m stonkgs.api.example``
 
 import click
 import pystow
+from indra.sources import reach
+from indra.sources.reach.processor import ReachProcessor
 
 from stonkgs import infer_species
 
@@ -35,6 +37,12 @@ def main():
     output_df = infer_species(rows)
     output_df.to_csv(SPECIES_PREDICTION_PATH, sep="\t", index=False)
     click.echo(f"Results at {SPECIES_PREDICTION_PATH}")
+
+    processor: ReachProcessor = reach.process_text("SENP1 desumoylates HIF1A")
+    statements = processor.statements
+    print(statements)
+    output_df = infer_species(statements)
+    print(output_df)
 
 
 if __name__ == "__main__":

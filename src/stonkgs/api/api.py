@@ -22,6 +22,8 @@ from transformers.trainer_utils import PredictionOutput
 from ..models.stonkgs_finetuning import STonKGsForSequenceClassification
 from ..models.stonkgs_for_embeddings import preprocess_df_for_embeddings
 
+InferenceHint = Union[pd.DataFrame, List[List[str]], List[Statement]]
+
 STONKGS = pystow.module("stonkgs")
 
 SPECIES_RECORD = "5205530"
@@ -122,9 +124,9 @@ def get_species_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_species)
 
 
-def infer_species(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+def infer_species(data: InferenceHint) -> pd.DataFrame:
     """Infer the species for the given input."""
-    return infer_concat(get_species_model(), source_df, columns=SPECIES_COLUMNS)
+    return infer_concat(get_species_model(), data, columns=SPECIES_COLUMNS)
 
 
 def ensure_location() -> Path:
@@ -138,9 +140,9 @@ def get_location_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_location)
 
 
-def infer_locations(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+def infer_locations(data: InferenceHint) -> pd.DataFrame:
     """Infer the locations for the given input."""
-    return infer_concat(get_location_model(), source_df, columns=LOCATION_COLUMNS)
+    return infer_concat(get_location_model(), data, columns=LOCATION_COLUMNS)
 
 
 def ensure_disease() -> Path:
@@ -154,9 +156,9 @@ def get_disease_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_disease)
 
 
-def infer_diseases(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+def infer_diseases(data: InferenceHint) -> pd.DataFrame:
     """Infer the diseases for the given input."""
-    return infer_concat(get_disease_model(), source_df, columns=DISEASE_COLUMNS)
+    return infer_concat(get_disease_model(), data, columns=DISEASE_COLUMNS)
 
 
 def ensure_correct_multiclass() -> Path:
@@ -170,11 +172,9 @@ def get_correct_multiclass_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_correct_multiclass)
 
 
-def infer_correct_multiclass(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+def infer_correct_multiclass(data: InferenceHint) -> pd.DataFrame:
     """Infer the correct multiclass output for the given input."""
-    return infer_concat(
-        get_correct_multiclass_model(), source_df, columns=CORRECT_MULTICLASS_COLUMNS
-    )
+    return infer_concat(get_correct_multiclass_model(), data, columns=CORRECT_MULTICLASS_COLUMNS)
 
 
 def ensure_correct_binary() -> Path:
@@ -188,10 +188,10 @@ def get_correct_binary_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_correct_binary)
 
 
-def infer_correct_binary(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+def infer_correct_binary(data: InferenceHint) -> pd.DataFrame:
     """Infer the correct binary output for the given input.
 
-    :param source_df: A pandas dataframe or rows to a dataframe with source, target, and evidence as columns
+    :param data: A pandas dataframe or rows to a dataframe with source, target, and evidence as columns
     :return: A pandas dataframe with source, target, evidence, incorrect probability, and correct probability based
         on :data:`CORRECT_BINARY_COLUMNS`.
 
@@ -205,7 +205,7 @@ def infer_correct_binary(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.
     ... ]
     >>> df = infer_correct_binary(rows)
     """
-    return infer_concat(get_correct_binary_model(), source_df, columns=CORRECT_BINARY_COLUMNS)
+    return infer_concat(get_correct_binary_model(), data, columns=CORRECT_BINARY_COLUMNS)
 
 
 def ensure_cell_line() -> Path:
@@ -219,9 +219,9 @@ def get_cell_line_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_cell_line)
 
 
-def infer_cell_lines(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+def infer_cell_lines(data: InferenceHint) -> pd.DataFrame:
     """Infer the cell lines for the given input."""
-    return infer_concat(get_cell_line_model(), source_df, columns=CELL_LINE_COLUMNS)
+    return infer_concat(get_cell_line_model(), data, columns=CELL_LINE_COLUMNS)
 
 
 KEEP_COLUMNS = ["input_ids", "attention_mask", "token_type_ids"]
@@ -252,16 +252,11 @@ def _convert_indra_statements(statements: Iterable[Statement]) -> pd.DataFrame:
     bel_graph = assembler.make_model()
     rows = []
     for u, v, data in bel_graph.edges(data=True):
-        rows.append((
-            data[pc.ANNOTATIONS]["stmt_hash"],
-            str(u),
-            str(v),
-            data[pc.EVIDENCE]
-        ))
+        rows.append((data[pc.ANNOTATIONS]["stmt_hash"], str(u), str(v), data[pc.EVIDENCE]))
     return pd.DataFrame(rows, columns=INDRA_DF_COLUMNS)
 
 
-def infer(model: STonKGsForSequenceClassification, data: Union[pd.DataFrame, List]):
+def infer(model: STonKGsForSequenceClassification, data: InferenceHint):
     """Run inference on a given model."""
     if isinstance(data, pd.DataFrame):
         pass
