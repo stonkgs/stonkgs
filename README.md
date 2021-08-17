@@ -30,41 +30,52 @@
     </a>
 </p>
 
-STonKGs is a Sophisticated Transformer that can be jointly trained on biomedical text and knowledge graphs.
-This multimodal Transformer combines structured information from KGs with unstructured text data to learn joint
-representations. While we demonstrated STonKGs on a biomedical knowledge graph (i.e., [INDRA](https://github.com/sorgerlab/indra)), the model can be applied other domains. In the following sections we describe
-the scripts that are necessary to be run to train the model on any given dataset.
+STonKGs is a Sophisticated Transformer that can be jointly trained on biomedical text and knowledge graphs. This
+multimodal Transformer combines structured information from KGs with unstructured text data to learn joint
+representations. While we demonstrated STonKGs on a biomedical knowledge graph (
+i.e., from [INDRA](https://github.com/sorgerlab/indra)), the model can be applied other domains. In the following
+sections we describe the scripts that are necessary to be run to train the model on any given dataset.
 
 ## 💪 Getting Started
 
 ### Data Format
 
-Since STonKGs is operating on both text and KG data, it's expected that the respective data files include columns for both modalities. More specifically, the expected data format is a `pandas` dataframe (or a pickled `pandas` dataframe for the pre-training script), in which each row is containing one text-triple pair. The following columns are expected:
+Since STonKGs is operating on both text and KG data, it's expected that the respective data files include columns for
+both modalities. More specifically, the expected data format is a `pandas` dataframe (or a pickled `pandas` dataframe
+for the pre-training script), in which each row is containing one text-triple pair. The following columns are expected:
+
 * **source**: Source node in the triple of a given text-triple pair
 * **target**: Target node in the triple of a given text-triple pair
 * **evidence**: Text of a given text-triple pair
-* (optional) **class**: Class label for a given text-triple pair in fine-tuning tasks (does not apply to the pre-training procedure)
+* (optional) **class**: Class label for a given text-triple pair in fine-tuning tasks (does not apply to the
+  pre-training procedure)
 
-Note that both source and target nodes are required to be in the Biological Expression Langauge (BEL) format, more specifically, they need to be contained in the INDRA KG. For more details on the BEL format, see for example the [INDRA documentation for BEL processor](https://indra.readthedocs.io/en/latest/modules/sources/bel/index.html?) and [PyBEL](https://github.com/pybel/pybel). 
+Note that both source and target nodes are required to be in the Biological Expression Langauge (BEL) format, more
+specifically, they need to be contained in the INDRA KG. For more details on the BEL format, see for example
+the [INDRA documentation for BEL processor](https://indra.readthedocs.io/en/latest/modules/sources/bel/index.html?)
+and [PyBEL](https://github.com/pybel/pybel).
 
 ### Pre-training STonKGs
 
-Once you have installed STonKGs as a Python package (see below), you can start training the STonKGs on your dataset
-by running:
+Once you have installed STonKGs as a Python package (see below), you can start training the STonKGs on your dataset by
+running:
 
 ```bash
 $ python3 -m stonkgs.models.stonkgs_pretraining
 ```
 
-The configuration of the model can be easily modified by altering the parameters of the *pretrain_stonkgs* method.
-The only required argument to be changed is *PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH*, which should point to your
-dataset. 
+The configuration of the model can be easily modified by altering the parameters of the *pretrain_stonkgs* method. The
+only required argument to be changed is *PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH*, which should point to your dataset.
 
 ### Downloading the pre-trained STonKGs model on the INDRA KG
 
-We released the pre-trained STonKGs models on the INDRA KG for possible future adaptations, such as further pre-training on other KGs. Both [STonKGs<sub>150k</sub>](https://huggingface.co/stonkgs/stonkgs-150k) as well as [STonKGs<sub>300k</sub>](https://huggingface.co/stonkgs/stonkgs-300k) are accessible through Hugging Face's model hub. 
+We released the pre-trained STonKGs models on the INDRA KG for possible future adaptations, such as further pre-training
+on other KGs. Both [STonKGs<sub>150k</sub>](https://huggingface.co/stonkgs/stonkgs-150k) as well
+as [STonKGs<sub>300k</sub>](https://huggingface.co/stonkgs/stonkgs-300k) are accessible through Hugging Face's model
+hub.
 
-The easiest way to download and initialize the pre-trained STonKGs model is to use the `from_default_pretrained()` class method (with STonKGs<sub>150k</sub> being the default): 
+The easiest way to download and initialize the pre-trained STonKGs model is to use the `from_default_pretrained()` class
+method (with STonKGs<sub>150k</sub> being the default):
 
 ```python
 from stonkgs import STonKGsForPreTraining
@@ -74,7 +85,8 @@ from stonkgs import STonKGsForPreTraining
 stonkgs_pretraining = STonKGsForPreTraining.from_default_pretrained()
 ```
 
-Alternatively, since our code is based on Hugging Face's `transformers` package, the pre-trained model can be easily downloaded and initialized using the `.from_pretrained()` function: 
+Alternatively, since our code is based on Hugging Face's `transformers` package, the pre-trained model can be easily
+downloaded and initialized using the `.from_pretrained()` function:
 
 ```python
 from stonkgs import STonKGsForPreTraining
@@ -86,9 +98,12 @@ stonkgs_pretraining = STonKGsForPreTraining.from_pretrained(
 )
 ```
 
-### Extracting Embeddings 
+### Extracting Embeddings
 
-The learned embeddings of the pre-trained STonKGs models (or your own STonKGs variants) can be extracted in two simple steps. First, a given dataset with text-triple pairs (a pandas `DataFrame`, see **Data Format**) needs to be preprocessed using the `preprocess_file_for_embeddings` function. Then, one can obtain the learned embeddings using the preprocessed data and the `get_stonkgs_embeddings` function:
+The learned embeddings of the pre-trained STonKGs models (or your own STonKGs variants) can be extracted in two simple
+steps. First, a given dataset with text-triple pairs (a pandas `DataFrame`, see **Data Format**) needs to be
+preprocessed using the `preprocess_file_for_embeddings` function. Then, one can obtain the learned embeddings using the
+preprocessed data and the `get_stonkgs_embeddings` function:
 
 ```python
 import pandas as pd
@@ -97,29 +112,27 @@ from stonkgs import get_stonkgs_embeddings, preprocess_df_for_embeddings
 
 # Generate some example data
 # Note that the evidence sentences are typically longer than in this example data
-example_data = pd.DataFrame(
-   data=[
-      [
-         "p(HGNC:1748 ! CDH1)",
-         "p(HGNC:2515 ! CTNND1)",
-         "Some example sentence about CDH1 and CTNND1.",
-      ],
-      [
-         "p(HGNC:6871 ! MAPK1)",
-         "p(HGNC:6018 ! IL6)",
-         "Another example about some interaction between MAPK and IL6.",
-      ],
-      [
-         "p(HGNC:3229 ! EGF)",
-         "p(HGNC:4066 ! GAB1)",
-         "One last example in which Gab1 and EGF are mentioned.",
-      ],
-   ],
-   columns=["source", "target", "evidence"],
-)
+rows = [
+    [
+        "p(HGNC:1748 ! CDH1)",
+        "p(HGNC:2515 ! CTNND1)",
+        "Some example sentence about CDH1 and CTNND1.",
+    ],
+    [
+        "p(HGNC:6871 ! MAPK1)",
+        "p(HGNC:6018 ! IL6)",
+        "Another example about some interaction between MAPK and IL6.",
+    ],
+    [
+        "p(HGNC:3229 ! EGF)",
+        "p(HGNC:4066 ! GAB1)",
+        "One last example in which Gab1 and EGF are mentioned.",
+    ],
+]
+example_df = pd.DataFrame(rows, columns=["source", "target", "evidence"])
 
 # 1. Preprocess the text-triple data for embedding extraction
-preprocessed_df_for_embeddings = preprocess_df_for_embeddings(example_data)
+preprocessed_df_for_embeddings = preprocess_df_for_embeddings(example_df)
 
 # 2. Extract the embeddings 
 embedding_df = get_stonkgs_embeddings(preprocessed_df_for_embeddings)
@@ -127,13 +140,15 @@ embedding_df = get_stonkgs_embeddings(preprocessed_df_for_embeddings)
 
 ### Fine-tuning STonKGs
 
-The most straightforward way of fine-tuning STonKGs on the original six classfication tasks is to run the fine-tuning script (note that this script assumes that you have a mlflow logger specified, e.g. using the --logging_dir argument):
+The most straightforward way of fine-tuning STonKGs on the original six classfication tasks is to run the fine-tuning
+script (note that this script assumes that you have a mlflow logger specified, e.g. using the --logging_dir argument):
 
 ```bash
 $ python3 -m stonkgs.models.stonkgs_finetuning
 ```
 
-Moreover, using STonKGs for your own fine-tuning tasks (i.e., sequence classification tasks) in your own code is just as easy as initializing the pre-trained model: 
+Moreover, using STonKGs for your own fine-tuning tasks (i.e., sequence classification tasks) in your own code is just as
+easy as initializing the pre-trained model:
 
 ```python
 from stonkgs import STonKGsForSequenceClassification
@@ -154,9 +169,11 @@ trainer = Trainer(
 trainer.train()
 ```
 
-### Using STonKGs for Inference 
+### Using STonKGs for Inference
 
-You can generate new predictions for previously unseen text-triple pairs (as long as the nodes are contained in the INDRA KG) based on either 1) the fine-tuned models used for the benchmark or 2) your own fine-tuned models. In order to do that, you first need to load/initialize the fine-tuned model:
+You can generate new predictions for previously unseen text-triple pairs (as long as the nodes are contained in the
+INDRA KG) based on either 1) the fine-tuned models used for the benchmark or 2) your own fine-tuned models. In order to
+do that, you first need to load/initialize the fine-tuned model:
 
 ```python
 from stonkgs.api import get_species_model, infer
@@ -197,8 +214,9 @@ $ cd stonkgs
 $ pip install -e .
 ```
 
-**Warning**: Because stellargraph [doesn't currently work on Python 3.9](https://github.com/stellargraph/stellargraph/issues/1960),
-this software can only be installed on Python 3.8.
+**Warning**: Because
+stellargraph [doesn't currently work on Python 3.9](https://github.com/stellargraph/stellargraph/issues/1960), this
+software can only be installed on Python 3.8.
 
 ## Artifacts
 
@@ -252,7 +270,8 @@ run reproducibly with:
 $ tox
 ```
 
-Additionally, these tests are automatically re-run with each commit in a [GitHub Action](https://github.com/stonkgs/stonkgs/actions?query=workflow%3ATests).
+Additionally, these tests are automatically re-run with each commit in
+a [GitHub Action](https://github.com/stonkgs/stonkgs/actions?query=workflow%3ATests).
 
 ### 📦 Making a Release
 
