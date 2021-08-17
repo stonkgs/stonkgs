@@ -254,6 +254,8 @@ def _convert_indra_statements(statements: Iterable[Statement]) -> pd.DataFrame:
     bel_graph = assembler.make_model()
     rows = []
     for u, v, data in bel_graph.edges(data=True):
+        if pc.ANNOTATIONS not in data:
+            continue
         rows.append(
             (
                 list(data[pc.ANNOTATIONS]["stmt_hash"].keys())[0],
