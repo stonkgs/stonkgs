@@ -5,14 +5,17 @@
 import time
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, List, Optional, Union
+from typing import Callable, Iterable, List, Optional, Union
 
 import click
 import pandas as pd
+import pybel.constants as pc
 import pystow
 import torch
 import torch.nn.functional
 from datasets import Dataset
+from indra.assemblers.pybel import PybelAssembler
+from indra.statements import Statement
 from tqdm import tqdm
 from transformers.trainer_utils import PredictionOutput
 
@@ -236,18 +239,45 @@ def infer_concat(
     return pd.concat([source_df, probabilities_df], axis=1)
 
 
-def infer(model: STonKGsForSequenceClassification, source_df: Union[pd.DataFrame, List]):
+INDRA_DF_COLUMNS = [
+    "stmt_hash",
+    "subject",
+    "object",
+    "evidence",
+]
+
+
+def _convert_indra_statements(statements: Iterable[Statement]) -> pd.DataFrame:
+    assembler = PybelAssembler(statements)
+    bel_graph = assembler.make_model()
+    rows = []
+    for u, v, data in bel_graph.edges(data=True):
+        rows.append((
+            data[pc.ANNOTATIONS]["stmt_hash"],
+            str(u),
+            str(v),
+            data[pc.EVIDENCE]
+        ))
+    return pd.DataFrame(rows, columns=INDRA_DF_COLUMNS)
+
+
+def infer(model: STonKGsForSequenceClassification, data: Union[pd.DataFrame, List]):
     """Run inference on a given model."""
-    if isinstance(source_df, pd.DataFrame):
+    if isinstance(data, pd.DataFrame):
         pass
-    elif isinstance(source_df, list):
-        source_df = pd.DataFrame(source_df, columns=["source", "target", "evidence"])
+    if isinstance(data, list):
+        if isinstance(data[0], (list, tuple)):
+            data = pd.DataFrame(data, columns=["source", "target", "evidence"])
+        elif isinstance(data[0], Statement):
+            data = _convert_indra_statements(data)
+        else:
+            raise TypeError(f"row has invalid type: {type(data[0])}")
     else:
-        raise TypeError
+        raise TypeError(f"source df has invalid type: {type(data)}")
     click.echo("Processing df for embeddings")
     t = time.time()
     preprocessed_df = preprocess_df_for_embeddings(
-        df=source_df,
+        df=data,
         embedding_name_to_vector_path=ensure_embeddings(),
         embedding_name_to_random_walk_path=ensure_walks(),
     )[KEEP_COLUMNS]
