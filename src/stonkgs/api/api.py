@@ -11,6 +11,7 @@ import click
 import pandas as pd
 import pystow
 import torch
+import torch.nn.functional
 from datasets import Dataset
 from tqdm import tqdm
 from transformers.trainer_utils import PredictionOutput
@@ -127,6 +128,9 @@ def get_cell_line_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_cell_line)
 
 
+KEEP_COLUMNS = ["input_ids", "attention_mask", "token_type_ids"]
+
+
 def infer(model: STonKGsForSequenceClassification, source_df: Union[pd.DataFrame, List]):
     """Run inference on a given model."""
     if isinstance(source_df, pd.DataFrame):
@@ -141,7 +145,7 @@ def infer(model: STonKGsForSequenceClassification, source_df: Union[pd.DataFrame
         df=source_df,
         embedding_name_to_vector_path=ensure_embeddings(),
         embedding_name_to_random_walk_path=ensure_walks(),
-    )[["input_ids", "attention_mask", "token_type_ids"]]
+    )[KEEP_COLUMNS]
     click.echo(f"done processing df for embeddings after {time.time() - t:.2f} seconds")
 
     dataset = Dataset.from_pandas(preprocessed_df)
