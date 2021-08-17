@@ -3,8 +3,9 @@
 """Functionality for ensuring the fine-tuned models are ready to use."""
 
 import time
+from functools import lru_cache
 from pathlib import Path
-from typing import List, Union
+from typing import Callable, List, Union
 
 import click
 import pandas as pd
@@ -48,6 +49,13 @@ def _ensure_fine_tuned(submodule, record) -> Path:
     )
 
 
+def _get_model(f: Callable[[], Path]) -> STonKGsForSequenceClassification:
+    return STonKGsForSequenceClassification.from_pretrained(
+        f().parent,
+        kg_embedding_dict_path=ensure_embeddings(),
+    )
+
+
 def ensure_species() -> Path:
     """Ensure that the species model is downloaded from `Zenodo <https://zenodo.org/record/5205530>`_.
 
@@ -58,9 +66,21 @@ def ensure_species() -> Path:
     return _ensure_fine_tuned("species", SPECIES_RECORD)
 
 
+@lru_cache(maxsize=1)
+def get_species_model() -> STonKGsForSequenceClassification:
+    """Get the species model."""
+    return _get_model(ensure_species)
+
+
 def ensure_location() -> Path:
     """Ensure that the location model is downloaded."""
     return _ensure_fine_tuned("location", LOCATION_RECORD)
+
+
+@lru_cache(maxsize=1)
+def get_location_model() -> STonKGsForSequenceClassification:
+    """Get the location model."""
+    return _get_model(ensure_location)
 
 
 def ensure_disease() -> Path:
@@ -68,9 +88,21 @@ def ensure_disease() -> Path:
     return _ensure_fine_tuned("disease", DISEASE_RECORD)
 
 
+@lru_cache(maxsize=1)
+def get_disease_model() -> STonKGsForSequenceClassification:
+    """Get the disease model."""
+    return _get_model(ensure_disease)
+
+
 def ensure_correct_multiclass() -> Path:
     """Ensure that the correct (multiclass) model is downloaded."""
     return _ensure_fine_tuned("correct_multiclass", CORRECT_MULTICLASS_RECORD)
+
+
+@lru_cache(maxsize=1)
+def get_correct_multiclass_model() -> STonKGsForSequenceClassification:
+    """Get the correct (multiclass) model."""
+    return _get_model(ensure_correct_multiclass)
 
 
 def ensure_correct_binary() -> Path:
@@ -78,9 +110,21 @@ def ensure_correct_binary() -> Path:
     return _ensure_fine_tuned("correct_binary", CORRECT_BINARY_RECORD)
 
 
-def ensure_cell_binary() -> Path:
+@lru_cache(maxsize=1)
+def get_correct_binary_model() -> STonKGsForSequenceClassification:
+    """Get the correct (binary) model."""
+    return _get_model(ensure_correct_binary)
+
+
+def ensure_cell_line() -> Path:
     """Ensure that the cell line model is downloaded."""
     return _ensure_fine_tuned("cell_line", CELL_LINE_RECORD)
+
+
+@lru_cache(maxsize=1)
+def get_cell_line_model() -> STonKGsForSequenceClassification:
+    """Get the cell line model."""
+    return _get_model(ensure_cell_line)
 
 
 def infer(model: STonKGsForSequenceClassification, source_df: Union[pd.DataFrame, List]):

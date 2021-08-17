@@ -12,22 +12,14 @@ import click
 import pandas as pd
 import pystow
 
-from stonkgs import STonKGsForSequenceClassification
-from stonkgs.api import ensure_embeddings, ensure_species, infer
+from stonkgs.api import get_species_model, infer
 
 
 def main():
     """Do an example application of the species model."""
-    # Ensure that all the necessary files are loaded (embeddings, random walks, fine-tuned model)
-    species_path = ensure_species()
-    embeddings_path = ensure_embeddings()
-
     click.echo("Model loading")
     t = time.time()
-    model = STonKGsForSequenceClassification.from_pretrained(
-        species_path.parent,
-        kg_embedding_dict_path=embeddings_path,
-    )
+    model = get_species_model()
     click.echo(f"Model {model.__class__.__name__} loaded in {time.time() - t:.2f} seconds")
 
     rows = [

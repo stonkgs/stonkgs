@@ -159,17 +159,9 @@ trainer.train()
 You can generate new predictions for previously unseen text-triple pairs (as long as the nodes are contained in the INDRA KG) based on either 1) the fine-tuned models used for the benchmark or 2) your own fine-tuned models. In order to do that, you first need to load/initialize the fine-tuned model:
 
 ```python
-from stonkgs import STonKGsForSequenceClassification
-from stonkgs.api import ensure_embeddings, ensure_species, infer
+from stonkgs.api import get_species_model, infer
 
-embeddings_path = ensure_embeddings()
-# Use 1) the fine-tuned models from the benchmark 
-species_path = ensure_species()
-
-model = STonKGsForSequenceClassification.from_pretrained(
-    species_path.parent, # Alternatively: Specify the path to 2) your own fine-tuned model
-    kg_embedding_dict_path=embeddings_path,
-)
+model = get_species_model()
 
 # Next, you want to use that model on your dataframe (consisting of at least source, target
 # and evidence columns, see **Data Format**) to generate the class probabilities for each
