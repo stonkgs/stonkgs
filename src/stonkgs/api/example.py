@@ -13,6 +13,7 @@ import pandas as pd
 import pystow
 
 from stonkgs.api import get_species_model, infer
+from stonkgs.api.api import SPECIES_COLUMNS
 
 
 def main():
@@ -51,7 +52,7 @@ def main():
 
     # Save as a dataframe
     df_path = pystow.join("stonkgs", "species", name="predictions.tsv")
-    probabilities_df = pd.DataFrame(probabilities, columns=["mouse", "rat", "human"])
+    probabilities_df = pd.DataFrame(probabilities, columns=SPECIES_COLUMNS)
     output_df = pd.concat([source_df, probabilities_df], axis=1)
     output_df.to_csv(df_path, sep="\t", index=False)
     click.echo(f"Results at {df_path}")

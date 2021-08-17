@@ -31,6 +31,52 @@ CELL_LINE_RECORD = "5205915"
 WALKS_URL = "https://zenodo.org/record/5205687/files/random_walks_best_model.tsv"
 EMBEDDINGS_URL = "https://zenodo.org/record/5205687/files/embeddings_best_model.tsv"
 
+POLARITY_COLUMNS = ["down", "up"]
+INTERACTION_COLUMNS = ["direct_interaction", "indirect_interaction"]
+SPECIES_COLUMNS = ["mouse", "rat", "human"]
+LOCATION_COLUMNS = [
+    "extracellular_space",
+    "cell_membrane",
+    "cell_nucleus",
+    "extracellular_matrix",
+    "cytoplasm",
+]
+DISEASE_COLUMNS = [
+    "neuroblastoma",
+    "multiple_myeloma",
+    "lung_non-small_cell_carcinomaleukemia",
+    "breast_cancer",
+    "lung_cancer",
+    "atherosclerosis",
+    "osteosarcoma",
+    "melanoma",
+    "leukemia",
+    "colon_cancer",
+]
+CORRECT_MULTICLASS_COLUMNS = [
+    "act_vs_amt",
+    "grounding",
+    "hypothesis",
+    "entity_boundaries",
+    "no_relation",
+    "correct",
+    "wrong_relation",
+    "polarity",
+]
+CORRECT_BINARY_COLUMNS = ["incorrect", "correct"]
+CORRECT_CELL_LINE_COLUMNS = [
+    "HeLa",
+    "THP-1",
+    "LNCAP",
+    "COS-1",
+    "DMS_114",
+    "NIH-3T3",
+    "HEK293",
+    "MCF7",
+    "Hep_G2",
+    "U-937",
+]
+
 
 def ensure_walks() -> Path:
     """Ensure the walks file is downloaded from zenodo."""
