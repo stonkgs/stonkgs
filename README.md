@@ -154,6 +154,36 @@ trainer = Trainer(
 trainer.train()
 ```
 
+### Using STonKGs for Inference 
+
+You can generate new predictions for previously unseen text-triple pairs (as long as the nodes are contained in the INDRA KG) based on either 1) the fine-tuned models used for the benchmark or 2) your own fine-tuned models. In order to do that, you first need to load/initialize the fine-tuned model:
+
+```python
+from stonkgs import STonKGsForSequenceClassification
+from stonkgs.api.constants import ensure_embeddings, ensure_species
+
+embeddings_path = ensure_embeddings()
+# Use 1) the fine-tuned models from the benchmark 
+species_path = ensure_species()
+
+
+model = STonKGsForSequenceClassification.from_pretrained(
+    species_path.parent, # Alternatively: Specify the path to 2) your own fine-tuned model
+    kg_embedding_dict_path=embeddings_path,
+)
+```
+
+Next, you want to use that model on your dataframe (consisting of at least source, target and evidence columns, see **Data Format**) to generate the class probabilities for each text-triple pair belonging to each of the specified classes in the respective fine-tuning task: 
+
+```python
+from stonkgs.api.example import _onrows
+
+# See Extracting Embeddings for the initialization of the example data
+# This returns both the raw (transformers) PredictionOutput as well as the class probabilities 
+# for each text-triple pair
+raw_results, probabilities = _onrows(example_data, model)
+```
+
 ## ⬇️ Installation
 
 The most recent release can be installed from
