@@ -12,6 +12,7 @@ import click
 import pandas as pd
 import pystow
 import torch
+import torch.nn.functional as F
 from datasets import Dataset
 from tqdm import tqdm
 from transformers.trainer_utils import PredictionOutput
@@ -33,9 +34,6 @@ def _onrows(source_df: pd.DataFrame, model):
     dataset = Dataset.from_pandas(preprocessed_df)
     dataset.set_format("torch")
 
-    # Initialize Softmax to process the logits predictions later on
-    softmax = torch.nn.Softmax(dim=1)
-
     # Save both the raw prediction results (as a pickle) as well as the processed probabilities (in a dataframe)
     raw_results = []
     probabilities = []
@@ -46,7 +44,7 @@ def _onrows(source_df: pd.DataFrame, model):
         }
 
         prediction_output: PredictionOutput = model(**data_entry, return_dict=True)
-        probabilities.append(softmax(prediction_output.logits)[0].tolist())
+        probabilities.append(F.softmax(prediction_output.logits, dim=1)[0].tolist())
         raw_results.append(prediction_output)
 
     return raw_results, probabilities
