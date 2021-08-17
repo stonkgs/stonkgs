@@ -229,20 +229,21 @@ KEEP_COLUMNS = ["input_ids", "attention_mask", "token_type_ids"]
 
 def infer_concat(
     model: STonKGsForSequenceClassification,
-    source_df: Union[pd.DataFrame, List],
+    data: Union[pd.DataFrame, List],
     *,
     columns: Optional[List[str]] = None,
 ) -> pd.DataFrame:
     """Run inference and return the input with output columns concatenated."""
-    raw_results, probabilities = infer(model, source_df)
+    data = _prepare_df(data)
+    raw_results, probabilities = infer(model, data)
     probabilities_df = pd.DataFrame(probabilities, columns=columns)
-    return pd.concat([source_df, probabilities_df], axis=1)
+    return pd.concat([data, probabilities_df], axis=1)
 
 
 INDRA_DF_COLUMNS = [
     "stmt_hash",
-    "subject",
-    "object",
+    "source",
+    "target",
     "evidence",
 ]
 
@@ -252,23 +253,29 @@ def _convert_indra_statements(statements: Iterable[Statement]) -> pd.DataFrame:
     bel_graph = assembler.make_model()
     rows = []
     for u, v, data in bel_graph.edges(data=True):
-        rows.append((data[pc.ANNOTATIONS]["stmt_hash"], str(u), str(v), data[pc.EVIDENCE]))
+        rows.append(
+            (list(data[pc.ANNOTATIONS]["stmt_hash"].keys())[0], str(u), str(v), data[pc.EVIDENCE])
+        )
     return pd.DataFrame(rows, columns=INDRA_DF_COLUMNS)
 
 
-def infer(model: STonKGsForSequenceClassification, data: InferenceHint):
-    """Run inference on a given model."""
+def _prepare_df(data: InferenceHint) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
-        pass
+        return data
     if isinstance(data, list):
         if isinstance(data[0], (list, tuple)):
-            data = pd.DataFrame(data, columns=["source", "target", "evidence"])
+            return pd.DataFrame(data, columns=["source", "target", "evidence"])
         elif isinstance(data[0], Statement):
-            data = _convert_indra_statements(data)
+            return _convert_indra_statements(data)
         else:
             raise TypeError(f"row has invalid type: {type(data[0])}")
     else:
         raise TypeError(f"source df has invalid type: {type(data)}")
+
+
+def infer(model: STonKGsForSequenceClassification, data: InferenceHint):
+    """Run inference on a given model."""
+    data = _prepare_df(data)
     click.echo("Processing df for embeddings")
     t = time.time()
     preprocessed_df = preprocess_df_for_embeddings(
