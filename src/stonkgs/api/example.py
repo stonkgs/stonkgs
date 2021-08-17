@@ -5,24 +5,16 @@
 Run with: ``python -m stonkgs.api.example``
 """
 
-import pickle
-import time
-
 import click
-import pandas as pd
 import pystow
 
-from stonkgs.api import get_species_model, infer
-from stonkgs.api.api import SPECIES_COLUMNS
+from stonkgs import infer_species
+
+SPECIES_PREDICTION_PATH = pystow.join("stonkgs", "species", name="predictions.tsv")
 
 
 def main():
     """Do an example application of the species model."""
-    click.echo("Model loading")
-    t = time.time()
-    model = get_species_model()
-    click.echo(f"Model {model.__class__.__name__} loaded in {time.time() - t:.2f} seconds")
-
     rows = [
         [
             "p(HGNC:1748 ! CDH1)",
@@ -40,22 +32,9 @@ def main():
             "One last example in which Gab1 and EGF are mentioned.",
         ],
     ]
-    source_df = pd.DataFrame(rows, columns=["source", "target", "evidence"])
-
-    # Save both the raw prediction results (as a pickle) as well as the processed probabilities (in a dataframe)
-    raw_results, probabilities = infer(model, source_df)
-
-    # Save as pickle
-    pickle_path = pystow.join("stonkgs", "species", name="predictions.pkl")
-    with pickle_path.open("wb") as file:
-        pickle.dump(raw_results, file, protocol=pickle.HIGHEST_PROTOCOL)
-
-    # Save as a dataframe
-    df_path = pystow.join("stonkgs", "species", name="predictions.tsv")
-    probabilities_df = pd.DataFrame(probabilities, columns=SPECIES_COLUMNS)
-    output_df = pd.concat([source_df, probabilities_df], axis=1)
-    output_df.to_csv(df_path, sep="\t", index=False)
-    click.echo(f"Results at {df_path}")
+    output_df = infer_species(rows)
+    output_df.to_csv(SPECIES_PREDICTION_PATH, sep="\t", index=False)
+    click.echo(f"Results at {SPECIES_PREDICTION_PATH}")
 
 
 if __name__ == "__main__":

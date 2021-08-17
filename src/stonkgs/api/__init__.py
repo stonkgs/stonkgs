@@ -18,4 +18,11 @@ from .api import (  # noqa:F401
     get_location_model,
     get_species_model,
     infer,
+    infer_cell_lines,
+    infer_concat,
+    infer_correct_binary,
+    infer_correct_multiclass,
+    infer_diseases,
+    infer_locations,
+    infer_species,
 )

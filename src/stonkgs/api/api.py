@@ -5,7 +5,7 @@
 import time
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable, List, Union
+from typing import Callable, List, Optional, Union
 
 import click
 import pandas as pd
@@ -64,7 +64,7 @@ CORRECT_MULTICLASS_COLUMNS = [
     "polarity",
 ]
 CORRECT_BINARY_COLUMNS = ["incorrect", "correct"]
-CORRECT_CELL_LINE_COLUMNS = [
+CELL_LINE_COLUMNS = [
     "HeLa",
     "THP-1",
     "LNCAP",
@@ -119,6 +119,11 @@ def get_species_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_species)
 
 
+def infer_species(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+    """Infer the species for the given input."""
+    return infer_concat(get_species_model(), source_df, columns=SPECIES_COLUMNS)
+
+
 def ensure_location() -> Path:
     """Ensure that the location model is downloaded."""
     return _ensure_fine_tuned("location", LOCATION_RECORD)
@@ -128,6 +133,11 @@ def ensure_location() -> Path:
 def get_location_model() -> STonKGsForSequenceClassification:
     """Get the location model."""
     return _get_model(ensure_location)
+
+
+def infer_locations(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+    """Infer the locations for the given input."""
+    return infer_concat(get_location_model(), source_df, columns=LOCATION_COLUMNS)
 
 
 def ensure_disease() -> Path:
@@ -141,6 +151,11 @@ def get_disease_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_disease)
 
 
+def infer_diseases(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+    """Infer the diseases for the given input."""
+    return infer_concat(get_disease_model(), source_df, columns=DISEASE_COLUMNS)
+
+
 def ensure_correct_multiclass() -> Path:
     """Ensure that the correct (multiclass) model is downloaded."""
     return _ensure_fine_tuned("correct_multiclass", CORRECT_MULTICLASS_RECORD)
@@ -150,6 +165,13 @@ def ensure_correct_multiclass() -> Path:
 def get_correct_multiclass_model() -> STonKGsForSequenceClassification:
     """Get the correct (multiclass) model."""
     return _get_model(ensure_correct_multiclass)
+
+
+def infer_correct_multiclass(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+    """Infer the correct multiclass output for the given input."""
+    return infer_concat(
+        get_correct_multiclass_model(), source_df, columns=CORRECT_MULTICLASS_COLUMNS
+    )
 
 
 def ensure_correct_binary() -> Path:
@@ -163,6 +185,11 @@ def get_correct_binary_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_correct_binary)
 
 
+def infer_correct_binary(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+    """Infer the correct binary output for the given input."""
+    return infer_concat(get_correct_binary_model(), source_df, columns=CORRECT_BINARY_COLUMNS)
+
+
 def ensure_cell_line() -> Path:
     """Ensure that the cell line model is downloaded."""
     return _ensure_fine_tuned("cell_line", CELL_LINE_RECORD)
@@ -174,7 +201,24 @@ def get_cell_line_model() -> STonKGsForSequenceClassification:
     return _get_model(ensure_cell_line)
 
 
+def infer_cell_lines(source_df: Union[pd.DataFrame, List[List[str]]]) -> pd.DataFrame:
+    """Infer the cell lines for the given input."""
+    return infer_concat(get_cell_line_model(), source_df, columns=CELL_LINE_COLUMNS)
+
+
 KEEP_COLUMNS = ["input_ids", "attention_mask", "token_type_ids"]
+
+
+def infer_concat(
+    model: STonKGsForSequenceClassification,
+    source_df: Union[pd.DataFrame, List],
+    *,
+    columns: Optional[List[str]] = None,
+) -> pd.DataFrame:
+    """Run inference and return the input with output columns concatenated."""
+    raw_results, probabilities = infer(model, source_df)
+    probabilities_df = pd.DataFrame(probabilities, columns=columns)
+    return pd.concat([source_df, probabilities_df], axis=1)
 
 
 def infer(model: STonKGsForSequenceClassification, source_df: Union[pd.DataFrame, List]):
