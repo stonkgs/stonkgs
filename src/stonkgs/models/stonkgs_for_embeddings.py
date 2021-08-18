@@ -4,7 +4,7 @@
 
 import logging
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Iterable, List, Optional, Tuple, Union
 
 import pandas as pd
 import torch
@@ -13,7 +13,6 @@ from transformers import BertTokenizer, BertTokenizerFast
 
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
-    NLP_MODEL_TYPE,
     RANDOM_WALKS_PATH,
     VOCAB_FILE,
 )
@@ -27,15 +26,50 @@ logging.basicConfig(level=logging.INFO)
 def preprocess_df_for_embeddings(
     df: pd.DataFrame,
     *,
-    embedding_name_to_vector_path: Union[str, Path] = EMBEDDINGS_PATH,
-    embedding_name_to_random_walk_path: Union[str, Path] = RANDOM_WALKS_PATH,
-    vocab_file_path: Union[str, Path] = VOCAB_FILE,
-    nlp_model_type: str = NLP_MODEL_TYPE,
-    sep_id: int = 102,
-    unk_id: int = 100,
+    embedding_name_to_vector_path: Union[None, str, Path] = None,
+    embedding_name_to_random_walk_path: Union[None, str, Path] = None,
+    vocab_file_path: Union[None, str, Path] = None,
+    nlp_model_type: Optional[str] = None,
+    sep_id: Optional[int] = None,
+    unk_id: Optional[int] = None,
+) -> pd.DataFrame:
+    """Preprocesses a given pandas dataframe so that it's ready for embedding extraction by STonKGs."""
+    return pd.DataFrame(
+        preprocess_df_for_embeddings_iter(
+            rows=df[["source", "target", "evidence"]].values,
+            embedding_name_to_random_walk_path=embedding_name_to_random_walk_path,
+            embedding_name_to_vector_path=embedding_name_to_vector_path,
+            vocab_file_path=vocab_file_path,
+            nlp_model_type=nlp_model_type,
+            sep_id=sep_id,
+            unk_id=unk_id,
+        )
+    )
+
+
+def preprocess_df_for_embeddings_iter(
+    rows: Iterable[Tuple[str, str, str]],
+    *,
+    embedding_name_to_vector_path: Union[None, str, Path] = None,
+    embedding_name_to_random_walk_path: Union[None, str, Path] = None,
+    vocab_file_path: Union[None, str, Path] = None,
+    nlp_model_type: Optional[str] = None,
+    sep_id: Optional[int] = None,
+    unk_id: Optional[int] = None,
 ) -> pd.DataFrame:
     """Preprocesses a given pandas dataframe so that it's ready for embedding extraction by STonKGs."""
     # TODO docs for all parameters
+    if embedding_name_to_vector_path is None:
+        embedding_name_to_vector_path = EMBEDDINGS_PATH
+    if embedding_name_to_random_walk_path is None:
+        embedding_name_to_random_walk_path = RANDOM_WALKS_PATH
+    if vocab_file_path is None:
+        vocab_file_path = VOCAB_FILE
+    if sep_id is None:
+        sep_id = 102
+    if unk_id is None:
+        unk_id = 100
+
     # Load the KG embedding dict to convert the names to numeric indices
     kg_embed_dict = prepare_df(embedding_name_to_vector_path)
     kg_name_to_idx = {key: i for i, key in enumerate(kg_embed_dict.keys())}
@@ -55,29 +89,22 @@ def preprocess_df_for_embeddings(
     half_length = len(next(iter(random_walk_idx_dict.values()))) * 2 + 2
 
     # Initialize a FAST tokenizer if it's the default one (BioBERT)
-    if nlp_model_type == NLP_MODEL_TYPE:
+    if nlp_model_type is None:
         # Initialize the fast tokenizer for getting the text token ids
         tokenizer = BertTokenizerFast(vocab_file=vocab_file_path)
     else:
         # Initialize a slow tokenizer used for getting the text token ids
         tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
 
-    # Initialize the preprocessed data
-    pre_training_preprocessed = []
-
     # Log progress with a progress bar
-    for _, row in tqdm(
-        df.iterrows(),
-        total=df.shape[0],
-        desc="Preprocessing the dataset",
-    ):
+    for source, target, evidence in rows:
         # 1. "Token type IDs": 0 for text tokens, 1 for entity tokens
         token_type_ids = [0] * half_length + [1] * half_length
 
         # 2. Tokenization for getting the input ids and attention masks for the text
         # Use encode_plus to also get the attention mask ("padding" mask)
         encoded_text = tokenizer.encode_plus(
-            row["evidence"],
+            evidence,
             padding="max_length",
             truncation=True,
             max_length=half_length,
@@ -89,13 +116,13 @@ def preprocess_df_for_embeddings(
         # 3. Get the random walks sequence and the node indices, add the SEP (usually with id=102) in between
         # Use a sequence of UNK tokens if the node is not contained in the dictionary of the nodes from pre-training
         random_w_source = (
-            random_walk_idx_dict[row["source"]]
-            if row["source"] in random_walk_idx_dict.keys()
+            random_walk_idx_dict[source]
+            if source in random_walk_idx_dict.keys()
             else [unk_id] * random_walk_length
         )
         random_w_target = (
-            random_walk_idx_dict[row["target"]]
-            if row["target"] in random_walk_idx_dict.keys()
+            random_walk_idx_dict[target]
+            if target in random_walk_idx_dict.keys()
             else [unk_id] * random_walk_length
         )
         random_walks = random_w_source + [sep_id] + random_w_target + [sep_id]
@@ -118,21 +145,14 @@ def preprocess_df_for_embeddings(
         input_ids = masked_lm_token_ids + ent_masked_lm_token_ids
 
         # Add all the features to the preprocessed data
-        pre_training_preprocessed.append(
-            {
-                "input_ids": input_ids,
-                "attention_mask": attention_mask,
-                "token_type_ids": token_type_ids,
-                "masked_lm_labels": masked_lm_labels,
-                "ent_masked_lm_labels": ent_masked_lm_labels,
-                "next_sentence_labels": 0,  # 0 indicates the random walks belong to the text evidence
-            }
-        )
-
-    # Put the preprocessed data into a dataframe
-    pre_training_preprocessed_df = pd.DataFrame(pre_training_preprocessed)
-
-    return pre_training_preprocessed_df
+        yield {
+            "input_ids": input_ids,
+            "attention_mask": attention_mask,
+            "token_type_ids": token_type_ids,
+            "masked_lm_labels": masked_lm_labels,
+            "ent_masked_lm_labels": ent_masked_lm_labels,
+            "next_sentence_labels": 0,  # 0 indicates the random walks belong to the text evidence
+        }
 
 
 def get_stonkgs_embeddings(
