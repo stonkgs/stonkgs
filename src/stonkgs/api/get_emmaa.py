@@ -42,4 +42,5 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger("indra.assemblers.pybel.assembler").setLevel(logging.ERROR)
     main()
