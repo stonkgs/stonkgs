@@ -22,6 +22,7 @@ MARM_URL = "https://emmaa.s3.amazonaws.com/assembled/marm_model/statements_2021-
 RAS_URL = "https://emmaa.s3.amazonaws.com/assembled/rasmachine/statements_2021-08-16-19-22-38.gz"
 COVID_URL = "https://emmaa.s3.amazonaws.com/assembled/covid19/statements_2021-08-16-20-29-07.gz"
 NF_URL = "https://emmaa.s3.amazonaws.com/assembled/nf/statements_2021-08-16-18-37-34.gz"
+VT_URL = "https://emmaa.s3.amazonaws.com/assembled/vitiligo/statements_2021-08-17-18-38-35.gz"
 
 
 def run_emmaa_demo(url: str):
@@ -50,13 +51,12 @@ def run_emmaa_demo(url: str):
 
 @click.command()
 @more_click.verbose_option
-@click.option("--url", default=MARM_URL)
+@click.option("--url", default=VT_URL)
 def main(url: str):
     """Run the EMMAA demo from the CLI."""
+    logging.getLogger("indra.assemblers.pybel.assembler").setLevel(logging.ERROR)
     run_emmaa_demo(url)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger("indra.assemblers.pybel.assembler").setLevel(logging.ERROR)
     main()
