@@ -25,16 +25,13 @@ SCATTER_PATH = STATEMENTS_PATH.with_suffix(".scatter.svg")
 
 def main():
     """Run the EMMAA demo."""
-    if RESULTS_PATH.is_file() and False:
-        df = pd.read_csv(RESULTS_PATH, sep="\t")
-    else:
-        with gzip.open(STATEMENTS_PATH, "rt") as file:
-            statements = stmts_from_json(json.load(file))
-        with RESULTS_PATH.open("w") as file:
-            writer = csv.writer(file, delimiter="\t")
-            writer.writerows(stonkgs.infer_correct_binary(statements))
+    with gzip.open(STATEMENTS_PATH, "rt") as file:
+        statements = stmts_from_json(json.load(file))
+    with RESULTS_PATH.open("w") as file:
+        writer = csv.writer(file, delimiter="\t")
+        writer.writerows(stonkgs.infer_correct_binary(statements))
 
-    return
+    df = pd.read_csv(RESULTS_PATH, usecols=[1, 6], sep="\t")
     fig, ax = plt.subplots(1, 1)
     sns.scatterplot(data=df, x="correct", y="belief", ax=ax)
     fig.savefig(SCATTER_PATH)
