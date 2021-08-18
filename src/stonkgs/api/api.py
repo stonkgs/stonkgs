@@ -253,11 +253,11 @@ def infer_concat_iter(
     """Run inference and return the input with output columns concatenated."""
     _data: pd.DataFrame = _prepare_df(data)
     if columns is not None:
-        header = *_data.columns, *columns
+        header = (*_data.columns, *columns)
         logger.info("header for output: %s", header)
         yield header
     for row, (_raw_results, probabilities) in zip(_data.values, infer_iter(model, _data)):
-        yield *row, *probabilities
+        yield (*row, *probabilities)
 
 
 INDRA_DF_COLUMNS = [
