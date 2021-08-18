@@ -26,31 +26,31 @@ NF_URL = "https://emmaa.s3.amazonaws.com/assembled/nf/statements_2021-08-16-18-3
 
 def run_emmaa_demo(url: str):
     """Run the EMMAA demo."""
-    STATEMENTS_PATH = pystow.ensure("stonkgs", "demos", "emmaa", url.split("/")[-2], url=url)
-    RESULTS_PATH = STATEMENTS_PATH.with_suffix(".results.tsv")
-    SCATTER_PATH = STATEMENTS_PATH.with_suffix(".scatter.svg")
-    with gzip.open(STATEMENTS_PATH, "rt") as file:
+    statements_path = pystow.ensure("stonkgs", "demos", "emmaa", url.split("/")[-2], url=url)
+    results_path = statements_path.with_suffix(".results.tsv")
+    scatter_path = statements_path.with_suffix(".scatter.svg")
+    with gzip.open(statements_path, "rt") as file:
         statements: List[Statement] = stmts_from_json(json.load(file))
 
     it = iter(stonkgs.infer_correct_binary(statements))
     header = next(it)
     first = next(it)
     # why do two calls to next()? to make sure it's successful before opening the file.
-    with RESULTS_PATH.open(mode="w") as file:
+    with results_path.open(mode="w") as file:
         writer = csv.writer(file, delimiter="\t")
         writer.writerow(header)
         writer.writerow(first)
         writer.writerows(it)
 
-    df = pd.read_csv(RESULTS_PATH, usecols=[1, 6], sep="\t")
+    df = pd.read_csv(results_path, usecols=[1, 6], sep="\t")
     fig, ax = plt.subplots(1, 1)
     sns.scatterplot(data=df, x="correct", y="belief", ax=ax)
-    fig.savefig(SCATTER_PATH)
+    fig.savefig(scatter_path)
 
 
 @click.command()
 @more_click.verbose_option
-@click.option('--url', default=MARM_URL)
+@click.option("--url", default=MARM_URL)
 def main(url: str):
     """Run the EMMAA demo from the CLI."""
     run_emmaa_demo(url)
