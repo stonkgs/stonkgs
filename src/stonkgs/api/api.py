@@ -102,12 +102,12 @@ def _ensure_fine_tuned(submodule, record) -> Path:
 
 def _get_model(f: Callable[[], Path]) -> STonKGsForSequenceClassification:
     path = f().parent
-    logger.info('loading STonKGs sequence classifier model from %s', path)
+    logger.info("loading STonKGs sequence classifier model from %s", path)
     rv = STonKGsForSequenceClassification.from_pretrained(
         path,
         kg_embedding_dict_path=ensure_embeddings(),
     )
-    logger.info('done loading STonKGs sequence classifier model')
+    logger.info("done loading STonKGs sequence classifier model")
     return rv
 
 
@@ -253,7 +253,7 @@ def infer_concat_iter(
     _data: pd.DataFrame = _prepare_df(data)
     if columns is not None:
         header = *_data.columns, *columns
-        logger.info('header for output: %s', header)
+        logger.info("header for output: %s", header)
         yield header
     for row, (_raw_results, probabilities) in zip(_data.values, infer_iter(model, _data)):
         logger.info([*row, *probabilities])
@@ -270,10 +270,10 @@ INDRA_DF_COLUMNS = [
 
 
 def _convert_indra_statements(statements: Iterable[Statement]) -> pd.DataFrame:
-    logger.info('assembling INDRA statements to PyBEL')
+    logger.info("assembling INDRA statements to PyBEL")
     assembler = PybelAssembler(statements)
     bel_graph = assembler.make_model()
-    logger.info('done assembling INDRA statements to PyBEL')
+    logger.info("done assembling INDRA statements to PyBEL")
     rows = []
     for u, v, data in bel_graph.edges(data=True):
         if pc.ANNOTATIONS not in data:
