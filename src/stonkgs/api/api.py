@@ -324,7 +324,7 @@ def infer_iter(
         embedding_name_to_random_walk_path=ensure_walks(),
     )
     for row in tqdm(rows, total=len(df.index), desc="Inferring"):
-        prediction_output: PredictionOutput = model.forward(
+        prediction_output: PredictionOutput = model(
             input_ids=torch.tensor([row["input_ids"]]),
             attention_mask=torch.tensor([row["attention_mask"]]),
             token_type_ids=torch.tensor([row["token_type_ids"]]),
