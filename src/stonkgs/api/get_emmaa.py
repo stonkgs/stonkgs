@@ -6,35 +6,54 @@ import csv
 import gzip
 import json
 import logging
+from typing import List
 
+import click
 import matplotlib.pyplot as plt
+import more_click
 import pandas as pd
 import pystow
 import seaborn as sns
-from indra.statements import stmts_from_json
+from indra.statements import Statement, stmts_from_json
 
 import stonkgs
 
-# URL = "https://emmaa.s3.amazonaws.com/assembled/marm_model/statements_2021-08-17-17-31-53.gz"
-# URL = "https://emmaa.s3.amazonaws.com/assembled/covid19/statements_2021-08-16-20-29-07.gz"
-URL = "https://emmaa.s3.amazonaws.com/assembled/nf/statements_2021-08-16-18-37-34.gz"
-STATEMENTS_PATH = pystow.ensure("stonkgs", "demos", "emmaa", URL.split("/")[-2], url=URL)
-RESULTS_PATH = STATEMENTS_PATH.with_suffix(".results.tsv")
-SCATTER_PATH = STATEMENTS_PATH.with_suffix(".scatter.svg")
+MARM_URL = "https://emmaa.s3.amazonaws.com/assembled/marm_model/statements_2021-08-17-17-31-53.gz"
+RAS_URL = "https://emmaa.s3.amazonaws.com/assembled/rasmachine/statements_2021-08-16-19-22-38.gz"
+COVID_URL = "https://emmaa.s3.amazonaws.com/assembled/covid19/statements_2021-08-16-20-29-07.gz"
+NF_URL = "https://emmaa.s3.amazonaws.com/assembled/nf/statements_2021-08-16-18-37-34.gz"
 
 
-def main():
+def run_emmaa_demo(url: str):
     """Run the EMMAA demo."""
+    STATEMENTS_PATH = pystow.ensure("stonkgs", "demos", "emmaa", url.split("/")[-2], url=url)
+    RESULTS_PATH = STATEMENTS_PATH.with_suffix(".results.tsv")
+    SCATTER_PATH = STATEMENTS_PATH.with_suffix(".scatter.svg")
     with gzip.open(STATEMENTS_PATH, "rt") as file:
-        statements = stmts_from_json(json.load(file))
-    with RESULTS_PATH.open("w") as file:
+        statements: List[Statement] = stmts_from_json(json.load(file))
+
+    it = iter(stonkgs.infer_correct_binary(statements))
+    header = next(it)
+    first = next(it)
+    # why do two calls to next()? to make sure it's successful before opening the file.
+    with RESULTS_PATH.open(mode="w") as file:
         writer = csv.writer(file, delimiter="\t")
-        writer.writerows(stonkgs.infer_correct_binary(statements))
+        writer.writerow(header)
+        writer.writerow(first)
+        writer.writerows(it)
 
     df = pd.read_csv(RESULTS_PATH, usecols=[1, 6], sep="\t")
     fig, ax = plt.subplots(1, 1)
     sns.scatterplot(data=df, x="correct", y="belief", ax=ax)
     fig.savefig(SCATTER_PATH)
+
+
+@click.command()
+@more_click.verbose_option
+@click.option('--url', default=MARM_URL)
+def main(url: str):
+    """Run the EMMAA demo from the CLI."""
+    run_emmaa_demo(url)
 
 
 if __name__ == "__main__":
