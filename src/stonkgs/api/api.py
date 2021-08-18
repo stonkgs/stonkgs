@@ -278,6 +278,8 @@ def _convert_indra_statements(statements: Iterable[Statement]) -> pd.DataFrame:
     for u, v, data in bel_graph.edges(data=True):
         if pc.ANNOTATIONS not in data:
             continue
+        if pc.EVIDENCE not in data:
+            continue
         rows.append(
             (
                 list(data[pc.ANNOTATIONS]["stmt_hash"].keys())[0],
