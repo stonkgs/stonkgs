@@ -14,6 +14,7 @@ import torch
 import torch.nn.functional
 from indra.assemblers.pybel import PybelAssembler
 from indra.statements import Statement
+from tqdm import tqdm
 from transformers.trainer_utils import PredictionOutput
 
 from ..models.stonkgs_finetuning import STonKGsForSequenceClassification
@@ -323,7 +324,7 @@ def infer_iter(
         embedding_name_to_vector_path=ensure_embeddings(),
         embedding_name_to_random_walk_path=ensure_walks(),
     )
-    for row in rows:
+    for row in tqdm(rows, total=len(df.index), desc="Inferring"):
         prediction_output: PredictionOutput = model.forward(
             input_ids=torch.tensor([row["input_ids"]]),
             attention_mask=torch.tensor([row["attention_mask"]]),

@@ -15,9 +15,9 @@ from indra.statements import stmts_from_json
 
 import stonkgs
 
-URL = "https://emmaa.s3.amazonaws.com/assembled/marm_model/statements_2021-08-17-17-31-53.gz"
+# URL = "https://emmaa.s3.amazonaws.com/assembled/marm_model/statements_2021-08-17-17-31-53.gz"
 # URL = "https://emmaa.s3.amazonaws.com/assembled/covid19/statements_2021-08-16-20-29-07.gz"
-# URL = "https://emmaa.s3.amazonaws.com/assembled/nf/statements_2021-08-16-18-37-34.gz"
+URL = "https://emmaa.s3.amazonaws.com/assembled/nf/statements_2021-08-16-18-37-34.gz"
 STATEMENTS_PATH = pystow.ensure("stonkgs", "demos", "emmaa", URL.split("/")[-2], url=URL)
 RESULTS_PATH = STATEMENTS_PATH.with_suffix(".results.tsv")
 SCATTER_PATH = STATEMENTS_PATH.with_suffix(".scatter.svg")
@@ -32,7 +32,6 @@ def main():
             statements = stmts_from_json(json.load(file))
         with RESULTS_PATH.open("w") as file:
             writer = csv.writer(file, delimiter="\t")
-            # TODO header
             writer.writerows(stonkgs.infer_correct_binary(statements))
 
     return
