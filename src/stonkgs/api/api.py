@@ -10,6 +10,7 @@ from typing import Callable, Iterable, List, Optional, Tuple, Union
 import pandas as pd
 import pybel.constants as pc
 import pystow
+from more_itertools import ichunked
 import torch
 import torch.nn.functional
 from indra.assemblers.pybel import PybelAssembler
@@ -316,7 +317,7 @@ def infer(model: STonKGsForSequenceClassification, data: InferenceHint):
 
 
 def infer_iter(
-    model: STonKGsForSequenceClassification, data: InferenceHint
+    model: STonKGsForSequenceClassification, data: InferenceHint, batch_size=256
 ) -> Iterable[Tuple[PredictionOutput, torch.FloatTensor]]:
     """Run inference on a given model."""
     df = _prepare_df(data)
@@ -325,11 +326,14 @@ def infer_iter(
         embedding_name_to_vector_path=ensure_embeddings(),
         embedding_name_to_random_walk_path=ensure_walks(),
     )
-    for row in tqdm(rows, total=len(df.index), desc="Inferring"):
+    rows = tqdm(rows, total=len(df.index), desc="Inferring")
+    rows = ((row["input_ids"], row["attention_mask"], row["token_type_ids"]) for row in rows)
+    for batch in ichunked(rows, batch_size):
+        input_ids, attention_mask, token_type_ids = zip(*batch)
         prediction_output: PredictionOutput = model(
-            input_ids=torch.tensor([row["input_ids"]]),
-            attention_mask=torch.tensor([row["attention_mask"]]),
-            token_type_ids=torch.tensor([row["token_type_ids"]]),
+            input_ids=torch.tensor(input_ids),
+            attention_mask=torch.tensor(attention_mask),
+            token_type_ids=torch.tensor(token_type_ids),
             return_dict=True,
         )
         probability = torch.nn.functional.softmax(prediction_output.logits, dim=1)[0].tolist()
