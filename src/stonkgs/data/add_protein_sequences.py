@@ -102,6 +102,7 @@ def add_protein_sequences_per_task(
 def add_protein_sequences(
     chunk_size: int = 10000,
 ):
+    """Add protein sequences."""
     # Define all the task and file names
     task_names = [
         "cell_line",
