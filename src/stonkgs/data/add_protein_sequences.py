@@ -16,6 +16,7 @@ from stonkgs.constants import (
     DISEASE_DIR,
     LOCATION_DIR,
     ORGAN_DIR,
+    PRETRAINING_DIR,
     SPECIES_DIR,
     RELATION_TYPE_DIR,
 )
@@ -26,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def add_protein_sequences_per_task(
-    input_file: str,
+        input_file: str,
 ):
     """Add the protein sequences to an existing dataframe consisting of the text-triple pairs with descriptions."""
     # Read the input file and create the resulting df
@@ -63,5 +64,52 @@ def add_protein_sequences_per_task(
     return result_df
 
 
+def add_protein_sequences():
+    # Define all the task and file names
+    task_names = [
+        "cell_line",
+        "cell_type",
+        "correct_incorrect_binary",
+        "correct_incorrect_multiclass",
+        "disease",
+        "location",
+        "organ",
+        "relation_type",
+        "species",
+        "pretraining",
+    ]
+    directories = [
+        CELL_LINE_DIR,
+        CELL_TYPE_DIR,
+        CORRECT_DIR,
+        CORRECT_DIR,
+        DISEASE_DIR,
+        LOCATION_DIR,
+        ORGAN_DIR,
+        RELATION_TYPE_DIR,
+        SPECIES_DIR,
+        PRETRAINING_DIR,
+    ]
+    original_file_names = [i + "_no_duplicates_ppi.tsv" for i in task_names[:-1]] + [
+        task_names[-1] + "_triples_ppi.tsv"
+    ]
+    new_file_names = [i + "_ppi_prot.tsv" for i in task_names]
+
+    # Add the protein sequences for each file
+    for task_name, directory, original_file_name, new_file_name in zip(
+        task_names,
+        directories,
+        original_file_names,
+        new_file_names,
+    ):
+        logger.info(f"Processing {task_name} data")
+
+        prot_df = add_protein_sequences_per_task(os.path.join(directory, original_file_name))
+        # Save the df with the protein sequences
+        prot_df.to_csv(os.path.join(directory, new_file_name), sep="\t", index=None)
+
+        logger.info(f"Processing {task_name} data complete")
+
+
 if __name__ == "__main__":
-    add_protein_sequences_per_task(os.path.join(CELL_LINE_DIR, "cell_line_no_duplicates_ppi.tsv"))
+    add_protein_sequences()
