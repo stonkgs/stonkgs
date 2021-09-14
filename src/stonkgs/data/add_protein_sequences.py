@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 def add_protein_sequences_per_task(
-        input_file: str,
+    input_file: str,
 ):
     """Add the protein sequences to an existing dataframe consisting of the text-triple pairs with descriptions."""
     # Read the input file and create the resulting df
