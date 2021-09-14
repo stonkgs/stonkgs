@@ -42,9 +42,9 @@ def add_protein_sequences_per_task(
         last_row = result_df.iloc[-1][["source_id", "target_id", "evidence"]]
         # Find the last processed row in the original input file
         input_index = input_df.index[
-            (input_df['source_id'] == last_row["source_id"]) &
-            (input_df['target_id'] == last_row["target_id"]) &
-            (input_df['evidence'] == last_row["evidence"])
+            (input_df["source_id"] == last_row["source_id"])
+            & (input_df["target_id"] == last_row["target_id"])
+            & (input_df["evidence"] == last_row["evidence"])
         ][0]
         logger.info(f"The original file has been processed until line no. {input_index}")
         # Define from which batch to start again
@@ -59,9 +59,11 @@ def add_protein_sequences_per_task(
 
     # Iterate batch-wise through all rows of the input file/df
     for i in trange(begin_cn, cn, desc="Batch-wise processing of the input file"):
-        partial_result_df = pd.DataFrame(columns=list(input_df.columns) + ["source_prot", "target_prot"])
+        partial_result_df = pd.DataFrame(
+            columns=list(input_df.columns) + ["source_prot", "target_prot"]
+        )
 
-        chunk_df = input_df.iloc[chunk_size * i: np.min([chunk_size * (i + 1), len(input_df)])]
+        chunk_df = input_df.iloc[chunk_size * i : np.min([chunk_size * (i + 1), len(input_df)])]
 
         # Find the protein sequences for each row in the batch
         for _, row in chunk_df.iterrows():
@@ -86,7 +88,7 @@ def add_protein_sequences_per_task(
                     partial_result_df = partial_result_df.append(row, ignore_index=True)
 
         # Append the resulting df with the partial result
-        partial_result_df.to_csv(output_file, sep="\t", index=False, mode='a', header=(i == 0))
+        partial_result_df.to_csv(output_file, sep="\t", index=False, mode="a", header=(i == 0))
 
     # Read result for the final overview of the number of text-triple pairs with protein sequences
     result_df = pd.read_csv(output_file, sep="\t", index_col=None)
