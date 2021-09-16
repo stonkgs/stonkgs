@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
+from typing import Optional
 
 import torch
 from torch import nn
@@ -13,10 +15,12 @@ from transformers import (
     BertTokenizer,
     BigBirdConfig,
     BigBirdForPreTraining,
-    # BigBirdModel,
     BigBirdTokenizer,
 )
-from transformers.models.big_bird.modeling_big_bird import BigBirdLMPredictionHead
+from transformers.models.big_bird.modeling_big_bird import (
+    BigBirdForPreTrainingOutput,
+    BigBirdLMPredictionHead,
+)
 
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
@@ -29,6 +33,13 @@ from stonkgs.models.kg_baseline_model import prepare_df
 # Initialize logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
+
+
+@dataclass
+class BigBirdForPreTrainingOutputWithPooling(BigBirdForPreTrainingOutput):
+    """Overriding the BigBirdForPreTrainingOutput class to further include the pooled output."""
+
+    pooler_output: Optional[torch.FloatTensor] = None
 
 
 class ProtSTonKGsPELMPredictionHead(BigBirdLMPredictionHead):
@@ -193,3 +204,124 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
         for backbone in [self.lm_backbone, self.prot_backbone]:
             for param in backbone.parameters():
                 param.requires_grad = False
+
+    def forward(
+        self,
+        input_ids=None,
+        attention_mask=None,
+        token_type_ids=None,
+        masked_lm_labels=None,
+        ent_masked_lm_labels=None,
+        prot_masked_lm_labels=None,
+        return_dict=None,
+        head_mask=None,
+    ):
+        """Perform one forward pass for a given sequence of text_input_ids + ent_input_ids + prot_input_ids.
+
+        Due to having more than two parts (and a RoBERTa base in the default BigBird model), the NSP objective is
+        omitted in this forward function.
+
+        :param input_ids: Concatenation of text + KG (random walk) + protein sequence embeddings
+        :param attention_mask: Attention mask of the combined input sequence
+        :param token_type_ids: Token type IDs of the combined input sequence
+        :param masked_lm_labels: Masked LM labels for only the text part
+        :param ent_masked_lm_labels: Masked entity labels for only the KG part
+        :param prot_masked_lm_labels: Masked protein labels for only the protein part
+        :param return_dict: Whether the output should be returned as a dict or not
+        :param head_mask: Used to cancel out certain heads in the Transformer
+
+        :return: Loss, prediction_logits in a BigBirdForPreTrainingOutputWithPooling format
+        """
+        # 1. Use the LM backbone to get the pre-trained token embeddings
+        # batch x number_text_tokens x hidden_size
+        # The first element of the returned tuple from the LM backbone forward() pass is the sequence of hidden states
+        text_embeddings = self.lm_backbone(input_ids[:, : self.kg_start_idx])[0]
+        # 2. Use the KG backbone to obtain the pre-trained entity embeddings
+        # batch x number_kg_tokens x hidden_size
+        ent_embeddings = torch.stack(
+            [
+                # for each numeric index in the random walks sequence: get the embedding vector from the KG backbone
+                torch.stack([self.kg_backbone[i.item()] for i in j])
+                # for each example in the batch: get the random walks sequence
+                for j in input_ids[:, self.kg_start_idx : self.prot_start_idx]
+            ],
+        )
+        # 3. Use the Prot backbone to obtain the pre-trained entity embeddings
+        # batch x number_prot_tokens x hidden_size
+        prot_embeddings = self.prot_backbone(input_ids[:, self.prot_start_idx :])[0]
+
+        # Concatenate token, KG and prot embeddings obtained from the LM, KG and prot backbones and cast to float
+        # batch x seq_len x hidden_size
+        inputs_embeds = (
+            torch.cat(
+                [
+                    text_embeddings,
+                    ent_embeddings.to(text_embeddings.device),
+                    prot_embeddings.to(text_embeddings.device),
+                ],
+                dim=1,
+            )
+            .type(torch.FloatTensor)
+            .to(self.device)
+        )
+
+        # Get the hidden states from the basic STonKGs Transformer layers
+        # batch x seq_len x hidden_size
+        outputs = self.bert(
+            inputs_embeds=inputs_embeds,
+            attention_mask=attention_mask,
+            token_type_ids=token_type_ids,
+            head_mask=head_mask,
+            return_dict=None,
+        )
+        # batch x seq_len x hidden_size
+        sequence_output, pooled_output = outputs[:2]
+
+        # Generate the prediction scores (mapping to text and entity vocab sizes + NSP) for the training objectives
+        # prediction_scores = Text MLM, entity "MLM" and protein "MLM" scores
+        prediction_scores, _ = self.cls(sequence_output, pooled_output)
+        # The custom STonKGsELMPredictionHead returns a triple of prediction scores for tokens, entities,
+        # and protein sequences, respectively
+        (
+            token_prediction_scores,
+            entity_predictions_scores,
+            prot_predictions_scores,
+        ) = prediction_scores
+
+        # Calculate the loss
+        total_loss = None
+        if (
+            masked_lm_labels is not None
+            and ent_masked_lm_labels is not None
+            and prot_masked_lm_labels is not None
+        ):
+            loss_fct = nn.CrossEntropyLoss()
+            # 1. Text-based MLM
+            masked_lm_loss = loss_fct(
+                token_prediction_scores.view(-1, self.config.vocab_size),
+                masked_lm_labels.view(-1),
+            )
+            # 2. Entity-based masked "language" (entity) modeling
+            ent_masked_lm_loss = loss_fct(
+                entity_predictions_scores.view(-1, self.config.kg_vocab_size),
+                ent_masked_lm_labels.view(-1),
+            )
+            # 3. Protein-based masked "language" (entity) modeling
+            prot_masked_lm_loss = loss_fct(
+                prot_predictions_scores.view(-1, self.config.kg_vocab_size),
+                prot_masked_lm_labels.view(-1),
+            )
+            # Total loss = the sum of the individual training objective losses
+            total_loss = masked_lm_loss + ent_masked_lm_loss + prot_masked_lm_loss
+
+        if not return_dict:
+            output = prediction_scores + outputs[2:]
+            return ((total_loss,) + output) if total_loss is not None else output
+
+        return BigBirdForPreTrainingOutputWithPooling(
+            loss=total_loss,
+            prediction_logits=prediction_scores,
+            hidden_states=sequence_output,
+            attentions=outputs.attentions,
+            pooler_output=pooled_output,
+        )
