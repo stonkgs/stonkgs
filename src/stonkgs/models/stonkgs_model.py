@@ -78,12 +78,16 @@ class STonKGsForPreTraining(BertForPreTraining):
 
     def __init__(
         self,
-        config,  # Required for automated methods such as .from_pretrained in classes that inherit from this one,
-        # the config is loaded from scratch later on anyways
+        config,  # the config is loaded from scratch later on anyways
         nlp_model_type: str = NLP_MODEL_TYPE,
         kg_embedding_dict_path: str = EMBEDDINGS_PATH,
     ):
-        """Initialize the model architecture components of STonKGs."""
+        """Initialize the model architecture components of STonKGs.
+
+        :param config: Required for automated methods such as .from_pretrained in classes that inherit from this one
+        :param nlp_model_type: Model type used to initialize the LM backbone for the text embeddings
+        :param kg_embedding_dict_path: Path specification for the stored node2vec embeddings used for the KG backbone
+        """
         # Initialize the KG dict from the file here, rather than passing it as a parameter, so that it can
         # be loaded from a checkpoint
         kg_embedding_dict = prepare_df(kg_embedding_dict_path)
@@ -144,22 +148,28 @@ class STonKGsForPreTraining(BertForPreTraining):
 
     def forward(
         self,
-        # required parameters
         input_ids=None,
         attention_mask=None,
         token_type_ids=None,
         masked_lm_labels=None,
         ent_masked_lm_labels=None,
         next_sentence_labels=None,
-        # determined the return type
         return_dict=None,
-        # in case certain masks do need to be canceled out
         head_mask=None,
     ):
-        """Perform one forward pass for a given sequence of text_input_ids + ent_input_ids."""
-        # TODO documentation for each parameter
-        # TODO type annotations for each parameter
+        """Perform one forward pass for a given sequence of text_input_ids + ent_input_ids.
 
+        :param input_ids: Concatenation of text + KG (random walk) embeddings
+        :param attention_mask: Attention mask of the combined input sequence
+        :param token_type_ids: Token type IDs of the combined input sequence
+        :param masked_lm_labels: Masked LM labels for only the text part
+        :param ent_masked_lm_labels: Masked ELM labels for only the KG part
+        :param next_sentence_labels: NSP labels (per sequence)
+        :param return_dict: Whether the output should be returned as a dict or not
+        :param head_mask: Used to cancel out certain heads in the Transformer
+
+        :return: Loss, prediction_logits in a BertForPreTrainingOutputWithPooling format
+        """
         # The code is based on CoLAKE: https://github.com/txsun1997/CoLAKE/blob/master/pretrain/model.py
 
         # Use the LM backbone to get the pre-trained token embeddings
@@ -228,13 +238,11 @@ class STonKGsForPreTraining(BertForPreTraining):
                 ent_masked_lm_labels.view(-1),
             )
             # 3. Next "sentence" loss: Whether a text and random walk sequence belong together or not
-            # next_sentence_loss = loss_fct(
-            #     seq_relationship_score.view(-1, 2),
-            #    next_sentence_labels.view(-1),
-            # )
+            next_sentence_loss = loss_fct(
+                seq_relationship_score.view(-1, 2), next_sentence_labels.view(-1)
+            )
             # Total loss = the sum of the individual training objective losses
-            # !! Leave out NSP loss in the ablation !!
-            total_loss = masked_lm_loss + ent_masked_lm_loss  # + next_sentence_loss
+            total_loss = masked_lm_loss + ent_masked_lm_loss + next_sentence_loss
 
         if not return_dict:
             output = (prediction_scores, seq_relationship_score) + outputs[2:]
