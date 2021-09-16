@@ -125,7 +125,8 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
         self.lm_backbone = BertModel.from_pretrained(lm_model_type)
 
         # 2. Prot backbone for protein sequences (e.g. ProtBERT)
-        self.prot_tokenizer = BertTokenizer.from_pretrained(prot_model_type)
+        # do_lower_case is required, see example in https://huggingface.co/Rostlab/prot_bert
+        self.prot_tokenizer = BertTokenizer.from_pretrained(prot_model_type, do_lower_case=False)
         self.prot_backbone = BertModel.from_pretrained(prot_model_type)
         self.prot_start_idx = prot_start_idx
 
