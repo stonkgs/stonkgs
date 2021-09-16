@@ -9,7 +9,6 @@ python -m src.stonkgs.data.prot_indra_for_pretraining
 import logging
 import os
 
-import numpy as np
 import pandas as pd
 from transformers import BertTokenizer, BertTokenizerFast
 from tqdm import tqdm
@@ -85,7 +84,7 @@ def prot_indra_to_pretraining_df(
             row["evidence"],
             padding="max_length",
             truncation=True,
-            max_length=kg_start_idx//3,  # TODO: replace with function parameter
+            max_length=kg_start_idx // 3,  # TODO: replace with function parameter
         )
         text_token_ids = encoded_text["input_ids"]
         text_attention_mask = encoded_text["attention_mask"]
@@ -103,7 +102,7 @@ def prot_indra_to_pretraining_df(
             row["source_prot"],
             padding="max_length",
             truncation=True,
-            max_length=kg_start_idx//3,  # TODO: replace with function parameter
+            max_length=kg_start_idx // 3,  # TODO: replace with function parameter
         )
         prot_sequence_ids = prot_sequence["input_ids"]
         prot_attention_mask = prot_sequence["attention_mask"]
@@ -122,8 +121,7 @@ def prot_indra_to_pretraining_df(
         # Also apply the masking strategy to the protein tokens and get the protein (P)LM labels
         # Again, use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
         prot_masked_lm_token_ids, prot_masked_lm_labels = replace_mlm_tokens(
-            tokens=prot_sequence_ids,
-            vocab_len=len(prot_tokenizer.vocab)
+            tokens=prot_sequence_ids, vocab_len=len(prot_tokenizer.vocab)
         )
 
         # 4. Total attention mask (attention mask is all 1 for the entity sequence)
