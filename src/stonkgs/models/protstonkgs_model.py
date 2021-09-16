@@ -20,6 +20,7 @@ from transformers.models.big_bird.modeling_big_bird import BigBirdLMPredictionHe
 
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
+    NLP_MODEL_TYPE,
     PROTSTONKGS_MODEL_TYPE,
     PROT_SEQ_MODEL_TYPE,
 )
@@ -88,10 +89,11 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
         self,
         config,  # the config is loaded from scratch later on anyways
         protstonkgs_model_type: str = PROTSTONKGS_MODEL_TYPE,
-        kg_start_idx: int = 768,
-        kg_embedding_dict_path: str = EMBEDDINGS_PATH,
+        lm_model_type: str = NLP_MODEL_TYPE,
         prot_start_idx: int = 1024,
         prot_model_type: str = PROT_SEQ_MODEL_TYPE,
+        kg_start_idx: int = 768,
+        kg_embedding_dict_path: str = EMBEDDINGS_PATH,
     ):
         """Initialize the model architecture components of ProtSTonKGs.
 
@@ -99,68 +101,62 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
 
         :param config: Required for automated methods such as .from_pretrained in classes that inherit from this one
         :param protstonkgs_model_type: The type of Transformer used to construct ProtSTonKGs.
+        :param lm_model_type: The type of (hf) model used to generate the initial text embeddings.
         :param kg_start_idx: The index at which the KG random walks start (and the text ends).
         :param kg_embedding_dict_path: The path specification for the node2vec embeddings used for the KG data.
         :param prot_start_idx: The index at which the protein sequences start (and the KG part ends).
         :param prot_model_type: The type of (hf) model used to generate the initial protein sequence embeddings.
         """
-        # Initialize the KG dict from the file here, rather than passing it as a parameter, so that it can
-        # be loaded from a checkpoint
-        kg_embedding_dict = prepare_df(kg_embedding_dict_path)
+        # Initialize the three backbones for generating the initial embeddings for the three modalities (text, KG, prot)
+        # 1. LM backbone for text (pre-trained BERT-based model to get the initial embeddings)
+        # based on the specified protstonkgs_model_type (e.g. BioBERT)
+        self.lm_tokenizer = BertTokenizer.from_pretrained(lm_model_type)
+        self.lm_backbone = BertModel.from_pretrained(lm_model_type)
 
-        # TODO: group the different parts (prot, text, KG) in three different functions
+        # 2. Prot backbone for protein sequences (e.g. ProtBERT)
         self.prot_tokenizer = BertTokenizer.from_pretrained(prot_model_type)
         self.prot_backbone = BertModel.from_pretrained(prot_model_type)
         self.prot_start_idx = prot_start_idx
 
-        # Initialize the BigBird config for the model architecture
-        config = BigBirdConfig.from_pretrained(protstonkgs_model_type)
+        # Initialize the ProtSTonKGs tokenizer
+        self.protstonkgs_tokenizer = BigBirdTokenizer.from_pretrained(protstonkgs_model_type)
 
-        # Add the number of KG entities to the default config of a standard BigBird model
-        config.update({"kg_vocab_size": len(kg_embedding_dict)})
-        # Add the protein sequence vocabulary size to the default config as well
-        config.update({"prot_vocab_size": self.prot_backbone.config.vocab_size})
+        # In order to initialize the KG backbone: First get the separator, mask and unknown token ids from all relevant
+        # models (LM + Prot backbones + ProtSTonKGs model) and make sure they are the same (for compatibility reasons
+        # in the forward function)
+        if not all(
+            [
+                self.protstonkgs_tokenizer.sep_token_id
+                == self.lm_tokenizer.sep_token_id
+                == self.prot_tokenizer.sep_token_id,
+                self.protstonkgs_tokenizer.mask_token_id
+                == self.lm_tokenizer.mask_token_id
+                == self.prot_tokenizer.mask_token_id,
+                self.protstonkgs_tokenizer.unk_token_id
+                == self.lm_tokenizer.unk_token_id
+                == self.prot_tokenizer.unk_token_id,
+            ]
+        ):
+            logger.warning(
+                "Special tokens are inconsistent across the backbones and/or ProtSTonKGs. The model might not be "
+                "trained properly."
+            )
 
-        # Initialize the underlying BigBirdForPreTraining model that will be used to build the STonKGs
-        # Transformer layers
-        super().__init__(config)
+        # Save respective attributes
+        self.sep_id = self.protstonkgs_tokenizer.sep_token_id  # usually 102
+        self.mask_id = self.protstonkgs_tokenizer.mask_token_id  # usually 103
+        self.unk_id = self.protstonkgs_tokenizer.unk_token_id  # usually 100
 
-        # Override the standard MLM head: In the underlying BigBirdForPreTraining model, change the MLM head to a custom
-        # ProtSTonKGsELMPredictionHead so that it can be used on the concatenated text/entity/prot sequence input
-        # TODO: ProtSTonKGs Prediction head
-        self.cls.predictions = ProtSTonKGsPELMPredictionHead(config)
-
-        # TODO: adapt the rest of the code to ProtSTonKGs
-        # Language Model (LM) backbone initialization (pre-trained BERT to get the initial embeddings)
-        # based on the specified protstonkgs_model_type (e.g. BioBERT)
-        self.lm_tokenizer = BertTokenizer.from_pretrained(protstonkgs_model_type)
-        self.lm_backbone = BertModel.from_pretrained(protstonkgs_model_type)
-
-        # Freeze the parameters of the LM and Prot backbones so that they're not updated during training
-        # (We only want to train the ProtSTonKGs Transformer layers)
-        for backbone in [self.lm_backbone, self.prot_backbone]:
-            for param in backbone.parameters():
-                param.requires_grad = False
-
-        # Get the separator, mask and unknown token ids from a protstonkgs_model_type specific tokenizer
-        self.lm_sep_id = BigBirdTokenizer.from_pretrained(
-            protstonkgs_model_type
-        ).sep_token_id  # usually 102
-        self.lm_mask_id = BigBirdTokenizer.from_pretrained(
-            protstonkgs_model_type
-        ).mask_token_id  # usually 103
-        self.lm_unk_id = BigBirdTokenizer.from_pretrained(
-            protstonkgs_model_type
-        ).unk_token_id  # usually 100
-
-        # KG backbone initialization
+        # 3. KG backbone for KG entities (pretrained node2vec model)
+        # Initialize the KG dict from the file here, rather than passing it as a parameter, so that it can
+        # be loaded from a checkpoint
+        kg_embedding_dict = prepare_df(kg_embedding_dict_path)
         # Get numeric indices for the KG embedding vectors except for the sep, unk, mask ids which are reserved for the
         # LM [SEP] embedding vectors (see below)
         numeric_indices = list(range(len(kg_embedding_dict) + 3))
         # Keep the numeric indices of the special tokens free, don't put the kg embeds there
-        for special_token_id in [self.lm_sep_id, self.lm_mask_id, self.lm_unk_id]:
+        for special_token_id in [self.sep_id, self.mask_id, self.unk_id]:
             numeric_indices.remove(special_token_id)
-
         # Generate numeric indices for the KG node names (iterating .keys() is deterministic)
         self.kg_idx_to_name = {i: key for i, key in zip(numeric_indices, kg_embedding_dict.keys())}
         # Initialize KG index to embeddings based on the provided kg_embedding_dict
@@ -172,7 +168,28 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
         # Add the MASK, SEP and UNK (LM backbone) embedding vectors to the KG backbone so that the labels are correctly
         # identified in the loss function later on
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
-        for special_token_id in [self.lm_sep_id, self.lm_mask_id, self.lm_unk_id]:
+        for special_token_id in [self.sep_id, self.mask_id, self.unk_id]:
             self.kg_backbone[special_token_id] = self.lm_backbone(
                 torch.tensor([[special_token_id]]).to(self.lm_backbone.device),
             )[0][0][0]
+
+        # Initialize the BigBird config for the model architecture
+        config = BigBirdConfig.from_pretrained(protstonkgs_model_type)
+        # Add the number of KG entities to the default config of a standard BigBird model
+        config.update({"kg_vocab_size": len(kg_embedding_dict)})
+        # Add the protein sequence vocabulary size to the default config as well
+        config.update({"prot_vocab_size": self.prot_backbone.config.vocab_size})
+
+        # Initialize the underlying BigBirdForPreTraining model that will be used to build the STonKGs
+        # Transformer layers
+        super().__init__(config)
+
+        # Override the standard MLM head: In the underlying BigBirdForPreTraining model, change the MLM head to a custom
+        # ProtSTonKGsELMPredictionHead so that it can be used on the concatenated text/entity/prot sequence input
+        self.cls.predictions = ProtSTonKGsPELMPredictionHead(config)
+
+        # Freeze the parameters of the LM and Prot backbones so that they're not updated during training
+        # (We only want to train the ProtSTonKGs Transformer layers)
+        for backbone in [self.lm_backbone, self.prot_backbone]:
+            for param in backbone.parameters():
+                param.requires_grad = False
