@@ -14,7 +14,6 @@ from transformers import (
     # BigBirdModel,
     BigBirdTokenizer,
 )
-# from transformers.models.big_bird.modeling_big_bird import BigBirdLMPredictionHead
 
 from stonkgs.constants import EMBEDDINGS_PATH, PROT_NLP_MODEL_TYPE
 from stonkgs.models.kg_baseline_model import prepare_df
@@ -61,10 +60,17 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
         # (We only want to train the STonKGs Transformer layers)
         for param in self.lm_backbone.parameters():
             param.requires_grad = False
+
         # Get the separator, mask and unknown token ids from a nlp_model_type specific tokenizer
-        self.lm_sep_id = BigBirdTokenizer.from_pretrained(nlp_model_type).sep_token_id  # usually 102
-        self.lm_mask_id = BigBirdTokenizer.from_pretrained(nlp_model_type).mask_token_id  # usually 103
-        self.lm_unk_id = BigBirdTokenizer.from_pretrained(nlp_model_type).unk_token_id  # usually 100
+        self.lm_sep_id = BigBirdTokenizer.from_pretrained(
+            nlp_model_type
+        ).sep_token_id  # usually 102
+        self.lm_mask_id = BigBirdTokenizer.from_pretrained(
+            nlp_model_type
+        ).mask_token_id  # usually 103
+        self.lm_unk_id = BigBirdTokenizer.from_pretrained(
+            nlp_model_type
+        ).unk_token_id  # usually 100
 
         # KG backbone initialization
         # Get numeric indices for the KG embedding vectors except for the sep, unk, mask ids which are reserved for the
