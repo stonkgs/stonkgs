@@ -99,8 +99,11 @@ DUMMY_EXAMPLE_INDRA = os.path.join(RAW_DIR, "statements_2021-01-30-17-21-54.json
 # Can be created by running python -m src.stonkgs.data.indra
 DUMMY_EXAMPLE_TRIPLES = os.path.join(LOCATION_DIR, "location.tsv")
 
-# Specify the (huggingface) language model that is used in this project
+# Specify the (huggingface) language model that is used as a basis for STonKGs
 NLP_MODEL_TYPE = "dmis-lab/biobert-v1.1"
+
+# Specify the (huggingface) language model that is used as a basis for ProtSTonKGs
+PROT_NLP_MODEL_TYPE = "google/bigbird-roberta-base"
 
 # Specify the vocab file of the language model that is used in this project
 # (the file can be obtained here: https://huggingface.co/dmis-lab/biobert-v1.1/tree/main)
