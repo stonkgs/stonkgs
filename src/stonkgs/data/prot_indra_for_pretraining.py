@@ -10,7 +10,7 @@ import logging
 import os
 
 import pandas as pd
-from transformers import BertTokenizer, BertTokenizerFast
+from transformers import BertTokenizer, BertTokenizerFast, BigBirdTokenizer
 from tqdm import tqdm
 
 from stonkgs.constants import (
@@ -19,6 +19,7 @@ from stonkgs.constants import (
     PRETRAINING_DIR,
     PRETRAINING_PROT_DUMMY_PATH,
     PROT_SEQ_MODEL_TYPE,
+    PROTSTONKGS_MODEL_TYPE,
     RANDOM_WALKS_PATH,
     VOCAB_FILE,
 )
@@ -37,6 +38,7 @@ def prot_indra_to_pretraining_df(
     lm_model_type: str = NLP_MODEL_TYPE,
     prot_model_type: str = PROT_SEQ_MODEL_TYPE,
     prot_seq_length: int = 3072,  # length for the combined protein input
+    protstonkgs_model_type: str = PROTSTONKGS_MODEL_TYPE,
 ):
     """Preprocesses the INDRA statements from the protein-specific pre-training file for the ProtSTonKGs model."""
     # Load the KG embedding dict to convert the names to numeric indices
@@ -67,6 +69,9 @@ def prot_indra_to_pretraining_df(
     # do_lower_case is required, see example in https://huggingface.co/Rostlab/prot_bert
     prot_tokenizer = BertTokenizer.from_pretrained(prot_model_type, do_lower_case=False)
 
+    # Initialize the tokenizer used in ProtSTonKGs
+    protstonkgs_tokenizer = BigBirdTokenizer.from_pretrained(protstonkgs_model_type)
+
     # Initialize the preprocessed data
     pre_training_preprocessed = []
 
@@ -78,12 +83,12 @@ def prot_indra_to_pretraining_df(
     ):
         # 2. Tokenization for getting the input ids and attention masks for the text
         # Use encode_plus to also get the attention mask ("padding" mask)
-        # Evidence with [CLS] and [SEP] tokens, and source and desc without (added manually later)
+        # Manually add all special tokens ([CLS] in the beginning, [SEP] later)
         encoded_evidence = lm_tokenizer.encode_plus(
             row["evidence"],
             padding="max_length",
             truncation=True,
-            max_length=text_seq_length // 3,
+            max_length=text_seq_length // 3 - 2,
         )
         encoded_source_desc = lm_tokenizer.encode_plus(
             row["source_description"],
@@ -100,14 +105,18 @@ def prot_indra_to_pretraining_df(
             add_special_tokens=False,
         )
         text_token_ids = (
-            encoded_evidence["input_ids"]
+            [protstonkgs_tokenizer.cls_token_id]
+            + encoded_evidence["input_ids"]
+            + [protstonkgs_tokenizer.sep_token_id]
             + encoded_source_desc["input_ids"]
-            + [lm_tokenizer.sep_token_id]
+            + [protstonkgs_tokenizer.sep_token_id]
             + encoded_target_desc["input_ids"]
-            + [lm_tokenizer.sep_token_id]
+            + [protstonkgs_tokenizer.sep_token_id]
         )
         text_attention_mask = (
-            encoded_evidence["attention_mask"]
+            [1]
+            + encoded_evidence["attention_mask"]
+            + [1]
             + encoded_source_desc["input_ids"]
             + [1]
             + encoded_target_desc["input_ids"]
@@ -117,9 +126,9 @@ def prot_indra_to_pretraining_df(
         # 3. Get the random walks sequence/the node indices, add the SEP ID (usually with id=102) from the LM in between
         random_walks = (
             random_walk_idx_dict[row["source"]]
-            + [lm_tokenizer.sep_token_id]
+            + [protstonkgs_tokenizer.sep_token_id]
             + random_walk_idx_dict[row["target"]]
-            + [lm_tokenizer.sep_token_id]
+            + [protstonkgs_tokenizer.sep_token_id]
         )
 
         # 4. Get the protein sequence and combine source and target with [SEP]
@@ -127,7 +136,8 @@ def prot_indra_to_pretraining_df(
             row["source_prot"],
             padding="max_length",
             truncation=True,
-            max_length=prot_seq_length // 2,
+            max_length=prot_seq_length // 2 - 1,
+            add_special_tokens=False,
         )
         prot_sequence_target = prot_tokenizer.encode_plus(
             row["target_prot"],
@@ -138,8 +148,9 @@ def prot_indra_to_pretraining_df(
         )
         prot_sequence_ids = (
             prot_sequence_source["input_ids"]
+            + [protstonkgs_tokenizer.sep_token_id]
             + prot_sequence_target["input_ids"]
-            + [prot_tokenizer.sep_token_id]
+            + [protstonkgs_tokenizer.sep_token_id]
         )
         prot_attention_mask = (
             prot_sequence_source["attention_mask"] + prot_sequence_target["attention_mask"] + [1]
