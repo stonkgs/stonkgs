@@ -17,7 +17,7 @@ from stonkgs.constants import (
     EMBEDDINGS_PATH,
     NLP_MODEL_TYPE,
     PRETRAINING_DIR,
-    PRETRAINING_PATH,
+    PRETRAINING_PROT_DUMMY_PATH,
     PROT_SEQ_MODEL_TYPE,
     RANDOM_WALKS_PATH,
     VOCAB_FILE,
@@ -29,15 +29,14 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
-# TODO adapt function
 def prot_indra_to_pretraining_df(
     embedding_name_to_vector_path: str = EMBEDDINGS_PATH,
     embedding_name_to_random_walk_path: str = RANDOM_WALKS_PATH,
-    pre_training_path: str = PRETRAINING_PATH,
-    kg_start_idx: int = 768,
+    pre_training_path: str = PRETRAINING_PROT_DUMMY_PATH,
+    text_seq_length: int = 768,  # length for the combined text input
     lm_model_type: str = NLP_MODEL_TYPE,
     prot_model_type: str = PROT_SEQ_MODEL_TYPE,
-    sep_id: int = 102,
+    prot_seq_length: int = 3072,  # length for the combined protein input
 ):
     """Preprocesses the INDRA statements from the protein-specific pre-training file for the ProtSTonKGs model."""
     # Load the KG embedding dict to convert the names to numeric indices
@@ -79,49 +78,77 @@ def prot_indra_to_pretraining_df(
     ):
         # 2. Tokenization for getting the input ids and attention masks for the text
         # Use encode_plus to also get the attention mask ("padding" mask)
-        # TODO: combine evidence, "source_description" and "target_description"
-        encoded_text = lm_tokenizer.encode_plus(
+        # Evidence with [CLS] and [SEP] tokens, and source and desc without (added manually later)
+        encoded_evidence = lm_tokenizer.encode_plus(
             row["evidence"],
             padding="max_length",
             truncation=True,
-            max_length=kg_start_idx // 3,  # TODO: replace with function parameter
+            max_length=text_seq_length // 3,
         )
-        text_token_ids = encoded_text["input_ids"]
-        text_attention_mask = encoded_text["attention_mask"]
+        encoded_source_desc = lm_tokenizer.encode_plus(
+            row["source_description"],
+            padding="max_length",
+            truncation=True,
+            max_length=text_seq_length // 3 - 1,
+            add_special_tokens=False,
+        )
+        encoded_target_desc = lm_tokenizer.encode_plus(
+            row["target_description"],
+            padding="max_length",
+            truncation=True,
+            max_length=text_seq_length // 3 - 1,
+            add_special_tokens=False,
+        )
+        text_token_ids = encoded_evidence["input_ids"] + encoded_source_desc["input_ids"] \
+                         + [lm_tokenizer.sep_token_id] + encoded_target_desc["input_ids"] + [lm_tokenizer.sep_token_id]
+        text_attention_mask = encoded_evidence["attention_mask"] + encoded_source_desc["input_ids"] \
+                              + [1] + encoded_target_desc["input_ids"] + [1]
 
-        # 3. Get the random walks sequence and the node indices, add the SEP (usually with id=102) in between
+        # 3. Get the random walks sequence/the node indices, add the SEP ID (usually with id=102) from the LM in between
         random_walks = (
             random_walk_idx_dict[row["source"]]
-            + [sep_id]
+            + [lm_tokenizer.sep_token_id]
             + random_walk_idx_dict[row["target"]]
-            + [sep_id]
+            + [lm_tokenizer.sep_token_id]
         )
 
-        # TODO 4. Get the protein sequence and combine source and target with [SEP]
-        prot_sequence = lm_tokenizer.encode_plus(
+        # 4. Get the protein sequence and combine source and target with [SEP]
+        prot_sequence_source = prot_tokenizer.encode_plus(
             row["source_prot"],
             padding="max_length",
             truncation=True,
-            max_length=kg_start_idx // 3,  # TODO: replace with function parameter
+            max_length=prot_seq_length // 2,
         )
-        prot_sequence_ids = prot_sequence["input_ids"]
-        prot_attention_mask = prot_sequence["attention_mask"]
+        prot_sequence_target = prot_tokenizer.encode_plus(
+            row["target_prot"],
+            padding="max_length",
+            truncation=True,
+            max_length=prot_seq_length // 2 - 1,
+            add_special_tokens=False,
+        )
+        prot_sequence_ids = prot_sequence_source["input_ids"] + prot_sequence_target["input_ids"] \
+                            + [prot_tokenizer.sep_token_id]
+        prot_attention_mask = prot_sequence_source["attention_mask"] + prot_sequence_target["attention_mask"] + [1]
 
         # Apply the masking strategy to the text tokens and get the text MLM labels
         masked_lm_token_ids, masked_lm_labels = replace_mlm_tokens(
             tokens=text_token_ids,
             vocab_len=len(lm_tokenizer.vocab),
+            mask_id=lm_tokenizer.mask_token_id,
         )
         # Apply the masking strategy to the entity tokens and get the entity (E)LM labels
         # Use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
         ent_masked_lm_token_ids, ent_masked_lm_labels = replace_mlm_tokens(
             tokens=random_walks,
             vocab_len=len(kg_embed_dict),
+            mask_id=lm_tokenizer.mask_token_id,
         )
         # Also apply the masking strategy to the protein tokens and get the protein (P)LM labels
         # Again, use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
         prot_masked_lm_token_ids, prot_masked_lm_labels = replace_mlm_tokens(
-            tokens=prot_sequence_ids, vocab_len=len(prot_tokenizer.vocab)
+            tokens=prot_sequence_ids,
+            vocab_len=len(prot_tokenizer.vocab),
+            mask_id=prot_tokenizer.mask_token_id,
         )
 
         # 4. Total attention mask (attention mask is all 1 for the entity sequence)
@@ -147,15 +174,20 @@ def prot_indra_to_pretraining_df(
 
     # Save the final dataframe
     pre_training_preprocessed_df.to_csv(
-        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed_prot.tsv"),
+        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed_prot_dummy.tsv"),
         sep="\t",
         index=False,
     )
     # Pickle it, too (easier for reading in the lists in the pandas dataframe)
     pre_training_preprocessed_df.to_pickle(
-        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed_prot.pkl"),
+        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed_prot_dummy.pkl"),
     )
 
     logger.info(f"Saved the data under {PRETRAINING_DIR}")
 
     return pre_training_preprocessed_df
+
+
+if __name__ == "__main__":
+    # Preprocess the data
+    prot_indra_to_pretraining_df()
