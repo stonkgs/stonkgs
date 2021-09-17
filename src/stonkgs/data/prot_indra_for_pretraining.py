@@ -153,7 +153,7 @@ def prot_indra_to_pretraining_df(
             + [protstonkgs_tokenizer.sep_token_id]
         )
         prot_attention_mask = (
-            prot_sequence_source["attention_mask"] + prot_sequence_target["attention_mask"] + [1]
+            prot_sequence_source["attention_mask"] + [1] + prot_sequence_target["attention_mask"] + [1]
         )
 
         # Apply the masking strategy to the text tokens and get the text MLM labels
