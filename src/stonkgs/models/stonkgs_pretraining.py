@@ -21,8 +21,9 @@ from stonkgs.constants import (
     MLFLOW_TRACKING_URI,
     NLP_MODEL_TYPE,
     PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH,
-    STONKGS_PRETRAINING_NO_NSP_DIR,
+    STONKGS_PRETRAINING_DIR,
 )
+from stonkgs.models.protstonkgs_model import ProtSTonKGsForPreTraining
 from stonkgs.models.stonkgs_model import STonKGsForPreTraining
 
 # Initialize logger
@@ -58,6 +59,7 @@ def _load_pre_training_data(
 @click.option("--lr", default=1e-4, help="Learning rate", type=float)
 @click.option("--dataloader_num_workers", default=8, help="Number of dataloader workers", type=int)
 @click.option("--deepspeed", default=False, help="Whether to use deepspeed or not", type=bool)
+@click.option("--experiment_name", default="STonKGs Pre-Training", type=str)
 @click.option(
     "--gradient_accumulation_steps",
     default=1,
@@ -69,6 +71,7 @@ def _load_pre_training_data(
 )
 @click.option("--logging_steps", default=100, help="Logging interval", type=int)
 @click.option("-m", "--max_steps", default=200, help="Number of training steps", type=int)
+@click.option("--model_variant", default="stonkgs", help="Model variant (either 'stonkgs' or 'protstonkgs')", type=str)
 @click.option(
     "--overwrite_output_dir",
     default=False,
@@ -87,8 +90,8 @@ def _load_pre_training_data(
 @click.option("--save_steps", default=5000, help="Checkpointing interval", type=int)
 @click.option(
     "--training_dir",
-    default=STONKGS_PRETRAINING_NO_NSP_DIR,
-    help="Whether to override the output dir",
+    default=STONKGS_PRETRAINING_DIR,
+    help="Output directory",
     type=str,
 )
 def pretrain_stonkgs(
@@ -99,13 +102,15 @@ def pretrain_stonkgs(
     dataloader_num_workers: int = 8,  # empirically determined value, I'm open to changing it :)
     gradient_accumulation_steps: int = 1,
     logging_dir: Optional[str] = MLFLOW_TRACKING_URI,
+    experiment_name: str = "STonKGs Pre-Training",
     logging_steps: int = 100,
     max_steps: int = 10000,
+    model_variant: str = "stonkgs",
     overwrite_output_dir: bool = False,
     pretraining_file: str = PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH,
     save_limit: int = 5,
     save_steps: int = 5000,
-    training_dir: str = STONKGS_PRETRAINING_NO_NSP_DIR,
+    training_dir: str = STONKGS_PRETRAINING_DIR,
 ):
     """Run the pre-training procedure for the STonKGs model based on the transformers Trainer and TrainingArguments."""
     # Part of this code is taken from
@@ -117,12 +122,18 @@ def pretrain_stonkgs(
     # Initialize mlflow run, set tracking URI to use the same experiment for all runs,
     # so that one can compare them
     mlflow.set_tracking_uri(logging_dir)
-    mlflow.set_experiment("STonKGs Pre-Training (No NSP Ablation)")
+    mlflow.set_experiment(experiment_name)
 
-    # Initialize the STonKGs model
+    # Initialize the STonKGs or ProtSTonKGs model
     # config = None just fills up the required argument for automated method calls such as .from_pretrained, it will be
     # overridden anyways in __init__
-    stonkgs_model = STonKGsForPreTraining(config=None, nlp_model_type=NLP_MODEL_TYPE)
+    if model_variant == "stonkgs":
+        stonkgs_model = STonKGsForPreTraining(config=None, nlp_model_type=NLP_MODEL_TYPE)
+    elif model_variant == "protstonkgs":
+        stonkgs_model = ProtSTonKGsForPreTraining(config=None)
+    else:
+        logger.info("Model variant must be in ['stonkgs', 'protstonkgs'].")
+        return
 
     # Add the huggingface accelerator
     accelerator = Accelerator()
