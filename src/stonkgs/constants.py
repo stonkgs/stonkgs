@@ -34,6 +34,8 @@ NDD_DIR = os.path.join(INPUT_DIR, "ndd")
 # Path for the pretraining data
 PRETRAINING_DIR = os.path.join(INPUT_DIR, "pretraining")
 PRETRAINING_PATH = os.path.join(PRETRAINING_DIR, "pretraining_triples.tsv")
+PRETRAINING_PROT_PATH = os.path.join(PRETRAINING_DIR, "pretraining_ppi_prot.tsv")
+PRETRAINING_PROT_DUMMY_PATH = os.path.join(PRETRAINING_DIR, "pretraining_ppi_prot_dummy.tsv")
 PRETRAINING_PREPROCESSED_DF_PATH = os.path.join(PRETRAINING_DIR, "pretraining_preprocessed.pkl")
 PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH = os.path.join(
     PRETRAINING_DIR, "pretraining_preprocessed_positive.pkl"
