@@ -71,7 +71,12 @@ def _load_pre_training_data(
 )
 @click.option("--logging_steps", default=100, help="Logging interval", type=int)
 @click.option("-m", "--max_steps", default=200, help="Number of training steps", type=int)
-@click.option("--model_variant", default="stonkgs", help="Model variant (either 'stonkgs' or 'protstonkgs')", type=str)
+@click.option(
+    "--model_variant",
+    default="stonkgs",
+    help="Model variant (either 'stonkgs' or 'protstonkgs')",
+    type=str,
+)
 @click.option(
     "--overwrite_output_dir",
     default=False,

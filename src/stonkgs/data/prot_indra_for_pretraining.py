@@ -99,10 +99,20 @@ def prot_indra_to_pretraining_df(
             max_length=text_seq_length // 3 - 1,
             add_special_tokens=False,
         )
-        text_token_ids = encoded_evidence["input_ids"] + encoded_source_desc["input_ids"] \
-                         + [lm_tokenizer.sep_token_id] + encoded_target_desc["input_ids"] + [lm_tokenizer.sep_token_id]
-        text_attention_mask = encoded_evidence["attention_mask"] + encoded_source_desc["input_ids"] \
-                              + [1] + encoded_target_desc["input_ids"] + [1]
+        text_token_ids = (
+            encoded_evidence["input_ids"]
+            + encoded_source_desc["input_ids"]
+            + [lm_tokenizer.sep_token_id]
+            + encoded_target_desc["input_ids"]
+            + [lm_tokenizer.sep_token_id]
+        )
+        text_attention_mask = (
+            encoded_evidence["attention_mask"]
+            + encoded_source_desc["input_ids"]
+            + [1]
+            + encoded_target_desc["input_ids"]
+            + [1]
+        )
 
         # 3. Get the random walks sequence/the node indices, add the SEP ID (usually with id=102) from the LM in between
         random_walks = (
@@ -126,9 +136,14 @@ def prot_indra_to_pretraining_df(
             max_length=prot_seq_length // 2 - 1,
             add_special_tokens=False,
         )
-        prot_sequence_ids = prot_sequence_source["input_ids"] + prot_sequence_target["input_ids"] \
-                            + [prot_tokenizer.sep_token_id]
-        prot_attention_mask = prot_sequence_source["attention_mask"] + prot_sequence_target["attention_mask"] + [1]
+        prot_sequence_ids = (
+            prot_sequence_source["input_ids"]
+            + prot_sequence_target["input_ids"]
+            + [prot_tokenizer.sep_token_id]
+        )
+        prot_attention_mask = (
+            prot_sequence_source["attention_mask"] + prot_sequence_target["attention_mask"] + [1]
+        )
 
         # Apply the masking strategy to the text tokens and get the text MLM labels
         masked_lm_token_ids, masked_lm_labels = replace_mlm_tokens(
