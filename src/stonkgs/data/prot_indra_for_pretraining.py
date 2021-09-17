@@ -160,21 +160,21 @@ def prot_indra_to_pretraining_df(
         masked_lm_token_ids, masked_lm_labels = replace_mlm_tokens(
             tokens=text_token_ids,
             vocab_len=len(lm_tokenizer.vocab),
-            mask_id=lm_tokenizer.mask_token_id,
+            mask_id=protstonkgs_tokenizer.mask_token_id,
         )
         # Apply the masking strategy to the entity tokens and get the entity (E)LM labels
         # Use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
         ent_masked_lm_token_ids, ent_masked_lm_labels = replace_mlm_tokens(
             tokens=random_walks,
             vocab_len=len(kg_embed_dict),
-            mask_id=lm_tokenizer.mask_token_id,
+            mask_id=protstonkgs_tokenizer.mask_token_id,
         )
         # Also apply the masking strategy to the protein tokens and get the protein (P)LM labels
         # Again, use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
         prot_masked_lm_token_ids, prot_masked_lm_labels = replace_mlm_tokens(
             tokens=prot_sequence_ids,
             vocab_len=len(prot_tokenizer.vocab),
-            mask_id=prot_tokenizer.mask_token_id,
+            mask_id=protstonkgs_tokenizer.mask_token_id,
         )
 
         # 4. Total attention mask (attention mask is all 1 for the entity sequence)
