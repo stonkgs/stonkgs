@@ -125,7 +125,9 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
         # Add the number of KG entities to the default config of a standard BigBird model
         config.update({"kg_vocab_size": len(kg_embedding_dict)})
         # Add the protein sequence vocabulary size to the default config as well
-        config.update({"prot_vocab_size": BertModel.from_pretrained(prot_model_type).config.vocab_size})
+        config.update(
+            {"prot_vocab_size": BertModel.from_pretrained(prot_model_type).config.vocab_size}
+        )
 
         # Initialize the underlying BigBirdForPreTraining model that will be used to build the STonKGs
         # Transformer layers
