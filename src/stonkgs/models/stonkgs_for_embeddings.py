@@ -17,7 +17,7 @@ from stonkgs.constants import (
     VOCAB_FILE,
 )
 from stonkgs.data.indra_for_pretraining import prepare_df, replace_mlm_tokens
-from stonkgs.models.stonkgs_pretraining import STonKGsForPreTraining
+from stonkgs.models.stonkgs_model import STonKGsForPreTraining
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
