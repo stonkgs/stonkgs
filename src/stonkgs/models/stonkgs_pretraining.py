@@ -57,7 +57,7 @@ def _load_pre_training_data(
 )
 @click.option("--fp16", default=True, help="Whether to use fp16 precision or not", type=bool)
 @click.option("--lr", default=1e-4, help="Learning rate", type=float)
-@click.option("--dataloader_num_workers", default=8, help="Number of dataloader workers", type=int)
+@click.option("--dataloader_num_workers", default=2, help="Number of dataloader workers", type=int)
 @click.option("--deepspeed", default=False, help="Whether to use deepspeed or not", type=bool)
 @click.option("--experiment_name", default="STonKGs Pre-Training", type=str)
 @click.option(
@@ -104,7 +104,7 @@ def pretrain_stonkgs(
     deepspeed: bool = False,
     fp16: bool = True,
     lr: float = 1e-4,
-    dataloader_num_workers: int = 8,  # empirically determined value, I'm open to changing it :)
+    dataloader_num_workers: int = 2,
     gradient_accumulation_steps: int = 1,
     logging_dir: Optional[str] = MLFLOW_TRACKING_URI,
     experiment_name: str = "STonKGs Pre-Training",
