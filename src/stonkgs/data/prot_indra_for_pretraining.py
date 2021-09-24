@@ -10,7 +10,7 @@ import logging
 import os
 
 import pandas as pd
-from transformers import BertTokenizer, BertTokenizerFast, BigBirdTokenizer
+from transformers import BertTokenizer, BertTokenizerFast, LongformerTokenizer
 from tqdm import tqdm
 
 from stonkgs.constants import (
@@ -70,7 +70,7 @@ def prot_indra_to_pretraining_df(
     prot_tokenizer = BertTokenizer.from_pretrained(prot_model_type, do_lower_case=False)
 
     # Initialize the tokenizer used in ProtSTonKGs
-    protstonkgs_tokenizer = BigBirdTokenizer.from_pretrained(protstonkgs_model_type)
+    protstonkgs_tokenizer = LongformerTokenizer.from_pretrained(protstonkgs_model_type)
 
     # Initialize the preprocessed data
     pre_training_preprocessed = []
@@ -105,13 +105,13 @@ def prot_indra_to_pretraining_df(
             add_special_tokens=False,
         )
         text_token_ids = (
-            [protstonkgs_tokenizer.cls_token_id]
+            [lm_tokenizer.cls_token_id]
             + encoded_evidence["input_ids"]
-            + [protstonkgs_tokenizer.sep_token_id]
+            + [lm_tokenizer.sep_token_id]
             + encoded_source_desc["input_ids"]
-            + [protstonkgs_tokenizer.sep_token_id]
+            + [lm_tokenizer.sep_token_id]
             + encoded_target_desc["input_ids"]
-            + [protstonkgs_tokenizer.sep_token_id]
+            + [lm_tokenizer.sep_token_id]
         )
         text_attention_mask = (
             [1]
@@ -160,7 +160,7 @@ def prot_indra_to_pretraining_df(
         masked_lm_token_ids, masked_lm_labels = replace_mlm_tokens(
             tokens=text_token_ids,
             vocab_len=len(lm_tokenizer.vocab),
-            mask_id=protstonkgs_tokenizer.mask_token_id,
+            mask_id=lm_tokenizer.mask_token_id,
         )
         # Apply the masking strategy to the entity tokens and get the entity (E)LM labels
         # Use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
@@ -174,7 +174,7 @@ def prot_indra_to_pretraining_df(
         prot_masked_lm_token_ids, prot_masked_lm_labels = replace_mlm_tokens(
             tokens=prot_sequence_ids,
             vocab_len=len(prot_tokenizer.vocab),
-            mask_id=protstonkgs_tokenizer.mask_token_id,
+            mask_id=prot_tokenizer.mask_token_id,
         )
 
         # 4. Total attention mask (attention mask is all 1 for the entity sequence)
