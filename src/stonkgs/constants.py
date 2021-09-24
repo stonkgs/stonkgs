@@ -104,7 +104,7 @@ DUMMY_EXAMPLE_TRIPLES = os.path.join(LOCATION_DIR, "location.tsv")
 # Specify the (huggingface) language model that is used as a basis for STonKGs
 NLP_MODEL_TYPE = "dmis-lab/biobert-v1.1"
 # Specify the (huggingface) language model that is used as a basis for ProtSTonKGs
-PROTSTONKGS_MODEL_TYPE = "google/bigbird-roberta-base"
+PROTSTONKGS_MODEL_TYPE = "allenai/longformer-base-4096"
 # Specify the protein bert backbone model type
 PROT_SEQ_MODEL_TYPE = "Rostlab/prot_bert"
 
