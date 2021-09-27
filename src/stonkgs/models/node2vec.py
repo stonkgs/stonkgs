@@ -103,7 +103,18 @@ def run_node2vec_hpo(
     embeddings_output_path: Optional[str] = None,
     random_walks_output_path: Optional[str] = None,
 ):
-    """CLI to run node2vec."""
+    """Run node2vec HPO.
+
+    :param pretraining_path: Path to the triple file.
+    :param sep: Separator used in the triple file.
+    :param delete_database: Whether to delete the previous HPO database or not.
+    :param logging_uri: Separator used in the triple file.
+    :param n_trials: Number of optimization trials.
+    :param seed: Random number seed.
+    :param n_threads: Number of threads.
+    :param embeddings_output_path: Output path for embeddings.
+    :param random_walks_output_path: Output path for random walks.
+    """
     if seed is None:
         seed = random.randint(1, 2 ** 32 - 1)  # noqa: S311
         logger.info(f"random seed given, setting to: {seed}")
@@ -267,7 +278,14 @@ def run_node2vec(
     embeddings_output_path: Optional[str] = None,
     random_walks_output_path: Optional[str] = None,
 ):
-    """Run node2vec with no HPO."""
+    """Run node2vec with no HPO.
+
+    :param pretraining_path: Path to the triple file.
+    :param sep: Separator used in the triple file.
+    :param n_threads: Number of threads.
+    :param embeddings_output_path: Output path for embeddings.
+    :param random_walks_output_path: Output path for random walks.
+    """
     # Double check the number of expected embeddings
     triples_df = pd.read_csv(pretraining_path, sep=sep)
     n_expected_nodes = len(set(triples_df["source"]).union(set(triples_df["target"])))
