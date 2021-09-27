@@ -73,7 +73,7 @@ def run_link_prediction(
 
 @click.command()
 @click.option(
-    "--pretraining_path", default=PRETRAINING_PATH, help="Path to the triple file", type=click.Path
+    "--pretraining_path", default=PRETRAINING_PATH, help="Path to the triple file", type=str
 )
 @click.option("--sep", default="\t", help="Separator used in the triple file", type=str)
 @click.option(
@@ -86,11 +86,9 @@ def run_link_prediction(
 @click.option("--n_trials", default=1, help="Number of optimization trials", type=int)
 @click.option("--n_threads", default=96, help="Number of threads", type=int)
 @click.option("--seed", default=None, help="Random number seed", type=int)
+@click.option("--embeddings_output_path", default=None, help="Output path for embeddings", type=str)
 @click.option(
-    "--embeddings_output_path", default=None, help="Output path for embeddings", type=click.Path
-)
-@click.option(
-    "--random_walks_output_path", default=None, help="Output path for random walks", type=click.Path
+    "--random_walks_output_path", default=None, help="Output path for random walks", type=str
 )
 def run_node2vec_hpo(
     pretraining_path: Optional[str] = PRETRAINING_PATH,
@@ -261,15 +259,13 @@ def run_node2vec_hpo(
 
 @click.command()
 @click.option(
-    "--pretraining_path", default=PRETRAINING_PATH, help="Path to the triple file", type=click.Path
+    "--pretraining_path", default=PRETRAINING_PATH, help="Path to the triple file", type=str
 )
 @click.option("--sep", default="\t", help="Separator used in the triple file", type=str)
 @click.option("--n_threads", default=96, help="Number of threads", type=int)
+@click.option("--embeddings_output_path", default=None, help="Output path for embeddings", type=str)
 @click.option(
-    "--embeddings_output_path", default=None, help="Output path for embeddings", type=click.Path
-)
-@click.option(
-    "--random_walks_output_path", default=None, help="Output path for random walks", type=click.Path
+    "--random_walks_output_path", default=None, help="Output path for random walks", type=str
 )
 def run_node2vec(
     pretraining_path: Optional[str] = PRETRAINING_PATH,
