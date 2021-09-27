@@ -20,6 +20,7 @@ from transformers.models.big_bird.modeling_big_bird import (
     BigBirdForPreTrainingOutput,
     BigBirdLMPredictionHead,
 )
+
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
     NLP_MODEL_TYPE,

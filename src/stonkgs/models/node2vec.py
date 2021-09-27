@@ -302,7 +302,9 @@ def run_node2vec(
     all_random_walks = node2vec_model.walks
     logger.info(f"{len(all_random_walks)} random walks were learned")
 
-    with open(os.path.join(KG_HPO_DIR, "random_walks_prot_best_model.tsv"), "w") as random_walk_file:
+    with open(
+        os.path.join(KG_HPO_DIR, "random_walks_prot_best_model.tsv"), "w"
+    ) as random_walk_file:
         for node, random_walks in zip(wv.index2entity, all_random_walks):
             random_walks_str = "\t".join(random_walks)
             random_walk_file.write(f"{node}\t{random_walks_str}\n")
