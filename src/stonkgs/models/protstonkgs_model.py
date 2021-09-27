@@ -12,16 +12,14 @@ import torch
 from torch import nn
 from transformers import (
     BertModel,
-    LongformerConfig,
-    LongformerForMaskedLM,
-    LongformerTokenizer,
+    BigBirdConfig,
+    BigBirdForPreTraining,
+    BigBirdTokenizer,
 )
-from transformers.activations import gelu
-from transformers.models.longformer.modeling_longformer import (
-    LongformerLMHead,
-    LongformerMaskedLMOutput,
+from transformers.models.big_bird.modeling_big_bird import (
+    BigBirdForPreTrainingOutput,
+    BigBirdLMPredictionHead,
 )
-
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
     NLP_MODEL_TYPE,
@@ -36,13 +34,13 @@ logging.basicConfig(level=logging.INFO)
 
 
 @dataclass
-class LongformerForPreTrainingOutputWithPooling(LongformerMaskedLMOutput):
-    """Overriding the LongformerForPreTrainingOutput class to further include the pooled output."""
+class BigBirdForPreTrainingOutputWithPooling(BigBirdForPreTrainingOutput):
+    """Overriding the BigBirdForPreTrainingOutput class to further include the pooled output."""
 
     pooler_output: Optional[torch.FloatTensor] = None
 
 
-class ProtSTonKGsPELMPredictionHead(LongformerLMHead):
+class ProtSTonKGsPELMPredictionHead(BigBirdLMPredictionHead):
     """Custom masked protein, entity and language modeling (PELM) head for proteins, entities and text tokens."""
 
     def __init__(
@@ -81,10 +79,8 @@ class ProtSTonKGsPELMPredictionHead(LongformerLMHead):
     def forward(self, hidden_states):
         """Map hidden states to values for the text (1st part), kg (2nd part) and protein vocabs (3rd part)."""
         # Common transformations (dense layer, layer norm + activation function) performed on text, KG and protein data
-        # transform is initialized in the parent LongformerLMPredictionHead class
-        hidden_states = self.dense(hidden_states)
-        hidden_states = gelu(hidden_states)
-        hidden_states = self.layer_norm(hidden_states)
+        # transform is initialized in the parent BigBirdLMPredictionHead class
+        hidden_states = self.transform(hidden_states)
 
         # The first part is processed with the text decoder, the second with the entity decoder, and the third with the
         # protein decoder to map to the text, kg, and protein vocab size, respectively
@@ -103,7 +99,7 @@ class ProtSTonKGsPELMPredictionHead(LongformerLMHead):
         )
 
 
-class ProtSTonKGsForPreTraining(LongformerForMaskedLM):
+class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
     """Create the pre-training part of the ProtSTonKGs model based, text and KG and protein sequence embeddings."""
 
     def __init__(
@@ -133,11 +129,11 @@ class ProtSTonKGsForPreTraining(LongformerForMaskedLM):
         # Initialize the KG dict from the file here, rather than passing it as a parameter, so that it can
         # be loaded from a checkpoint
         kg_embedding_dict = prepare_df(kg_embedding_dict_path)
-        # Initialize the Longformer config for the model architecture
-        config = LongformerConfig.from_pretrained(protstonkgs_model_type)
+        # Initialize the BigBird config for the model architecture
+        config = BigBirdConfig.from_pretrained(protstonkgs_model_type)
         # Use gradient checkpointing to save memory at the expense of speed
         config.update({"gradient_checkpointing": True})
-        # Add the number of KG entities to the default config of a standard Longformer model
+        # Add the number of KG entities to the default config of a standard BigBird model
         config.update({"kg_vocab_size": len(kg_embedding_dict)})
         # Add the protein sequence vocabulary size to the default config as well
         config.update({"prot_vocab_size": prot_vocab_size})
@@ -157,10 +153,10 @@ class ProtSTonKGsForPreTraining(LongformerForMaskedLM):
         self.prot_start_idx = prot_start_idx
 
         # Initialize the ProtSTonKGs tokenizer
-        self.protstonkgs_tokenizer = LongformerTokenizer.from_pretrained(protstonkgs_model_type)
+        self.protstonkgs_tokenizer = BigBirdTokenizer.from_pretrained(protstonkgs_model_type)
 
         # In order to initialize the KG backbone: First get the separator, mask and unknown token ids from the
-        # ProtSTonKGs model base (Longformer)
+        # ProtSTonKGs model base (BigBird)
         self.sep_id = self.protstonkgs_tokenizer.sep_token_id
         self.mask_id = self.protstonkgs_tokenizer.mask_token_id
         self.unk_id = self.protstonkgs_tokenizer.unk_token_id
@@ -185,13 +181,13 @@ class ProtSTonKGsForPreTraining(LongformerForMaskedLM):
         # [0][0][0] is required to get the shape from batch x seq_len x hidden_size to hidden_size
         with torch.no_grad():
             for special_token_id in [self.sep_id, self.mask_id, self.unk_id]:
-                self.kg_backbone[special_token_id] = self.longformer(
+                self.kg_backbone[special_token_id] = self.lm_backbone(
                     torch.tensor([[special_token_id]]).to(self.device),
                 )[0][0][0]
 
-        # Override the standard MLM head: In the underlying LongformerForPreTraining model, change the MLM head to a
+        # Override the standard MLM head: In the underlying BigBirdForPreTraining model, change the MLM head to a
         # custom ProtSTonKGsELMPredictionHead so that it can be used on the concatenated text/entity/prot sequence input
-        self.lm_head = ProtSTonKGsPELMPredictionHead(
+        self.cls.predictions = ProtSTonKGsPELMPredictionHead(
             config,
             kg_start_idx=kg_start_idx,
             prot_start_idx=prot_start_idx,
@@ -222,7 +218,7 @@ class ProtSTonKGsForPreTraining(LongformerForMaskedLM):
     ):
         """Perform one forward pass for a given sequence of text_input_ids + ent_input_ids + prot_input_ids.
 
-        Due to having more than two parts (and a RoBERTa base in the default Longformer model), the NSP objective is
+        Due to having more than two parts (and a RoBERTa base in the default BigBird model), the NSP objective is
         omitted in this forward function.
 
         :param input_ids: Concatenation of text + KG (random walk) + protein sequence embeddings
@@ -288,26 +284,20 @@ class ProtSTonKGsForPreTraining(LongformerForMaskedLM):
             .to(self.device)
         )
 
-        global_attention_mask = (
-            torch.FloatTensor([1] + [0] * (input_ids.shape[1] - 1))
-            .repeat((input_ids.shape[0], 1))
-            .to(self.device)
-        )
-
-        # Get the hidden states from the basic STonKGs Transformer layers
+        # Get the hidden states from the basic ProtSTonKGs Transformer layers
         # batch x seq_len x hidden_size
-        outputs = self.longformer(
+        outputs = self.bert(
             inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
-            global_attention_mask=global_attention_mask,
-            return_dict=True,
+            return_dict=None,
         )
         # batch x seq_len x hidden_size
-        sequence_output, pooled_output = outputs.last_hidden_state, outputs.pooler_output
+        # sequence_output, pooled_output = outputs.last_hidden_state, outputs.pooler_output
+        sequence_output, pooled_output = outputs[:2]
 
         # Generate the prediction scores (mapping to text and entity vocab sizes + NSP) for the training objectives
         # prediction_scores = Text MLM, entity "MLM" and protein "MLM" scores
-        prediction_scores = self.lm_head(sequence_output)
+        prediction_scores, _ = self.cls(sequence_output, pooled_output)
         # The custom STonKGsELMPredictionHead returns a triple of prediction scores for tokens, entities,
         # and protein sequences, respectively
         (
@@ -346,7 +336,7 @@ class ProtSTonKGsForPreTraining(LongformerForMaskedLM):
             output = prediction_scores + outputs[2:]
             return ((total_loss,) + output) if total_loss is not None else output
 
-        return LongformerForPreTrainingOutputWithPooling(
+        return BigBirdForPreTrainingOutputWithPooling(
             loss=total_loss,
             prediction_logits=prediction_scores,
             hidden_states=sequence_output,
