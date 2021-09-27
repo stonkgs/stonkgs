@@ -11,6 +11,7 @@ import pickle
 import random
 from typing import Optional, Union
 
+import click
 import csrgraph as cg
 import networkx as nx
 import numpy as np
@@ -24,7 +25,7 @@ from sklearn.model_selection import train_test_split
 from stellargraph.data import EdgeSplitter
 from tqdm import tqdm
 
-from stonkgs.constants import KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR, PRETRAINING_PROT_PATH
+from stonkgs.constants import KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR, PRETRAINING_PATH
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -70,16 +71,37 @@ def run_link_prediction(
     return roc_auc_score(labels_test, predictions_test)
 
 
-# TODO: add parameters/click later on
-# @click.group()
+@click.command()
+@click.option(
+    "--pretraining_path", default=PRETRAINING_PATH, help="Path to the triple file", type=click.Path
+)
+@click.option("--sep", default="\t", help="Separator used in the triple file", type=str)
+@click.option(
+    "--delete_database",
+    default=True,
+    help="Whether to delete the previous HPO database or not",
+    type=bool,
+)
+@click.option("--logging_uri", default="\t", help="Separator used in the triple file", type=str)
+@click.option("--n_trials", default=1, help="Number of optimization trials", type=int)
+@click.option("--n_threads", default=96, help="Number of threads", type=int)
+@click.option("--seed", default=None, help="Random number seed", type=int)
+@click.option(
+    "--embeddings_output_path", default=None, help="Output path for embeddings", type=click.Path
+)
+@click.option(
+    "--random_walks_output_path", default=None, help="Output path for random walks", type=click.Path
+)
 def run_node2vec_hpo(
-    positive_graph_path: Optional[str] = PRETRAINING_PROT_PATH,
+    pretraining_path: Optional[str] = PRETRAINING_PATH,
     sep: Optional[str] = "\t",
     delete_database: Optional[bool] = True,
-    mlflow_tracking_uri: Optional[str] = MLFLOW_TRACKING_URI,
-    n_optimization_trials: Optional[int] = 1,  # TODO change later to 20
+    logging_uri: Optional[str] = MLFLOW_TRACKING_URI,
+    n_trials: Optional[int] = 1,
     n_threads: Optional[int] = 96,  # hard coded to the cluster, change if necessary
     seed: Optional[int] = None,
+    embeddings_output_path: Optional[str] = None,
+    random_walks_output_path: Optional[str] = None,
 ):
     """CLI to run node2vec."""
     if seed is None:
@@ -92,7 +114,7 @@ def run_node2vec_hpo(
     random.seed(seed)
 
     # Read graph, first read the triples into a dataframe
-    triples_df = pd.read_csv(positive_graph_path, sep=sep)
+    triples_df = pd.read_csv(pretraining_path, sep=sep)
     # Initialize empty Graph and fill it with the triples from the df
     indra_kg_pos = nx.DiGraph()
     for _, row in tqdm(triples_df[["source", "target"]].iterrows(), total=triples_df.shape[0]):
@@ -113,8 +135,6 @@ def run_node2vec_hpo(
     walk_length: int = 127
     # has to be the same as the embedding dimension of the NLP model
     dimensions: int = 768
-    # TODO: Discuss if one should use these or just set them to 1, see
-    #  "embedding a large graph" https://github.com/VHRanger/nodevectors (replace with inverse if != 1.0)
     p = 1.0
     q = 1.0
 
@@ -162,7 +182,7 @@ def run_node2vec_hpo(
 
     # Add mlflow callback to log the HPO in mlflow
     mlflow_callback = MLflowCallback(
-        tracking_uri=mlflow_tracking_uri,
+        tracking_uri=logging_uri,
         metric_name="ROC AUC Score",
     )
 
@@ -180,7 +200,7 @@ def run_node2vec_hpo(
 
     study.optimize(
         objective,
-        n_trials=n_optimization_trials,
+        n_trials=n_trials,
         callbacks=[mlflow_callback],
     )
 
@@ -207,7 +227,10 @@ def run_node2vec_hpo(
     sorted_vocab_items = sorted(wv.vocab.items(), key=lambda item: item[1].count, reverse=True)
     vectors = wv.vectors
 
-    with open(os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv"), "w") as emb_file:
+    if embeddings_output_path is None:
+        embeddings_output_path = os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv")
+
+    with open(embeddings_output_path, "w") as emb_file:
         for word, vocab_ in sorted_vocab_items:
             # Write to vectors file
             embeddings = "\t".join(repr(val) for val in vectors[vocab_.index])
@@ -216,26 +239,43 @@ def run_node2vec_hpo(
     """Save the random walks"""
     all_random_walks = best_clf.walks
 
-    with open(os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv"), "w") as random_walk_file:
+    if random_walks_output_path is None:
+        random_walks_output_path = os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv")
+
+    with open(random_walks_output_path, "w") as random_walk_file:
         for node, random_walks in zip(wv.index2entity, all_random_walks):
             random_walks_str = "\t".join(random_walks)
             random_walk_file.write(f"{node}\t{random_walks_str}\n")
 
 
+@click.command()
+@click.option(
+    "--pretraining_path", default=PRETRAINING_PATH, help="Path to the triple file", type=click.Path
+)
+@click.option("--sep", default="\t", help="Separator used in the triple file", type=str)
+@click.option("--n_threads", default=96, help="Number of threads", type=int)
+@click.option(
+    "--embeddings_output_path", default=None, help="Output path for embeddings", type=click.Path
+)
+@click.option(
+    "--random_walks_output_path", default=None, help="Output path for random walks", type=click.Path
+)
 def run_node2vec(
-    positive_graph_path: Optional[str] = PRETRAINING_PROT_PATH,
+    pretraining_path: Optional[str] = PRETRAINING_PATH,
     sep: Optional[str] = "\t",
     n_threads: Optional[int] = 96,  # hard coded to the cluster, change if necessary
+    embeddings_output_path: Optional[str] = None,
+    random_walks_output_path: Optional[str] = None,
 ):
     """Run node2vec with no HPO."""
     # Double check the number of expected embeddings
-    triples_df = pd.read_csv(positive_graph_path, sep=sep)
+    triples_df = pd.read_csv(pretraining_path, sep=sep)
     n_expected_nodes = len(set(triples_df["source"]).union(set(triples_df["target"])))
     logger.info(f"{n_expected_nodes} node embeddings are expected")
 
     # Use CSRGraph for speedup
     indra_kg_pos = cg.read_edgelist(
-        positive_graph_path,
+        pretraining_path,
         directed=False,
         sep=sep,
         usecols=["source", "target"],
@@ -281,7 +321,7 @@ def run_node2vec(
     logger.info("Successfully trained the model")
 
     # Save the trained model to a file
-    with open(os.path.join(KG_HPO_DIR, "node2vec_model_prot_no_hpo.pickle"), "wb") as fout:
+    with open(os.path.join(KG_HPO_DIR, "node2vec_model_no_hpo.pickle"), "wb") as fout:
         pickle.dump(node2vec_model, fout)
 
     # Save the embeddings
@@ -290,7 +330,10 @@ def run_node2vec(
     logger.info(f"{len(sorted_vocab_items)} embeddings were learned")
     vectors = wv.vectors
 
-    with open(os.path.join(KG_HPO_DIR, "embeddings_prot_best_model.tsv"), "w") as emb_file:
+    if embeddings_output_path is None:
+        embeddings_output_path = os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv")
+
+    with open(embeddings_output_path, "w") as emb_file:
         for word, vocab_ in sorted_vocab_items:
             # Write to vectors file
             embeddings = "\t".join(repr(val) for val in vectors[vocab_.index])
@@ -302,9 +345,10 @@ def run_node2vec(
     all_random_walks = node2vec_model.walks
     logger.info(f"{len(all_random_walks)} random walks were learned")
 
-    with open(
-        os.path.join(KG_HPO_DIR, "random_walks_prot_best_model.tsv"), "w"
-    ) as random_walk_file:
+    if random_walks_output_path is None:
+        random_walks_output_path = os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv")
+
+    with open(random_walks_output_path, "w") as random_walk_file:
         for node, random_walks in zip(wv.index2entity, all_random_walks):
             random_walks_str = "\t".join(random_walks)
             random_walk_file.write(f"{node}\t{random_walks_str}\n")
