@@ -24,7 +24,7 @@ from sklearn.model_selection import train_test_split
 from stellargraph.data import EdgeSplitter
 from tqdm import tqdm
 
-from stonkgs.constants import KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR, PRETRAINING_PATH
+from stonkgs.constants import KG_HPO_DIR, MLFLOW_TRACKING_URI, MODELS_DIR, PRETRAINING_PROT_PATH
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -73,7 +73,7 @@ def run_link_prediction(
 # TODO: add parameters/click later on
 # @click.group()
 def run_node2vec_hpo(
-    positive_graph_path: Optional[str] = PRETRAINING_PATH,
+    positive_graph_path: Optional[str] = PRETRAINING_PROT_PATH,
     sep: Optional[str] = "\t",
     delete_database: Optional[bool] = True,
     mlflow_tracking_uri: Optional[str] = MLFLOW_TRACKING_URI,
@@ -223,7 +223,7 @@ def run_node2vec_hpo(
 
 
 def run_node2vec(
-    positive_graph_path: Optional[str] = PRETRAINING_PATH,
+    positive_graph_path: Optional[str] = PRETRAINING_PROT_PATH,
     sep: Optional[str] = "\t",
     n_threads: Optional[int] = 96,  # hard coded to the cluster, change if necessary
 ):
@@ -281,7 +281,7 @@ def run_node2vec(
     logger.info("Successfully trained the model")
 
     # Save the trained model to a file
-    with open(os.path.join(KG_HPO_DIR, "node2vec_model_no_hpo.pickle"), "wb") as fout:
+    with open(os.path.join(KG_HPO_DIR, "node2vec_model_prot_no_hpo.pickle"), "wb") as fout:
         pickle.dump(node2vec_model, fout)
 
     # Save the embeddings
@@ -290,7 +290,7 @@ def run_node2vec(
     logger.info(f"{len(sorted_vocab_items)} embeddings were learned")
     vectors = wv.vectors
 
-    with open(os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv"), "w") as emb_file:
+    with open(os.path.join(KG_HPO_DIR, "embeddings_prot_best_model.tsv"), "w") as emb_file:
         for word, vocab_ in sorted_vocab_items:
             # Write to vectors file
             embeddings = "\t".join(repr(val) for val in vectors[vocab_.index])
@@ -302,7 +302,7 @@ def run_node2vec(
     all_random_walks = node2vec_model.walks
     logger.info(f"{len(all_random_walks)} random walks were learned")
 
-    with open(os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv"), "w") as random_walk_file:
+    with open(os.path.join(KG_HPO_DIR, "random_walks_prot_best_model.tsv"), "w") as random_walk_file:
         for node, random_walks in zip(wv.index2entity, all_random_walks):
             random_walks_str = "\t".join(random_walks)
             random_walk_file.write(f"{node}\t{random_walks_str}\n")
