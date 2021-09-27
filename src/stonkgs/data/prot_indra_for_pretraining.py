@@ -10,14 +10,14 @@ import logging
 import os
 
 import pandas as pd
-from transformers import BertTokenizer, BertTokenizerFast, LongformerTokenizer
+from transformers import BertTokenizer, BertTokenizerFast, BigBirdTokenizer
 from tqdm import tqdm
 
 from stonkgs.constants import (
     EMBEDDINGS_PATH,
     NLP_MODEL_TYPE,
     PRETRAINING_DIR,
-    PRETRAINING_PROT_DUMMY_PATH,
+    PRETRAINING_PROT_PATH,
     PROT_SEQ_MODEL_TYPE,
     PROTSTONKGS_MODEL_TYPE,
     RANDOM_WALKS_PATH,
@@ -33,7 +33,7 @@ logging.basicConfig(level=logging.INFO)
 def prot_indra_to_pretraining_df(
     embedding_name_to_vector_path: str = EMBEDDINGS_PATH,
     embedding_name_to_random_walk_path: str = RANDOM_WALKS_PATH,
-    pre_training_path: str = PRETRAINING_PROT_DUMMY_PATH,
+    pre_training_path: str = PRETRAINING_PROT_PATH,
     text_seq_length: int = 768,  # length for the combined text input
     lm_model_type: str = NLP_MODEL_TYPE,
     prot_model_type: str = PROT_SEQ_MODEL_TYPE,
@@ -70,7 +70,7 @@ def prot_indra_to_pretraining_df(
     prot_tokenizer = BertTokenizer.from_pretrained(prot_model_type, do_lower_case=False)
 
     # Initialize the tokenizer used in ProtSTonKGs
-    protstonkgs_tokenizer = LongformerTokenizer.from_pretrained(protstonkgs_model_type)
+    protstonkgs_tokenizer = BigBirdTokenizer.from_pretrained(protstonkgs_model_type)
 
     # Initialize the preprocessed data
     pre_training_preprocessed = []
@@ -203,13 +203,13 @@ def prot_indra_to_pretraining_df(
 
     # Save the final dataframe
     pre_training_preprocessed_df.to_csv(
-        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed_prot_dummy.tsv"),
+        os.path.join(PRETRAINING_DIR, "pretraining_ppi_prot_preprocessed.tsv"),
         sep="\t",
         index=False,
     )
     # Pickle it, too (easier for reading in the lists in the pandas dataframe)
     pre_training_preprocessed_df.to_pickle(
-        os.path.join(PRETRAINING_DIR, "pretraining_preprocessed_prot_dummy.pkl"),
+        os.path.join(PRETRAINING_DIR, "pretraining_ppi_prot_preprocessed.pkl"),
     )
 
     logger.info(f"Saved the data under {PRETRAINING_DIR}")
