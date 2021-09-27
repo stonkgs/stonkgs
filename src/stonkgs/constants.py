@@ -35,6 +35,7 @@ NDD_DIR = os.path.join(INPUT_DIR, "ndd")
 PRETRAINING_DIR = os.path.join(INPUT_DIR, "pretraining")
 PRETRAINING_PATH = os.path.join(PRETRAINING_DIR, "pretraining_triples.tsv")
 PRETRAINING_PROT_PATH = os.path.join(PRETRAINING_DIR, "pretraining_ppi_prot.tsv")
+PRETRAINING_PREPROCESSED_PROT_DF_PATH = os.path.join(PRETRAINING_DIR, "pretraining_ppi_prot.pkl")
 PRETRAINING_PROT_DUMMY_PATH = os.path.join(PRETRAINING_DIR, "pretraining_ppi_prot_dummy.tsv")
 PRETRAINING_PREPROCESSED_DF_PATH = os.path.join(PRETRAINING_DIR, "pretraining_preprocessed.pkl")
 PRETRAINING_PREPROCESSED_POSITIVE_DF_PATH = os.path.join(
@@ -104,7 +105,7 @@ DUMMY_EXAMPLE_TRIPLES = os.path.join(LOCATION_DIR, "location.tsv")
 # Specify the (huggingface) language model that is used as a basis for STonKGs
 NLP_MODEL_TYPE = "dmis-lab/biobert-v1.1"
 # Specify the (huggingface) language model that is used as a basis for ProtSTonKGs
-PROTSTONKGS_MODEL_TYPE = "allenai/longformer-base-4096"
+PROTSTONKGS_MODEL_TYPE = "google/bigbird-roberta-base"
 # Specify the protein bert backbone model type
 PROT_SEQ_MODEL_TYPE = "Rostlab/prot_bert"
 
