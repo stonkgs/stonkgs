@@ -22,7 +22,7 @@ from transformers.models.big_bird.modeling_big_bird import (
 )
 
 from stonkgs.constants import (
-    EMBEDDINGS_PATH,
+    PROT_EMBEDDINGS_PATH,
     NLP_MODEL_TYPE,
     PROTSTONKGS_MODEL_TYPE,
     PROT_SEQ_MODEL_TYPE,
@@ -61,14 +61,14 @@ class ProtSTonKGsPELMPredictionHead(BigBirdLMPredictionHead):
         # 2. The KG part of the sequence that is projected onto the dimension of the kg vocabulary index
         # 3. The protein sequence part that is projected onto the dimension of the protein vocabulary index
         # 1. Text decoder
-        self.text_decoder = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.text_decoder = nn.Linear(config.hidden_size, config.lm_vocab_size, bias=False)
         # 2. KG/Entity decoder
         self.entity_decoder = nn.Linear(config.hidden_size, config.kg_vocab_size, bias=False)
         # 3. Protein decoder
         self.prot_decoder = nn.Linear(config.hidden_size, config.prot_vocab_size, bias=False)
 
         # Set the biases differently for the decoder layers
-        self.text_bias = nn.Parameter(torch.zeros(config.vocab_size))
+        self.text_bias = nn.Parameter(torch.zeros(config.lm_vocab_size))
         self.entity_bias = nn.Parameter(torch.zeros(config.kg_vocab_size))
         self.prot_bias = nn.Parameter(torch.zeros(config.prot_vocab_size))
 
@@ -108,11 +108,12 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
         config,  # the config is loaded from scratch later on anyways
         protstonkgs_model_type: str = PROTSTONKGS_MODEL_TYPE,
         lm_model_type: str = NLP_MODEL_TYPE,
+        lm_vocab_size: int = 28996,
         prot_start_idx: int = 1024,
         prot_model_type: str = PROT_SEQ_MODEL_TYPE,
         prot_vocab_size: int = 30,
         kg_start_idx: int = 768,
-        kg_embedding_dict_path: str = EMBEDDINGS_PATH,
+        kg_embedding_dict_path: str = PROT_EMBEDDINGS_PATH,
     ):
         """Initialize the model architecture components of ProtSTonKGs.
 
@@ -121,6 +122,7 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
         :param config: Required for automated methods such as .from_pretrained in classes that inherit from this one
         :param protstonkgs_model_type: The type of Transformer used to construct ProtSTonKGs.
         :param lm_model_type: The type of (hf) model used to generate the initial text embeddings.
+        :param lm_vocab_size: Vocabulary size of the language model backbone.
         :param kg_start_idx: The index at which the KG random walks start (and the text ends).
         :param kg_embedding_dict_path: The path specification for the node2vec embeddings used for the KG data.
         :param prot_start_idx: The index at which the protein sequences start (and the KG part ends).
@@ -134,6 +136,8 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
         config = BigBirdConfig.from_pretrained(protstonkgs_model_type)
         # Use gradient checkpointing to save memory at the expense of speed
         config.update({"gradient_checkpointing": True})
+        # Add the number of KG entities to the default config of a standard BigBird model
+        config.update({"lm_vocab_size": lm_vocab_size})
         # Add the number of KG entities to the default config of a standard BigBird model
         config.update({"kg_vocab_size": len(kg_embedding_dict)})
         # Add the protein sequence vocabulary size to the default config as well
@@ -200,10 +204,10 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
             for param in backbone.parameters():
                 param.requires_grad = False
 
-        # Add another layer that transforms the hidden size of the protein model onto the LM/KG hidden size
+        # Add another layer that transforms the hidden size of the protein model onto the ProtSTonKGs hidden size
         self.prot_to_lm_hidden_linear = nn.Linear(
             self.prot_backbone.config.hidden_size,
-            self.lm_backbone.config.hidden_size,
+            self.config.hidden_size,
         )
 
     def forward(
@@ -263,9 +267,7 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
             )
             # 3. Use the Prot backbone to obtain the pre-trained entity embeddings
             # batch x number_prot_tokens x prot_hidden_size (prot_hidden_size != hidden_size)
-            prot_embeddings_original_dim = self.prot_backbone(input_ids[:, self.prot_start_idx :])[
-                0
-            ]
+            prot_embeddings_original_dim = self.prot_backbone(input_ids[:, self.prot_start_idx:])[0]
 
         # Additional layer to project prot_hidden_size onto hidden_size
         prot_embeddings = self.prot_to_lm_hidden_linear(prot_embeddings_original_dim)
@@ -317,7 +319,7 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
             loss_fct = nn.CrossEntropyLoss()
             # 1. Text-based MLM
             masked_lm_loss = loss_fct(
-                token_prediction_scores.view(-1, self.config.vocab_size),
+                token_prediction_scores.view(-1, self.config.lm_vocab_size),
                 masked_lm_labels.view(-1),
             )
             # 2. Entity-based masked "language" (entity) modeling
