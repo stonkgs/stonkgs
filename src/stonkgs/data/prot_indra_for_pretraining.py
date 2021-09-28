@@ -14,13 +14,13 @@ from transformers import BertTokenizer, BertTokenizerFast, BigBirdTokenizer
 from tqdm import tqdm
 
 from stonkgs.constants import (
-    EMBEDDINGS_PATH,
     NLP_MODEL_TYPE,
     PRETRAINING_DIR,
     PRETRAINING_PROT_PATH,
+    PROT_EMBEDDINGS_PATH,
+    PROT_RANDOM_WALKS_PATH,
     PROT_SEQ_MODEL_TYPE,
     PROTSTONKGS_MODEL_TYPE,
-    RANDOM_WALKS_PATH,
     VOCAB_FILE,
 )
 from stonkgs.data.indra_for_pretraining import replace_mlm_tokens
@@ -31,8 +31,8 @@ logging.basicConfig(level=logging.INFO)
 
 
 def prot_indra_to_pretraining_df(
-    embedding_name_to_vector_path: str = EMBEDDINGS_PATH,
-    embedding_name_to_random_walk_path: str = RANDOM_WALKS_PATH,
+    embedding_name_to_vector_path: str = PROT_EMBEDDINGS_PATH,
+    embedding_name_to_random_walk_path: str = PROT_RANDOM_WALKS_PATH,
     pre_training_path: str = PRETRAINING_PROT_PATH,
     text_seq_length: int = 768,  # length for the combined text input
     lm_model_type: str = NLP_MODEL_TYPE,
@@ -117,9 +117,9 @@ def prot_indra_to_pretraining_df(
             [1]
             + encoded_evidence["attention_mask"]
             + [1]
-            + encoded_source_desc["input_ids"]
+            + encoded_source_desc["attention_mask"]
             + [1]
-            + encoded_target_desc["input_ids"]
+            + encoded_target_desc["attention_mask"]
             + [1]
         )
 
@@ -148,9 +148,9 @@ def prot_indra_to_pretraining_df(
         )
         prot_sequence_ids = (
             prot_sequence_source["input_ids"]
-            + [protstonkgs_tokenizer.sep_token_id]
+            + [prot_tokenizer.sep_token_id]
             + prot_sequence_target["input_ids"]
-            + [protstonkgs_tokenizer.sep_token_id]
+            + [prot_tokenizer.sep_token_id]
         )
         prot_attention_mask = (
             prot_sequence_source["attention_mask"]
