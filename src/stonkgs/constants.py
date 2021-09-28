@@ -58,6 +58,7 @@ STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, "stonkgs")
 DEEPSPEED_CONFIG_PATH = os.path.join(MODELS_DIR, "deepspeed_config_zero2.json")
 
 EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv")
+PROT_EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, "embeddings_prot_best_model.tsv")
 RANDOM_WALKS_PATH = os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv")
 
 # Move to parent folder by os.sep.join(PROJECT_DIR.split(os.sep)[:-1]) to get to the logs folder
