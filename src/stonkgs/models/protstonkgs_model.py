@@ -22,9 +22,9 @@ from transformers.models.big_bird.modeling_big_bird import (
 )
 
 from stonkgs.constants import (
-    PROT_EMBEDDINGS_PATH,
     NLP_MODEL_TYPE,
     PROTSTONKGS_MODEL_TYPE,
+    PROT_EMBEDDINGS_PATH,
     PROT_SEQ_MODEL_TYPE,
 )
 from stonkgs.models.kg_baseline_model import prepare_df
@@ -267,7 +267,9 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
             )
             # 3. Use the Prot backbone to obtain the pre-trained entity embeddings
             # batch x number_prot_tokens x prot_hidden_size (prot_hidden_size != hidden_size)
-            prot_embeddings_original_dim = self.prot_backbone(input_ids[:, self.prot_start_idx:])[0]
+            prot_embeddings_original_dim = self.prot_backbone(input_ids[:, self.prot_start_idx :])[
+                0
+            ]
 
         # Additional layer to project prot_hidden_size onto hidden_size
         prot_embeddings = self.prot_to_lm_hidden_linear(prot_embeddings_original_dim)
