@@ -205,7 +205,7 @@ def preprocess_fine_tuning_data(
     return fine_tuning_preprocessed_df
 
 
-class INDRAEntityEvidenceDataset(torch.utils.data.Dataset):
+class INDRADataset(torch.utils.data.Dataset):
     """Custom Dataset class for INDRA data containing the combination of text and KG triple data."""
 
     def __init__(
@@ -400,7 +400,7 @@ def run_sequence_classification_cv(
         )
 
         # Based on the preprocessed fine-tuning dataframe: Convert the data into the desired dictionary format
-        # for the INDRAEntityEvidenceDataset
+        # for the INDRADataset
         train_data = (
             fine_tuning_data.iloc[indices["train_idx"]]
             .reset_index(drop=True)
@@ -411,8 +411,8 @@ def run_sequence_classification_cv(
         )
         train_labels = labels[indices["train_idx"]].tolist()
         test_labels = labels[indices["test_idx"]].tolist()
-        train_dataset = INDRAEntityEvidenceDataset(encodings=train_data, labels=train_labels)
-        test_dataset = INDRAEntityEvidenceDataset(encodings=test_data, labels=test_labels)
+        train_dataset = INDRADataset(encodings=train_data, labels=train_labels)
+        test_dataset = INDRADataset(encodings=test_data, labels=test_labels)
 
         # Note that due to the randomization in the batches, the training/evaluation is slightly
         # different every time
@@ -591,25 +591,23 @@ def run_all_fine_tuning_tasks(
         column_names,
         task_names,
     ):
-        # TODO comment out later
-        if task_name == "ndd":
-            # Run the 8 fine-tuning tasks
-            run_sequence_classification_cv(
-                train_data_path=os.path.join(directory, file),
-                model_path=model_path,
-                output_dir=output_dir,
-                logging_uri_mlflow=logging_dir,
-                epochs=epochs,
-                log_steps=log_steps,
-                lr=lr,
-                batch_size=batch_size,
-                gradient_accumulation=gradient_accumulation_steps,
-                class_column_name=column_name,
-                task_name=task_name,
-                deepspeed=deepspeed,
-                max_dataset_size=max_dataset_size,
-            )
-            logger.info(f"Finished the {task_name} task")
+        # Run the 8 fine-tuning tasks
+        run_sequence_classification_cv(
+            train_data_path=os.path.join(directory, file),
+            model_path=model_path,
+            output_dir=output_dir,
+            logging_uri_mlflow=logging_dir,
+            epochs=epochs,
+            log_steps=log_steps,
+            lr=lr,
+            batch_size=batch_size,
+            gradient_accumulation=gradient_accumulation_steps,
+            class_column_name=column_name,
+            task_name=task_name,
+            deepspeed=deepspeed,
+            max_dataset_size=max_dataset_size,
+        )
+        logger.info(f"Finished the {task_name} task")
 
 
 if __name__ == "__main__":
