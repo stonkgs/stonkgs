@@ -50,11 +50,16 @@ NLP_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, "nlp-baseline")
 KG_HPO_DIR = os.path.join(MODELS_DIR, "kg-hpo")
 KG_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, "kg-baseline")
 STONKGS_PRETRAINING_DIR = os.path.join(MODELS_DIR, "stonkgs-pretraining")
+PROTSTONKGS_PRETRAINING_DIR = os.path.join(MODELS_DIR, "protstonkgs-pretraining")
 STONKGS_PRETRAINING_NO_NSP_DIR = os.path.join(MODELS_DIR, "stonkgs-pretraining-no-nsp")
 PRETRAINED_STONKGS_DUMMY_PATH = os.path.join(
     STONKGS_PRETRAINING_DIR, "pretrained-stonkgs-dummy-model"
 )
+PRETRAINED_PROTSTONKGS_PATH = os.path.join(
+    PROTSTONKGS_PRETRAINING_DIR, "pretrained-protstonkgs"
+)
 STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, "stonkgs")
+PROT_STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, "protstonkgs")
 DEEPSPEED_CONFIG_PATH = os.path.join(MODELS_DIR, "deepspeed_config_zero2.json")
 
 EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv")
