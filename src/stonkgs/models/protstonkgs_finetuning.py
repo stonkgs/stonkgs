@@ -44,8 +44,8 @@ from stonkgs.constants import (
     VOCAB_FILE,
 )
 from stonkgs.models.kg_baseline_model import prepare_df
-from stonkgs.models.stonkgs_finetuning import get_train_test_splits, INDRADataset
 from stonkgs.models.protstonkgs_model import ProtSTonKGsForPreTraining
+from stonkgs.models.stonkgs_finetuning import INDRADataset, get_train_test_splits
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -81,9 +81,15 @@ def preprocess_fine_tuning_data(
         train_data_path,
         sep="\t",
         usecols=[
-            "source", "target", "evidence", "source_description", "target_description", "source_prot", "target_prot",
+            "source",
+            "target",
+            "evidence",
+            "source_description",
+            "target_description",
+            "source_prot",
+            "target_prot",
             class_column_name,
-        ]
+        ],
     )
 
     # Filter out any triples that contain a node that is not in the embeddings_dict
@@ -509,7 +515,9 @@ def run_sequence_classification_cv(
     result_df = result_df.replace({"predicted_label": id2tag, "true_label": id2tag})
     # Save the result_df
     result_df.to_csv(
-        os.path.join(PROT_STONKGS_OUTPUT_DIR, "predicted_labels_protstonkgs_" + task_name + "df.tsv"),
+        os.path.join(
+            PROT_STONKGS_OUTPUT_DIR, "predicted_labels_protstonkgs_" + task_name + "df.tsv"
+        ),
         index=False,
         sep="\t",
     )
