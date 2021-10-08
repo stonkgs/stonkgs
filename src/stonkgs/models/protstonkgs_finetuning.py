@@ -543,7 +543,9 @@ def run_sequence_classification_cv(
 
 @click.command()
 @click.option("-e", "--epochs", default=5, help="Number of epochs", type=int)
-@click.option("--cv", default=5, help="Number of cross validation splits (use 1 to omit cv)", type=int)
+@click.option(
+    "--cv", default=5, help="Number of cross validation splits (use 1 to omit cv)", type=int
+)
 @click.option("--lr", default=5e-5, help="Learning rate", type=float)
 @click.option(
     "--logging_dir",
