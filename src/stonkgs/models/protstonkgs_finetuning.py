@@ -460,6 +460,7 @@ def run_sequence_classification_cv(
             do_train=True,
             do_predict=True,
             per_device_train_batch_size=batch_size,
+            per_device_eval_batch_size=batch_size,
             gradient_accumulation_steps=gradient_accumulation,
         )
 
