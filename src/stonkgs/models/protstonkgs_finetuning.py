@@ -387,6 +387,7 @@ def run_sequence_classification_cv(
     task_name: str = "",
     deepspeed: bool = True,
     max_dataset_size: int = 100000,
+    cv: int = 5,
 ) -> Dict:
     """Run cross-validation for the sequence classification task(s) using STonKGs."""
     # Get data splits
@@ -398,6 +399,7 @@ def run_sequence_classification_cv(
     train_test_splits = get_train_test_splits(
         fine_tuning_df,
         max_dataset_size=max_dataset_size,
+        n_splits=cv,
     )
 
     # Get text evidences and labels
@@ -541,6 +543,7 @@ def run_sequence_classification_cv(
 
 @click.command()
 @click.option("-e", "--epochs", default=5, help="Number of epochs", type=int)
+@click.option("--cv", default=5, help="Number of cross validation splits (use 1 to omit cv)", type=int)
 @click.option("--lr", default=5e-5, help="Learning rate", type=float)
 @click.option(
     "--logging_dir",
@@ -579,6 +582,7 @@ def run_all_fine_tuning_tasks(
     gradient_accumulation_steps: int = 1,
     deepspeed: bool = True,
     max_dataset_size: int = 100000,  # effectively removes the max dataset size restriction
+    cv: int = 5,
     local_rank: int = -1,
 ):
     """Run all fine-tuning tasks at once."""
@@ -642,6 +646,7 @@ def run_all_fine_tuning_tasks(
             task_name=task_name,
             deepspeed=deepspeed,
             max_dataset_size=max_dataset_size,
+            cv=cv,
         )
         logger.info(f"Finished the {task_name} task")
 
