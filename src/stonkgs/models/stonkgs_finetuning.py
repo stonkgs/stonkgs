@@ -25,14 +25,15 @@ from transformers.trainer import Trainer, TrainingArguments
 
 from stonkgs.constants import (
     CELL_LINE_DIR,
+    CELL_TYPE_DIR,
     CORRECT_DIR,
     DEEPSPEED_CONFIG_PATH,
     DISEASE_DIR,
     EMBEDDINGS_PATH,
     LOCATION_DIR,
     MLFLOW_FINETUNING_TRACKING_URI,
-    NDD_DIR,
     NLP_MODEL_TYPE,
+    ORGAN_DIR,
     PRETRAINED_STONKGS_DUMMY_PATH,
     RANDOM_WALKS_PATH,
     RELATION_TYPE_DIR,
@@ -551,39 +552,42 @@ def run_all_fine_tuning_tasks(
     # Specify all directories and file names
     directories = [
         CELL_LINE_DIR,
+        CELL_TYPE_DIR,
         CORRECT_DIR,
         CORRECT_DIR,
         DISEASE_DIR,
         LOCATION_DIR,
+        ORGAN_DIR,
         SPECIES_DIR,
         RELATION_TYPE_DIR,
         RELATION_TYPE_DIR,
-        NDD_DIR,
     ]
     file_names = [
-        "cell_line_no_duplicates.tsv",
-        "correct_incorrect_binary_no_duplicates.tsv",
-        "correct_incorrect_multiclass_no_duplicates.tsv",
-        "disease_no_duplicates.tsv",
-        "location_no_duplicates.tsv",
-        "species_no_duplicates.tsv",
-        "relation_type_no_duplicates.tsv",
-        "relation_type_no_duplicates.tsv",
-        "ndd_no_duplicates.tsv",
+        "cell_line_ppi_prot.tsv",
+        "cell_type_ppi_prot.tsv",
+        "correct_incorrect_binary_ppi_prot.tsv",
+        "correct_incorrect_multiclass_ppi_prot.tsv",
+        "disease_ppi_prot.tsv",
+        "location_ppi_prot.tsv",
+        "organ_ppi_prot.tsv",
+        "species_ppi_prot.tsv",
+        "relation_type_ppi_prot.tsv",
+        "relation_type_ppi_prot.tsv",
     ]
     task_names = [
         "cell_line",
+        "cell_type",
         "correct_binary",
         "correct_multiclass",
         "disease",
         "location",
+        "organ",
         "species",
         "interaction",
         "polarity",
-        "ndd",
     ]
     # Specify the column names of the target variable
-    column_names = ["class"] * 6 + ["interaction"] + ["polarity"] + ["class"]
+    column_names = ["class"] * 8 + ["interaction"] + ["polarity"]
 
     for directory, file, column_name, task_name in zip(
         directories,
