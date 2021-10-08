@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import f1_score
-from sklearn.model_selection import KFold, StratifiedShuffleSplit
+from sklearn.model_selection import KFold, StratifiedShuffleSplit, train_test_split
 from tqdm import tqdm
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.bert import BertModel, BertTokenizer, BertTokenizerFast
@@ -75,14 +75,25 @@ def get_train_test_splits(
             data = data.iloc[train_index, :].reset_index(drop=True)
             labels = labels.iloc[train_index].reset_index(drop=True)
 
-    # Generate the actual train/test splits here:
-    # Implement non-stratified train/test splits
-    skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
+    # Create the indices differently depending on whether or not cv should be used
+    if n_splits == 1:
+        train_idx, test_idx = train_test_split(
+            data,
+            labels,
+            train_size=0.8,
+            random_state=random_seed,
+            shuffle=True,
+        )
+        return [{"train_idx": train_idx, "test_idx": test_idx}]
+    else:
+        # Generate the actual train/test splits here:
+        # Implement non-stratified train/test splits
+        skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
 
-    return [
-        {"train_idx": train_idx, "test_idx": test_idx}
-        for train_idx, test_idx in skf.split(data, labels)
-    ]
+        return [
+            {"train_idx": train_idx, "test_idx": test_idx}
+            for train_idx, test_idx in skf.split(data, labels)
+        ]
 
 
 def preprocess_fine_tuning_data(
