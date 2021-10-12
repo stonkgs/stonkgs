@@ -75,25 +75,18 @@ def get_train_test_splits(
             data = data.iloc[train_index, :].reset_index(drop=True)
             labels = labels.iloc[train_index].reset_index(drop=True)
 
-    # Create the indices differently depending on whether or not cv should be used
-    if n_splits == 1:
-        train_idx, test_idx = train_test_split(
-            data,
-            labels,
-            train_size=0.8,
-            random_state=random_seed,
-            shuffle=True,
-        )
-        return [{"train_idx": train_idx, "test_idx": test_idx}]
-    else:
-        # Generate the actual train/test splits here:
-        # Implement non-stratified train/test splits
-        skf = KFold(n_splits=n_splits, random_state=random_seed, shuffle=True)
+    # Generate the actual train/test splits here:
+    # Implement non-stratified train/test splits
+    skf = KFold(n_splits=5 if n_splits == 1 else n_splits, random_state=random_seed, shuffle=True)
+    result_indices = [
+        {"train_idx": train_idx, "test_idx": test_idx}
+        for train_idx, test_idx in skf.split(data, labels)
+    ]
 
-        return [
-            {"train_idx": train_idx, "test_idx": test_idx}
-            for train_idx, test_idx in skf.split(data, labels)
-        ]
+    if n_splits == 1:
+        return [result_indices[0]]
+    else:
+        return result_indices
 
 
 def preprocess_fine_tuning_data(
