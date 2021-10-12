@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.metrics import f1_score
-from sklearn.model_selection import KFold, StratifiedShuffleSplit, train_test_split
+from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from tqdm import tqdm
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.bert import BertModel, BertTokenizer, BertTokenizerFast
