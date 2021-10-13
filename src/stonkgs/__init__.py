@@ -11,8 +11,8 @@ from .api.api import (
     infer_locations,
     infer_species,
 )
-from .models.protstonkgs_model import ProtSTonKGsForPreTraining
 from .models.protstonkgs_finetuning import ProtSTonKGsForSequenceClassification
+from .models.protstonkgs_model import ProtSTonKGsForPreTraining
 from .models.stonkgs_finetuning import STonKGsForSequenceClassification
 from .models.stonkgs_for_embeddings import get_stonkgs_embeddings, preprocess_df_for_embeddings
 from .models.stonkgs_model import STonKGsForPreTraining
