@@ -191,6 +191,43 @@ example_data = ...
 raw_results, probabilities = infer(model, example_data)
 ```
 
+### ProtSTonKGs
+
+It is possible to download the extension of STonKGs, the pre-trained ProtSTonKGs model, and 
+initialize it for further pre-training on text, KG and amino acid sequence data: 
+
+```python
+from stonkgs import ProtSTonKGsForPreTraining
+
+# Download the model from the model hub and initialize it for pre-training 
+# using from_pretrained
+protstonkgs_pretraining = ProtSTonKGsForPreTraining.from_pretrained(
+    'stonkgs/protstonkgs',
+)
+```
+
+Moreover, analogous to STonKGs, ProtSTonKGs can be used for fine-tuning sequence classification 
+tasks as well: 
+
+```python
+from stonkgs import ProtSTonKGsForSequenceClassification
+
+# Download the model from the model hub and initialize it for fine-tuning
+protstonkgs_model_finetuning = ProtSTonKGsForSequenceClassification.from_default_pretrained(
+    num_labels=number_of_labels_in_your_task,
+)
+
+# Initialize a Trainer based on the training dataset
+trainer = Trainer(
+    model=model,
+    args=some_previously_defined_training_args,
+    train_dataset=some_previously_defined_finetuning_data,
+)
+
+# Fine-tune the model to the moon 
+trainer.train()
+```
+
 ## ⬇️ Installation
 
 The most recent release can be installed from
