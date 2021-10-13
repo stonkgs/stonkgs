@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from functools import lru_cache
 from typing import Optional
 
 import torch
@@ -209,6 +210,12 @@ class ProtSTonKGsForPreTraining(BigBirdForPreTraining):
             self.prot_backbone.config.hidden_size,
             self.config.hidden_size,
         )
+
+    @classmethod
+    @lru_cache(maxsize=32)
+    def from_default_pretrained(cls, **kwargs) -> ProtSTonKGsForPreTraining:
+        """Get the default pre-trained STonKGs model."""
+        return cls.from_pretrained("stonkgs/protstonkgs", **kwargs)
 
     def forward(
         self,
