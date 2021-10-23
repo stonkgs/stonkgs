@@ -61,6 +61,7 @@ PROT_STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, "protstonkgs")
 DEEPSPEED_CONFIG_PATH = os.path.join(MODELS_DIR, "deepspeed_config_zero2.json")
 
 EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, "embeddings_best_model.tsv")
+TRANSE_EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, "transe_embeddings_best_model.tsv")
 PROT_EMBEDDINGS_PATH = os.path.join(KG_HPO_DIR, "embeddings_prot_best_model.tsv")
 RANDOM_WALKS_PATH = os.path.join(KG_HPO_DIR, "random_walks_best_model.tsv")
 PROT_RANDOM_WALKS_PATH = os.path.join(KG_HPO_DIR, "random_walks_prot_best_model.tsv")
