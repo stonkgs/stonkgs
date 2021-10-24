@@ -80,12 +80,10 @@ def replace_mlm_tokens(
 def _add_negative_nsp_samples(
     processed_df: pd.DataFrame,
     nsp_negative_proportion: float = 0.25,
+    text_part_length: int = 256,
 ):
     """Generates non-matching text-entity pairs (negative NSP samples)."""
     negative_samples = []
-
-    # Get the length of half a sequence
-    half_length = len(processed_df.iloc[0]["input_ids"]) // 2
 
     # First get the indices that serve as the basis for the negative examples
     negative_sample_idx = random.sample(
@@ -113,8 +111,8 @@ def _add_negative_nsp_samples(
         # 2. Replace the entity mask labels
         # 3. Replace the NSP label
         new_entry = {
-            "input_ids": text_features["input_ids"][:half_length]
-            + entity_features["input_ids"][half_length:],
+            "input_ids": text_features["input_ids"][:text_part_length]
+            + entity_features["input_ids"][text_part_length:],
             "attention_mask": text_features["attention_mask"],
             "token_type_ids": text_features["token_type_ids"],
             "masked_lm_labels": text_features["masked_lm_labels"],
