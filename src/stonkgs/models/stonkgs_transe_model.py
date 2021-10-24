@@ -2,7 +2,7 @@
 
 """STonKGs model architecture components based on TransE embeddings.
 
-Mostly resembles the default STonKGs model architecture, apart from the input sequence length, which is l=259.
+Mostly resembles the default STonKGs model architecture, apart from the input sequence length, which is l=260.
 """
 
 import logging
@@ -41,7 +41,7 @@ class TransESTonKGsELMPredictionHead(BertLMPredictionHead):
         self.entity_decoder = nn.Linear(config.hidden_size, config.kg_vocab_size, bias=False)
 
         # !! TransESTonKGs-specific !! Determine the text part length of the overall sequence based on the config
-        self.text_part_length = config.max_position_embeddings - 3
+        self.text_part_length = config.max_position_embeddings - 4
 
         # Set the biases differently for the decoder layers
         self.text_bias = nn.Parameter(torch.zeros(config.vocab_size))
@@ -89,8 +89,8 @@ class TransESTonKGsForPreTraining(BertForPreTraining):
         # Add the number of KG entities to the default config of a standard BERT model
         config = BertConfig.from_pretrained(nlp_model_type)
         config.update({"kg_vocab_size": len(kg_embedding_dict)})
-        # !! TransESTonKGs-specific !! Change the default sequence length to 259
-        config.update({"max_position_embeddings": 259})
+        # !! TransESTonKGs-specific !! Change the default sequence length to 260
+        config.update({"max_position_embeddings": 260})
         # Initialize the underlying BertForPreTraining model that will be used to build the STonKGs Transformer layers
         super().__init__(config)
 
