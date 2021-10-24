@@ -25,6 +25,7 @@ from stonkgs.constants import (
 )
 from stonkgs.models.protstonkgs_model import ProtSTonKGsForPreTraining
 from stonkgs.models.stonkgs_model import STonKGsForPreTraining
+from stonkgs.models.stonkgs_transe_model import TransESTonKGsForPreTraining
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -136,8 +137,10 @@ def pretrain_stonkgs(
         stonkgs_model = STonKGsForPreTraining(config=None, nlp_model_type=NLP_MODEL_TYPE)
     elif model_variant == "protstonkgs":
         stonkgs_model = ProtSTonKGsForPreTraining(config=None)
+    elif model_variant == "transestonkgs":
+        stonkgs_model = TransESTonKGsForPreTraining(config=None)
     else:
-        logger.info("Model variant must be in ['stonkgs', 'protstonkgs'].")
+        logger.info("Model variant must be in ['stonkgs', 'protstonkgs', 'transestonkgs'].")
         return
 
     # Add the huggingface accelerator
