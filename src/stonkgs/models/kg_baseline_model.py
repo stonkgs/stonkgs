@@ -390,6 +390,8 @@ def run_kg_baseline_classification_cv(
             triples_df["target"],
             labels,
         )
+        mlflow.set_tracking_uri(logging_uri_mlflow)
+        mlflow.set_experiment("KG Baseline for STonKGs")
     elif model_variant == "transe":
         kg_embeds = TransEINDRAEntityDataset(
             embeddings_dict,
@@ -398,9 +400,8 @@ def run_kg_baseline_classification_cv(
             triples_df["target"],
             labels,
         )
-
-    mlflow.set_tracking_uri(logging_uri_mlflow)
-    mlflow.set_experiment("KG Baseline for STonKGs")
+        mlflow.set_tracking_uri(logging_uri_mlflow)
+        mlflow.set_experiment("Transe-KG Baseline for STonKGs")
 
     mlflow.pytorch.autolog()
 
