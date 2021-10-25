@@ -249,10 +249,17 @@ class TransEINDRAEntityDataset(torch.utils.data.Dataset):
         embeddings = np.empty((number_of_triples, 3, embedding_dim))
 
         # 1. Iterate through all triples: Get the embeddings for sources, relations, targets based on embedding_dict
-        for idx, (source, relation, target) in enumerate(zip(self.sources, self.relations, self.targets)):
+        for idx, (source, relation, target) in enumerate(
+            zip(self.sources, self.relations, self.targets)
+        ):
             # 2. Get embeddings for the nodes/relations using embedding_dict
             embeds = np.stack(
-                [self.embedding_dict[source], self.embedding_dict[relation], self.embedding_dict[target]], axis=0
+                [
+                    self.embedding_dict[source],
+                    self.embedding_dict[relation],
+                    self.embedding_dict[target],
+                ],
+                axis=0,
             )
             # The final embedding sequence for a given triple has the dimension 3 x embedding_dim
             embeddings[idx, :, :] = embeds
