@@ -140,8 +140,8 @@ class KGEClassificationModel(pl.LightningModule):
         return {"test_f1": test_f1}
 
 
-class INDRAEntityDataset(torch.utils.data.Dataset):
-    """Custom dataset class for INDRA data."""
+class Node2VecINDRAEntityDataset(torch.utils.data.Dataset):
+    """Custom dataset class for Node2vec-based INDRA data."""
 
     def __init__(self, embedding_dict, random_walk_dict, sources, targets, labels, max_len=254):
         """Initialize INDRA Dataset based on random walk embeddings for 2 nodes in each triple."""
@@ -201,6 +201,61 @@ class INDRAEntityDataset(torch.utils.data.Dataset):
             )
             # The final embedding sequence for a given triple has the dimension max_length x embedding_dim
             embeddings[idx, :, :] = embeds_random_walk
+
+        return embeddings
+
+
+class TransEINDRAEntityDataset(torch.utils.data.Dataset):
+    """Custom dataset class for TransE-based INDRA data."""
+
+    def __init__(self, embedding_dict, sources, relations, targets, labels):
+        """Initialize INDRA Dataset based on h,r,t embeddings in each triple."""
+        # Three units (source, relation, target) of each triple
+        self.sources = sources
+        self.relations = relations
+        self.targets = targets
+        # Initialize dictionary of node name -> embedding vector
+        self.embedding_dict = embedding_dict
+        # Add the null vector to the embedding dict for "out-of-vocabulary" nodes
+        self.embedding_dict[-1] = np.zeros(np.shape(next(iter(self.embedding_dict.values()))))
+        # Get the embedding sequences for each triple
+        self.embeddings = self.get_embeddings()
+        # Assumes that the labels are numerically encoded
+        self.labels = labels
+
+    def __getitem__(self, idx):
+        """Get embeddings and labels for given indices."""
+        # Get embeddings (of random walk sequences of source + target) for given indices
+        item = torch.tensor(self.embeddings[idx, :, :], dtype=torch.float)
+        # Get labels for given indices
+        labels = torch.tensor(self.labels[idx], dtype=torch.long)
+        return item, labels
+
+    def __len__(self):
+        """Return the length of the dataset."""
+        return len(self.labels)
+
+    def get_embeddings(self):
+        """Get the embedding sequences for each triple in the dataset (based on h,r,t).
+
+        :return: embedding sequences for each triple in the dataset
+        """
+        # Number of total examples in the dataset
+        number_of_triples = len(self.sources)
+        # Get the embedding dimension by accessing a random element
+        embedding_dim = len(next(iter(self.embedding_dict.values())))
+
+        # Initialize the embedding array of dimension n x 3 (h,r,t) x embedding_dim
+        embeddings = np.empty((number_of_triples, 3, embedding_dim))
+
+        # 1. Iterate through all triples: Get the embeddings for sources, relations, targets based on embedding_dict
+        for idx, (source, relation, target) in enumerate(zip(self.sources, self.relations, self.targets)):
+            # 2. Get embeddings for the nodes/relations using embedding_dict
+            embeds = np.stack(
+                [self.embedding_dict[source], self.embedding_dict[relation], self.embedding_dict[target]], axis=0
+            )
+            # The final embedding sequence for a given triple has the dimension 3 x embedding_dim
+            embeddings[idx, :, :] = embeds
 
         return embeddings
 
@@ -269,6 +324,7 @@ def run_kg_baseline_classification_cv(
     log_steps: int = 500,
     task_name: str = "",
     max_dataset_size: int = 100000,
+    model_variant: str = "node2vec",
 ) -> Dict[str, float]:
     """Run KG baseline classification."""
     # Step 1. load the tsv file with the annotation types you want to test and make the splits
@@ -284,7 +340,8 @@ def run_kg_baseline_classification_cv(
 
     # Prepare embeddings and random walks
     embeddings_dict = prepare_df(embedding_path)
-    random_walks_dict = prepare_df(random_walks_path)
+    if model_variant == "node2vec":
+        random_walks_dict = prepare_df(random_walks_path)
 
     # Filter out any triples that contain a node that is not in the embeddings_dict
     original_length = len(triples_df)
@@ -318,13 +375,22 @@ def run_kg_baseline_classification_cv(
     f1_scores = []
 
     # Initialize INDRA for KG baseline dataset
-    kg_embeds = INDRAEntityDataset(
-        embeddings_dict,
-        random_walks_dict,
-        triples_df["source"],
-        triples_df["target"],
-        labels,
-    )
+    if model_variant == "node2vec":
+        kg_embeds = Node2VecINDRAEntityDataset(
+            embeddings_dict,
+            random_walks_dict,
+            triples_df["source"],
+            triples_df["target"],
+            labels,
+        )
+    elif model_variant == "transe":
+        kg_embeds = TransEINDRAEntityDataset(
+            embeddings_dict,
+            triples_df["source"],
+            triples_df["relation"],
+            triples_df["target"],
+            labels,
+        )
 
     mlflow.set_tracking_uri(logging_uri_mlflow)
     mlflow.set_experiment("KG Baseline for STonKGs")
@@ -459,6 +525,18 @@ def run_kg_baseline_classification_cv(
     help="Maximum dataset size of the fine-tuning datasets",
     type=int,
 )
+@click.option(
+    "--model_variant",
+    default="node2vec",
+    help="KGE base for the baseline. Possible values: ['node2vec', 'transe']",
+    type=str,
+)
+@click.option(
+    "--embedding_path",
+    default=EMBEDDINGS_PATH,
+    help="Path for the embedding dictionary",
+    type=str,
+)
 def run_all_fine_tuning_tasks(
     epochs: int = 5,
     log_steps: int = 500,
@@ -466,6 +544,8 @@ def run_all_fine_tuning_tasks(
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 16,
     max_dataset_size: int = 100000,  # effectively removes the max dataset size restriction
+    model_variant: str = "node2vec",
+    embedding_path: str = EMBEDDINGS_PATH,
 ):
     """Run all fine-tuning tasks at once."""
     # Specify all directories and file names
@@ -519,6 +599,8 @@ def run_all_fine_tuning_tasks(
             train_batch_size=batch_size,
             task_name=task_name,
             max_dataset_size=max_dataset_size,
+            model_variant=model_variant,
+            embedding_path=embedding_path,
         )
         logger.info(f"Finished the {task_name} task")
 
