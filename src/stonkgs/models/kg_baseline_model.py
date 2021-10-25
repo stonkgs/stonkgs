@@ -341,6 +341,7 @@ def run_kg_baseline_classification_cv(
         usecols=[
             "source",
             "target",
+            "relation",
             label_column_name,
         ],
     )
