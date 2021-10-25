@@ -25,7 +25,7 @@ from stonkgs.constants import (
 )
 from stonkgs.models.protstonkgs_model import ProtSTonKGsForPreTraining
 from stonkgs.models.stonkgs_model import STonKGsForPreTraining
-from stonkgs.models.stonkgs_transe_model import TransESTonKGsForPreTraining
+from stonkgs.models.transestonkgs_model import TransESTonKGsForPreTraining
 
 # Initialize logger
 logger = logging.getLogger(__name__)
