@@ -56,12 +56,8 @@ STONKGS_PRETRAINING_NO_NSP_DIR = os.path.join(MODELS_DIR, "stonkgs-pretraining-n
 PRETRAINED_STONKGS_DUMMY_PATH = os.path.join(
     STONKGS_PRETRAINING_DIR, "pretrained-stonkgs-dummy-model"
 )
-PRETRAINED_STONKGS_PATH = os.path.join(
-    STONKGS_PRETRAINING_DIR, "pretrained-stonkgs"
-)
-PRETRAINED_PROTSTONKGS_PATH = os.path.join(
-    PROTSTONKGS_PRETRAINING_DIR, "pretrained-protstonkgs"
-)
+PRETRAINED_STONKGS_PATH = os.path.join(STONKGS_PRETRAINING_DIR, "pretrained-stonkgs")
+PRETRAINED_PROTSTONKGS_PATH = os.path.join(PROTSTONKGS_PRETRAINING_DIR, "pretrained-protstonkgs")
 PRETRAINED_TRANSESTONKGS_PATH = os.path.join(
     TRANSESTONKGS_PRETRAINING_DIR, "pretrained-transestonkgs"
 )
