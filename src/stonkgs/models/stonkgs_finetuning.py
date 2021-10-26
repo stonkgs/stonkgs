@@ -34,7 +34,7 @@ from stonkgs.constants import (
     MLFLOW_FINETUNING_TRACKING_URI,
     NLP_MODEL_TYPE,
     ORGAN_DIR,
-    PRETRAINED_STONKGS_DUMMY_PATH,
+    PRETRAINED_STONKGS_PATH,
     RANDOM_WALKS_PATH,
     RELATION_TYPE_DIR,
     SPECIES_DIR,
@@ -348,7 +348,7 @@ class STonKGsForSequenceClassification(STonKGsForPreTraining):
 
 def run_sequence_classification_cv(
     train_data_path: str,
-    model_path: str = PRETRAINED_STONKGS_DUMMY_PATH,
+    model_path: str = PRETRAINED_STONKGS_PATH,
     output_dir: Optional[str] = STONKGS_OUTPUT_DIR,
     logging_uri_mlflow: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     label_column_name: str = "labels",
@@ -528,7 +528,7 @@ def run_sequence_classification_cv(
 @click.option("--log_steps", default=500, help="Number of steps between each log", type=int)
 @click.option(
     "--model_path",
-    default=PRETRAINED_STONKGS_DUMMY_PATH,
+    default=PRETRAINED_STONKGS_PATH,
     help="Path of the pretrained model",
     type=str,
 )
@@ -550,7 +550,7 @@ def run_all_fine_tuning_tasks(
     cv: int = 5,
     log_steps: int = 500,
     lr: float = 5e-5,
-    model_path: str = PRETRAINED_STONKGS_DUMMY_PATH,
+    model_path: str = PRETRAINED_STONKGS_PATH,
     output_dir: str = STONKGS_OUTPUT_DIR,
     logging_dir: Optional[str] = MLFLOW_FINETUNING_TRACKING_URI,
     batch_size: int = 8,

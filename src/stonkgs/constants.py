@@ -51,13 +51,19 @@ KG_HPO_DIR = os.path.join(MODELS_DIR, "kg-hpo")
 KG_BL_OUTPUT_DIR = os.path.join(MODELS_DIR, "kg-baseline")
 STONKGS_PRETRAINING_DIR = os.path.join(MODELS_DIR, "stonkgs-pretraining")
 PROTSTONKGS_PRETRAINING_DIR = os.path.join(MODELS_DIR, "protstonkgs-pretraining")
+TRANSESTONKGS_PRETRAINING_DIR = os.path.join(MODELS_DIR, "transestonkgs-pretraining")
 STONKGS_PRETRAINING_NO_NSP_DIR = os.path.join(MODELS_DIR, "stonkgs-pretraining-no-nsp")
 PRETRAINED_STONKGS_DUMMY_PATH = os.path.join(
     STONKGS_PRETRAINING_DIR, "pretrained-stonkgs-dummy-model"
 )
-PRETRAINED_PROTSTONKGS_PATH = os.path.join(PROTSTONKGS_PRETRAINING_DIR, "pretrained-protstonkgs")
+PRETRAINED_STONKGS_PATH = os.path.join(
+    STONKGS_PRETRAINING_DIR, "pretrained-stonkgs"
+)
+PRETRAINED_PROTSTONKGS_PATH = os.path.join(
+    PROTSTONKGS_PRETRAINING_DIR, "pretrained-protstonkgs"
+)
 PRETRAINED_TRANSESTONKGS_PATH = os.path.join(
-    PROTSTONKGS_PRETRAINING_DIR, "pretrained-transestonkgs"
+    TRANSESTONKGS_PRETRAINING_DIR, "pretrained-transestonkgs"
 )
 STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, "stonkgs")
 PROT_STONKGS_OUTPUT_DIR = os.path.join(MODELS_DIR, "protstonkgs")
