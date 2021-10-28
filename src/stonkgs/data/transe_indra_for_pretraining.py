@@ -8,6 +8,7 @@ python -m src.stonkgs.data.transe_indra_for_pretraining
 
 import logging
 import os
+from more_itertools import sliced
 
 import numpy as np
 import pandas as pd
@@ -35,19 +36,31 @@ def indra_to_transe_pretraining_df(
     nsp_negative_proportion: float = 0.25,
     text_part_length: int = 256,
     sep_id: int = 102,
+    chunk_size: int = 50000,
 ):
     """Preprocesses the INDRA statements from the pre-training file so that it contains all the necessary attributes."""
     # Load the KG embedding dict to convert the names to numeric indices
     kg_embed_dict = prepare_df(embedding_name_to_vector_path)
     kg_name_to_idx = {key: i for i, key in enumerate(kg_embed_dict.keys())}
-    # Keep track of how many triples need to be skipped
-    skip_count = 0
 
     # Log the number of entities
     logger.info(f"There are {len(kg_embed_dict)} many entities in the pre-trained KG")
 
     # Load the pre-training dataframe
     pretraining_df = pd.read_csv(pre_training_path, sep="\t")
+    # Read the length of the existing preprocessed dataframe if it's already partially preprocessed
+    already_preprocessed_items = 0
+    if os.path.exists(os.path.join(PRETRAINING_DIR, "pretraining_transe_preprocessed_positive.tsv")):
+        already_preprocessed_items = len(pd.read_csv(
+            os.path.join(PRETRAINING_DIR, "pretraining_transe_preprocessed_positive.tsv"),
+            sep="\t",
+            index_col=None,
+            usecols=[0],  # only read 1 column to determine the length
+        ))
+        logger.info(f"Found an existing file with {already_preprocessed_items} many preprocessed triples")
+    # Only deal with the part that hasn't been preprocessed yet
+    pretraining_df_not_processed = pretraining_df.iloc[already_preprocessed_items:]
+    pretraining_df_not_processed.reset_index()
 
     # Check if all pretraining entities are covered by the embedding dict
     number_of_pre_training_nodes = len(
@@ -67,84 +80,103 @@ def indra_to_transe_pretraining_df(
         # Initialize a slow tokenizer used for getting the text token ids
         tokenizer = BertTokenizer.from_pretrained(nlp_model_type)
 
-    # Initialize the preprocessed data
-    pre_training_preprocessed = []
+    # Prepare chunk-wise processing of the dataframe
+    chunks = [
+        pretraining_df_not_processed[i:i+chunk_size]
+        for i in range(0, pretraining_df_not_processed.shape[0], chunk_size)
+    ]
 
     # Log progress with a progress bar
-    for idx, row in tqdm(
-        pretraining_df.iterrows(),
-        total=pretraining_df.shape[0],
-        desc="Generating positive samples",
-    ):
-        # 1. "Token type IDs": 0 for text tokens, 1 for TransE embedding "tokens"
-        token_type_ids = [0] * text_part_length + [1] * 4
+    for i, chunk in enumerate(tqdm(
+        chunks,
+        total=len(chunks),
+        desc="Processing the dataframe chunk-wise",
+    )):
+        pre_training_preprocessed_partial = []
+        skip_count = 0
 
-        # 2. Tokenization for getting the input ids and attention masks for the text
-        # Use encode_plus to also get the attention mask ("padding" mask)
-        encoded_text = tokenizer.encode_plus(
-            row["evidence"],
-            padding="max_length",
-            truncation=True,
-            max_length=text_part_length,
-        )
-        text_token_ids = encoded_text["input_ids"]
-        text_attention_mask = encoded_text["attention_mask"]
+        for idx, row in tqdm(
+            chunk.iterrows(),  # Different start index if partially processed
+            total=chunk.shape[0],
+            desc=f"Generating positive samples for chunk no. {i} out of {len(chunks)} chunks left",
+            leave=True,
+            position=1,
+        ):
+            # 1. "Token type IDs": 0 for text tokens, 1 for TransE embedding "tokens"
+            token_type_ids = [0] * text_part_length + [1] * 4
 
-        # !! TransESTonKGs-specific !!
-        # 3. Get the TransE-based input sequence part, add the SEP (usually with id=102) afterwards
-        try:
-            transe_embedding_part = (
-                [kg_name_to_idx[row["source"]]]
-                + [kg_name_to_idx[row["relation"]]]
-                + [kg_name_to_idx[row["target"]]]
-                + [sep_id]
+            # 2. Tokenization for getting the input ids and attention masks for the text
+            # Use encode_plus to also get the attention mask ("padding" mask)
+            encoded_text = tokenizer.encode_plus(
+                row["evidence"],
+                padding="max_length",
+                truncation=True,
+                max_length=text_part_length,
             )
-        except KeyError:
-            skip_count += 1
-            continue
+            text_token_ids = encoded_text["input_ids"]
+            text_attention_mask = encoded_text["attention_mask"]
 
-        # 4. Total attention mask (attention mask is all 1 for the entity sequence)
-        attention_mask = text_attention_mask + [1] * 4
+            # !! TransESTonKGs-specific !!
+            # 3. Get the TransE-based input sequence part, add the SEP (usually with id=102) afterwards
+            try:
+                transe_embedding_part = (
+                    [kg_name_to_idx[row["source"]]]
+                    + [kg_name_to_idx[row["relation"]]]
+                    + [kg_name_to_idx[row["target"]]]
+                    + [sep_id]
+                )
+            except KeyError:
+                skip_count += 1
+                continue
 
-        # Apply the masking strategy to the text tokens and get the text MLM labels
-        masked_lm_token_ids, masked_lm_labels = replace_mlm_tokens(
-            tokens=text_token_ids,
-            vocab_len=len(tokenizer.vocab),
+            # 4. Total attention mask (attention mask is all 1 for the entity sequence)
+            attention_mask = text_attention_mask + [1] * 4
+
+            # Apply the masking strategy to the text tokens and get the text MLM labels
+            masked_lm_token_ids, masked_lm_labels = replace_mlm_tokens(
+                tokens=text_token_ids,
+                vocab_len=len(tokenizer.vocab),
+            )
+            # Apply the masking strategy to the entity tokens and get the entity (E)LM labels
+            # Use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
+            ent_masked_lm_token_ids, ent_masked_lm_labels = replace_mlm_tokens(
+                tokens=transe_embedding_part,
+                vocab_len=len(kg_embed_dict),
+            )
+
+            input_ids = masked_lm_token_ids + ent_masked_lm_token_ids
+
+            # Add all the features to the preprocessed data
+            pre_training_preprocessed_partial.append(
+                {
+                    "input_ids": input_ids,
+                    "attention_mask": attention_mask,
+                    "token_type_ids": token_type_ids,
+                    "masked_lm_labels": masked_lm_labels,
+                    "ent_masked_lm_labels": ent_masked_lm_labels,
+                    "next_sentence_labels": 0,  # 0 indicates the random walks belong to the text evidence
+                }
+            )
+
+        pre_training_preprocessed_df_partial = pd.DataFrame(pre_training_preprocessed_partial)
+
+        # Keep track of how many triples need to be skipped
+        logger.info(f"{skip_count} many examples were skipped")
+
+        pre_training_preprocessed_df_partial.to_csv(
+            os.path.join(PRETRAINING_DIR, "pretraining_transe_preprocessed_positive.tsv"),
+            sep="\t",
+            index=False,
+            mode="a",
         )
-        # Apply the masking strategy to the entity tokens and get the entity (E)LM labels
-        # Use the same mask_id as in the NLP model (handled appropriately by STonKGs later on)
-        ent_masked_lm_token_ids, ent_masked_lm_labels = replace_mlm_tokens(
-            tokens=transe_embedding_part,
-            vocab_len=len(kg_embed_dict),
-        )
-
-        input_ids = masked_lm_token_ids + ent_masked_lm_token_ids
-
-        # Add all the features to the preprocessed data
-        pre_training_preprocessed.append(
-            {
-                "input_ids": input_ids,
-                "attention_mask": attention_mask,
-                "token_type_ids": token_type_ids,
-                "masked_lm_labels": masked_lm_labels,
-                "ent_masked_lm_labels": ent_masked_lm_labels,
-                "next_sentence_labels": 0,  # 0 indicates the random walks belong to the text evidence
-            }
-        )
-
-    # Put the preprocessed data into a dataframe
-    pre_training_preprocessed_df = pd.DataFrame(pre_training_preprocessed)
 
     logger.info("Finished generating positive training examples")
-    logger.info(f"{skip_count} many examples were skipped")
 
-    # Save the positive examples
-    pre_training_preprocessed_df.to_csv(
+    # Load the positive examples to save them as a pickle
+    pre_training_preprocessed_df = pd.read_csv(
         os.path.join(PRETRAINING_DIR, "pretraining_transe_preprocessed_positive.tsv"),
         sep="\t",
-        index=False,
     )
-    # Pickle it, too (easier for reading in the lists in the pandas dataframe)
     pre_training_preprocessed_df.to_pickle(
         os.path.join(PRETRAINING_DIR, "pretraining_transe_preprocessed_positive.pkl"),
     )
