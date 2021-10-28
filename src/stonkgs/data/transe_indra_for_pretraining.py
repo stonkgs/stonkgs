@@ -50,14 +50,20 @@ def indra_to_transe_pretraining_df(
     pretraining_df = pd.read_csv(pre_training_path, sep="\t")
     # Read the length of the existing preprocessed dataframe if it's already partially preprocessed
     already_preprocessed_items = 0
-    if os.path.exists(os.path.join(PRETRAINING_DIR, "pretraining_transe_preprocessed_positive.tsv")):
-        already_preprocessed_items = len(pd.read_csv(
-            os.path.join(PRETRAINING_DIR, "pretraining_transe_preprocessed_positive.tsv"),
-            sep="\t",
-            index_col=None,
-            usecols=[0],  # only read 1 column to determine the length
-        ))
-        logger.info(f"Found an existing file with {already_preprocessed_items} many preprocessed triples")
+    if os.path.exists(
+        os.path.join(PRETRAINING_DIR, "pretraining_transe_preprocessed_positive.tsv")
+    ):
+        already_preprocessed_items = len(
+            pd.read_csv(
+                os.path.join(PRETRAINING_DIR, "pretraining_transe_preprocessed_positive.tsv"),
+                sep="\t",
+                index_col=None,
+                usecols=[0],  # only read 1 column to determine the length
+            )
+        )
+        logger.info(
+            f"Found an existing file with {already_preprocessed_items} many preprocessed triples"
+        )
     # Only deal with the part that hasn't been preprocessed yet
     pretraining_df_not_processed = pretraining_df.iloc[already_preprocessed_items:]
     pretraining_df_not_processed.reset_index()
@@ -82,16 +88,18 @@ def indra_to_transe_pretraining_df(
 
     # Prepare chunk-wise processing of the dataframe
     chunks = [
-        pretraining_df_not_processed[i:i+chunk_size]
+        pretraining_df_not_processed[i : i + chunk_size]
         for i in range(0, pretraining_df_not_processed.shape[0], chunk_size)
     ]
 
     # Log progress with a progress bar
-    for i, chunk in enumerate(tqdm(
-        chunks,
-        total=len(chunks),
-        desc="Processing the dataframe chunk-wise",
-    )):
+    for i, chunk in enumerate(
+        tqdm(
+            chunks,
+            total=len(chunks),
+            desc="Processing the dataframe chunk-wise",
+        )
+    ):
         pre_training_preprocessed_partial = []
         skip_count = 0
 
