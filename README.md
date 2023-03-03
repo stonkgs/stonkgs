@@ -270,8 +270,8 @@ The code in this package is licensed under the [MIT License](https://github.com/
 ### 📖 Citation
 
 Balabin H., Hoyt C.T., Birkenbihl C., Gyori B.M., Bachman J.A., Komdaullil A.T., Plöger P.G., Hofmann-Apitius M.,
-Domingo-Fernández D. [STonKGs: A Sophisticated Transformer Trained on Biomedical Text and Knowledge Graphs](https://www.biorxiv.org/content/10.1101/2021.08.17.456616v1)
-(2021), *bioRxiv*, 2021.08.17.456616v1.
+Domingo-Fernández D. [STonKGs: A Sophisticated Transformer Trained on Biomedical Text and Knowledge Graphs](https://academic.oup.com/bioinformatics/article/38/6/1648/6497782)
+(2022), *Bioinformatics*, Volume 38, Issue 6, March 2022, Pages 1648–1656.
 
 ### 🎁 Support
 
